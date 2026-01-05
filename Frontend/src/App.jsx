@@ -5,9 +5,13 @@ import '../src/index.css'
 import Home from "@/components/shared/Home";
 import About from "@/components/shared/About"
 import Contact from "@/components/shared/Contact"
+import RegisterAsk from '@/components/shared/RegisterAsk'
+import DashBoard from '@/components/Admin/DashBoard'
 import GetAllProducts from "@/components/Admin/GetAllProduct"
 import GetAllUsers from "@/components/Admin/GetAllUser"
-import VerifyUser from "@/components/Admin/VerifyUser"
+import GetUser from "@/components/Admin/GetUser"
+import AllOrders from '@/components/Admin/AllOrders'
+import ReportAdmin from '@/components/Admin/ReportAdmin'
 
 import BuyerRegister from "@/components/Buyer/BuyerRegister";
 import BuyerLogin from "@/components/Buyer/BuyerLogin";
@@ -50,17 +54,22 @@ const appRouter = createBrowserRouter([
     path: '/contact',
     element: <Contact />
   },
+  {
+    path: '/registeras',
+    element: <RegisterAsk />
+  },
 
   {
     path: "/admin",
     children: [
       { path: "getallusers", element: <GetAllUsers /> },
       { path: "getallproducts", element: <GetAllProducts /> },
-      { path: "verifyuser", element: <VerifyUser /> },
+      { path: "getuser", element: <GetUser /> },
+      { path: "dashboard", element: <DashBoard /> },
+      { path: "allorders", element: <AllOrders/>},
+      { path: "report", element: <ReportAdmin/>}
     ],
   },
-
-
 
   {
     path: "/seller",
@@ -87,7 +96,7 @@ const appRouter = createBrowserRouter([
     ],
   },
 
-   // Product Routes
+  // Product Routes
   {
     path: "/product",
     children: [
@@ -98,7 +107,7 @@ const appRouter = createBrowserRouter([
     ],
   },
 
-   // Transporter Routes
+  // Transporter Routes
   {
     path: "/transporter",
     children: [

@@ -2,10 +2,14 @@ import { Seller } from '../models/Seller'
 
 export const registerSeller = async (req, res) => {
     try {
-        const { name, email, password, address, phone } = req.body;
-        if (!name || !email || !password || !address || !phone) {
-            return res.status(400).json({ message: "All fields are required", success: false });
+        const { name, email, password, phone, latitude, longitude, city } = req.body;
+        if (!name || !email || !password || !phone || !latitude || !longitude || !city) {
+            return res.status(400).json({
+                message: "All fields are required",
+                success: false
+            });
         }
+
         const existingSeller = await Seller.findOne({ email });
         if (existingSeller) {
             return res.status(400).json({ message: "Buyer with this email already exists", success: false });
@@ -16,8 +20,12 @@ export const registerSeller = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            address,
-            phone
+            phone,
+            location: {
+                type: "Point",
+                coordinates: [longitude, latitude], // IMPORTANT ORDER
+                city
+            }
         });
 
         await newSeller.save();
