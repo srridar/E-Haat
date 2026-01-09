@@ -1,16 +1,23 @@
 import mongoose from 'mongoose';
+import validator from "validator";
 
 const transportProviderSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        minlength: [3, " buyer name must consist at least 3 characters in his name"]
     },
     email: {
         type: String,
         required: true,
         unique: true,
-        lowercase: true
+        lowercase: true,
+        validate: {
+            validator: validator.isEmail,
+            message: "Invalid email format"
+        }
+
     },
     password: {
         type: String,
@@ -20,6 +27,10 @@ const transportProviderSchema = new mongoose.Schema({
     phone: {
         type: String,
         required: true,
+        match: [
+            /^(98|97)\d{8}$/,
+            "Please enter a valid Nepali mobile number"
+        ]
     },
     role: {
         type: String,
@@ -32,6 +43,12 @@ const transportProviderSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    notifications: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Notification",
+        },
+    ],
 
     verificationStatus: {
         type: String,

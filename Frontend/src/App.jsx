@@ -6,6 +6,7 @@ import Home from "@/components/shared/Home";
 import About from "@/components/shared/About"
 import Contact from "@/components/shared/Contact"
 import RegisterAsk from '@/components/shared/RegisterAsk'
+import LoginAsk from '@/components/shared/LoginAsk';
 import DashBoard from '@/components/Admin/DashBoard'
 import GetAllProducts from "@/components/Admin/GetAllProduct"
 import GetAllUsers from "@/components/Admin/GetAllUser"
@@ -27,6 +28,8 @@ import SellerRegister from "@/components/Seller/SellerRegister";
 import SellerLogin from "@/components/Seller/SellerLogin";
 import SellerProfile from "@/components/Seller/SellerProfile";
 import SellerProfileUpdate from "@/components/Seller/SellerProfileUpdate";
+import SellerPasswordChange from '@/components/Seller/SellerPasswordChange';
+import AllMyProducts from '@/components/Seller/AllMyProducts'
 
 import CreateProduct from "@/components/Product/CreateProduct";
 import GetAllProductsPage from "@/components/Product/GetAllProducts";
@@ -55,8 +58,12 @@ const appRouter = createBrowserRouter([
     element: <Contact />
   },
   {
-    path: '/registeras',
+    path: '/register-as',
     element: <RegisterAsk />
+  },
+  {
+    path: '/login-as',
+    element: <LoginAsk />
   },
 
   {
@@ -78,6 +85,8 @@ const appRouter = createBrowserRouter([
       { path: "login", element: <SellerLogin /> },
       { path: "profile", element: <SellerProfile /> },
       { path: "profile/update", element: <SellerProfileUpdate /> },
+      { path: "change-password", element: <SellerPasswordChange /> },
+      { path: "my-products", element :<AllMyProducts/>}
     ],
   },
 
@@ -101,7 +110,7 @@ const appRouter = createBrowserRouter([
     path: "/product",
     children: [
       { path: "create", element: <CreateProduct /> },
-      { path: "", element: <GetAllProductsPage /> },
+      { path: "allproduct", element: <GetAllProductsPage /> },
       { path: ":id", element: <GetProduct /> },
       { path: "update/:id", element: <UpdateProductDetails /> },
     ],

@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { UserIcon, Cog6ToothIcon, BellIcon, CubeIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import  Notification from '@/components/shared/Notification'
+import { useNavigate } from 'react-router-dom';
 
 
-const SellerProfile = ({ onClose }) => {
+const SellerProfile = () => {
   const [setting, setSetting] = useState(false);
+  const navigate= useNavigate();
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-8 flex justify-start items-center gap-24 ">
+    <div className="min-h-screen bg-gray-100 px-4 py-8 flex justify-start items-start gap-24 ">
+      
       <div className="h-[40rem] w-1/5 rounded-2xl bg-white shadow">
         <div className="bg-[var(--secondary-orange-lite)] rounded-2xl shadow p-6 flex flex-col md:flex-row items-center gap-6">
           <img
@@ -31,7 +35,7 @@ const SellerProfile = ({ onClose }) => {
             <Cog6ToothIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">Setting</h2>
           </div>
-          <div className="flex px-2 py-2 gap-4 items-center">
+          <div className="flex px-2 py-2 gap-4 items-center" onClick={()=>navigate("/seller/my-products")}>
             <CubeIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">My Products</h2>
           </div>
@@ -130,6 +134,8 @@ const SellerProfile = ({ onClose }) => {
         </div>
 
       </div>
+
+      <Notification/>
 
       {setting && (<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 ">
         <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">

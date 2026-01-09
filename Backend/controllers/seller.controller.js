@@ -171,11 +171,34 @@ export const updateSellerProfile = async (req, res) => {
         if (name) seller.name = name;
         if (address) seller.address = address;
         if (phone) seller.phone = phone;
+        //  frontend  - >  multer middleware  ->  cloudinary upload  ->  req.file object created  ->Controller reads req.file.path  -> URL saved in MongoDB
 
         if (req.file) {
-            seller.profileImage = req.file.path; //  frontend  - >  multer middleware  ->  cloudinary upload  ->  req.file object created  ->Controller reads req.file.path  -> URL saved in MongoDB
-        }
+            // delete old image from cloudinary
+            if (seller.profileImage?.public_id) {
+                await cloudinary.v2.uploader.destroy(
+                    seller.profileImage.public_id
+                );
+            }
 
+            // convert file buffer → data uri
+            const fileUri = getDataUri(req.file);
+
+            // upload to cloudinary
+            const uploadResult = await cloudinary.v2.uploader.upload(
+                fileUri.content,
+                {
+                    folder: "sellers/profile",
+                    resource_type: "image",
+                }
+            );
+
+            // save new image
+            seller.profileImage = {
+                url: uploadResult.secure_url,
+                public_id: uploadResult.public_id,
+            };
+        }
 
         await seller.save();
         const updatedSeller = {
@@ -187,6 +210,14 @@ export const updateSellerProfile = async (req, res) => {
             profileImage: seller.profileImage,
 
         }
+
+        await Notification.create({
+            user: sellerId,
+            role: "seller",
+            type: "profile_update",
+            title: "Profile Updated",
+            message: "Your profile has been updated successfully.",
+        });
 
         return res.status(200).json({
             message: "Product Updated Successfully !",           // shows that the 
@@ -241,6 +272,14 @@ export const changeSellerPassword = async (req, res) => {
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         seller.password = hashedNewPassword;
         await seller.save();
+
+        await Notification.create({
+            user: sellerId,
+            role: "seller",
+            type: "password_change",
+            title: "Password Changed",
+            message: "Your password has been updated successfully.",
+        });
 
         return res.status(200).json({
             message: "Password changed successfully",
@@ -302,7 +341,6 @@ export const deleteSellerAccount = async (req, res) => {
             })
         }
 
-
         seller.isBlocked = true;
         await seller.save();
 
@@ -310,7 +348,6 @@ export const deleteSellerAccount = async (req, res) => {
             { seller: sellerId },
             { $set: { isActive: false } }
         );
-
 
         res.clearCookie("token");
 

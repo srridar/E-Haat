@@ -34,13 +34,28 @@ export const CreateProduct = async (req, res) => {
             });
         }
 
+        let images = [];
+
+        if (req.files && req.files.length > 0) {
+            for (let file of req.files) {
+                const fileUri = getDataUri(file);
+                const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content, { folder: "products", resource_type: " images" });
+
+                images.push({
+                    url: uploadResult.secure_url,
+                    public_id: uploadResult.public_id
+                });
+            }
+        }
+
         const newProduct = await Product.create({
             name,
             description,
             price,
             stock,
             category,
-            seller: sellerId
+            seller: sellerId,
+            images
         });
 
         seller.productsOwned.push(newProduct._id);
@@ -133,7 +148,7 @@ export const UpdateProduct = async (req, res) => {
     try {
 
         const { name, description, category, price, stock } = req.body;
-        const requestedId = req.user.id;
+        const sellerId = req.user.id;
         const productId = req.params.id;
 
         const product = await Product.findById(productId);
@@ -168,19 +183,29 @@ export const UpdateProduct = async (req, res) => {
             product.stock = stock
         }
 
-        await product.save();
-        const updatedProduct = {
-            _id: product._id,
-            name: product.name,
-            description: product.description,
-            category: product.category,
-            price: product.price,
-            stock: product.stock
+        if (req.files && req.files.length > 0) {
+            for (let img of product.images) {
+                await cloudinary.v2.uploader.destroy(img.public_id);
+            }
+
+            let images = [];
+            for (let file of req.files) {
+                const fileUri = getDataUri(file);
+                const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content, { folder: "products", resource_type: " images" });
+
+                images.push({
+                    url: uploadResult.secure_url,
+                    public_id: uploadResult.public_id
+                });
+            }
+            product.images = images;
         }
+
+        await product.save();
 
         return res.status(200).json({
             message: "Product Updated Successfully !",           // shows that the 
-            updatedProduct,
+            updatedProduct : product,
             success: true
         })
 
@@ -296,64 +321,64 @@ export const SearchFilterProduct = async (req, res) => {
 export const RateAndReviewProduct = async (req, res) => {
     try {
 
-          const { rating, productId, orderId } = req.body;
-                const buyerId = req.user.id;
-        
-                if (!rating || rating < 1 || rating > 5) {
-                    return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
-                }
-        
-                // check if order exists and belongs to buyer
-                const order = await Order.findOne({
-                    _id: orderId,
-                    buyer: buyerId,
-                    product: productId
-                })
-        
-                if (!order) {
-                    return res.status(404).json({ message: "Order not found", success: false });
-                }
-        
-                if (order.status !== "DELIVERED") {
-                    return res.status(400).json({
-                        message: "You can rate transporter only after delivery",
-                        success: false
-                    });
-                }
-        
-                // 4️⃣ Prevent double rating
-                if (order.isTransportRated) {
-                    return res.status(400).json({
-                        message: "Transporter already rated for this order",
-                        success: false
-                    });
-                }
-        
-        
-                // check if transporter exists
-                const product = await Product.findById(productId);
-                if (!product) {
-                    return res.status(404).json({ message: "Product not found", success: false });
-                }
-        
-        
-                // update transporter's rating
-                const newTotalRatings = product.totalRatings + 1;
-                const newRating = ((product.rating  * product.totalRatings) + rating) / newTotalRatings;
-        
-                product.rating = Number(newRating.toFixed(1));
-                product.totalRatings = newTotalRatings;
-        
-                order.isTransportRated = true;
-        
-                await product.save();
-                await order.save();
-        
-                return res.status(200).json({
-                    message: "Product rated successfully",
-                    success: true,
-                    rating: product.rating
-                });
+        const { rating, productId, orderId } = req.body;
+        const buyerId = req.user.id;
+
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
+        }
+
+        // check if order exists and belongs to buyer
+        const order = await Order.findOne({
+            _id: orderId,
+            buyer: buyerId,
+            product: productId
+        })
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found", success: false });
+        }
+
+        if (order.status !== "DELIVERED") {
+            return res.status(400).json({
+                message: "You can rate transporter only after delivery",
+                success: false
+            });
+        }
+
+        // 4️⃣ Prevent double rating
+        if (order.isTransportRated) {
+            return res.status(400).json({
+                message: "Transporter already rated for this order",
+                success: false
+            });
+        }
+
+
+        // check if transporter exists
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: "Product not found", success: false });
+        }
+
+
+        // update transporter's rating
+        const newTotalRatings = product.totalRatings + 1;
+        const newRating = ((product.rating * product.totalRatings) + rating) / newTotalRatings;
+
+        product.rating = Number(newRating.toFixed(1));
+        product.totalRatings = newTotalRatings;
+
+        order.isTransportRated = true;
+
+        await product.save();
+        await order.save();
+
+        return res.status(200).json({
+            message: "Product rated successfully",
+            success: true,
+            rating: product.rating
+        });
 
 
     } catch (error) {

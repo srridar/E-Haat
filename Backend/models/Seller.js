@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import validator from "validator";
 
 const sellerSchema = new mongoose.Schema({
     name: {
@@ -8,7 +9,11 @@ const sellerSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        validate: {
+            validator: validator.isEmail,
+            message: "Invalid email format"
+        }
     },
     password: {
         type: String,
@@ -16,7 +21,11 @@ const sellerSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: true
+        required: true,
+        match: [
+            /^(98|97)\d{8}$/,
+            "Please enter a valid Nepali mobile number"
+        ]
     },
     productsOwned: {
         type: [mongoose.Schema.Types.ObjectId],    // Array of product IDs
@@ -25,19 +34,25 @@ const sellerSchema = new mongoose.Schema({
     },
     rating: {
         type: Number,
-        default: 0 
+        default: 0
     },
     totalRatings: {
         type: Number,
         default: 0
     },
     profileImage: {
-        type: String, // Cloudinary URL
+        type: String,   // Cloudinary URL
     },
     isBlocked: {
         type: Boolean,
         default: false
     },
+    notifications: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Notification",
+        },
+    ],
     isVerified: {
         type: Boolean,
         default: false

@@ -1,5 +1,6 @@
 import express from 'express'
 import isAuthenticated from "../middlewares/isAuthenticated"
+import { upload } from "../middlewares/multer.js";
 import {CreateProduct, 
     GetAllProduct, 
     GetProductById, 
@@ -10,11 +11,11 @@ import {CreateProduct,
 
 const router=express.Router();
 
-router.route("/createproduct").post(isAuthenticated, CreateProduct);
-router.route("/getallproduct").post(GetAllProduct);
-router.route("/getproductbyid").get(isAuthenticated,GetProductById);
-router.route("/updateproduct").get(isAuthenticated,UpdateProduct);
-router.route("/deleteproduct").post(isAuthenticated, deleteProduct);
+router.route("/create-product").post(isAuthenticated,upload.array("images", 5),  CreateProduct);
+router.route("/get-all-product").post(GetAllProduct);
+router.route("/get-productbyid").get(isAuthenticated,GetProductById);
+router.route("/update-product").get(isAuthenticated,upload.array("images", 5), UpdateProduct);
+router.route("/delete-product").post(isAuthenticated, deleteProduct);
 router.route("/searchfilterproduct").post(isAuthenticated,SearchFilterProduct);
 router.route("/rateandreviewproduct").post(isAuthenticated,RateAndReviewProduct);
 

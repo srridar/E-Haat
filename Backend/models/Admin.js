@@ -14,7 +14,7 @@ const adminSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        select : false         // never send password to frontend by default
+        select: false         // never send password to frontend by default
     },
     role: {
         type: String,
@@ -28,6 +28,12 @@ const adminSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    notifications: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Notification",
+        },
+    ],
     isActive: {
         type: Boolean,
         default: true

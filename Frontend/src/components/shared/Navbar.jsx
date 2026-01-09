@@ -31,6 +31,9 @@ const Navbar = () => {
             <Link to="/about" className="text-dark hover:text-primary">
               About
             </Link>
+             <Link to="/contact" className="text-dark hover:text-primary">
+              Contact
+            </Link>
           </nav>
 
           <div className="flex justify-center items-center">
@@ -38,9 +41,9 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="outline">Login</Button>
+            <Button variant="outline"><Link to="/login-as">Log In</Link></Button>
             <Button className="bg-secondary text-white hover:bg-secondary/90">
-              Register
+             <Link to="/register-as">Sign In</Link>
             </Button>
           </div>
         </div>

@@ -1,11 +1,3 @@
-/*
-
-getMyRatings
-applyForVerification
-getVerificationStatus
-
-*/
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { TransportProvider } from "../models/TransportProvider.js";
@@ -14,34 +6,15 @@ import { Order } from "../models/Order.js"
 
 export const registerTransportProvider = async (req, res) => {
     try {
-        const {
-            name,
-            email,
-            password,
-            phone,
-            vehicle,
-            serviceAreas,
-            pricePerKm
-        } = req.body;
 
-        /* Validate input */
-        if (
-            !name ||
-            !email ||
-            !password ||
-            !phone ||
-            !vehicle?.type ||
-            !vehicle?.numberPlate ||
-            !vehicle?.capacityKg ||
-            !pricePerKm
-        ) {
+        const { name, email, password, phone, vehicle, serviceAreas, pricePerKm } = req.body;
+        if (!name || !email || !password || !phone || !vehicle?.type || !vehicle?.numberPlate || !vehicle?.capacityKg || !pricePerKm) {
             return res.status(400).json({
                 message: "All required fields must be provided",
                 success: false
             });
         }
 
-        /* Check existing transporter */
         const existing = await TransportProvider.findOne({ email });
         if (existing) {
             return res.status(400).json({
@@ -50,10 +23,7 @@ export const registerTransportProvider = async (req, res) => {
             });
         }
 
-        /* 3️⃣ Hash password */
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        /* 4️⃣ Create transporter */
         const transporter = await TransportProvider.create({
             name,
             email,
@@ -64,11 +34,9 @@ export const registerTransportProvider = async (req, res) => {
             pricePerKm
         });
 
-        /* 5️⃣ Response */
         return res.status(201).json({
             success: true,
-            message:
-                "Transport provider registered successfully. Verification pending.",
+            message: "Transport provider registered successfully. Verification pending.",
             transporter: {
                 id: transporter._id,
                 name: transporter.name,
@@ -94,7 +62,6 @@ export const loginTransportProvider = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        /* 1️⃣ Validate input */
         if (!email || !password) {
             return res.status(400).json({
                 message: "Email and password are required",
@@ -102,7 +69,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        /* 2️⃣ Find transporter */
         const transporter = await TransportProvider
             .findOne({ email })
             .select("+password");
@@ -114,7 +80,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        /* 3️⃣ Check if account is active */
         if (!transporter.isActive) {
             return res.status(403).json({
                 message: "Account has been deactivated",
@@ -122,7 +87,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        /* 4️⃣ Check if blocked */
         if (transporter.isBlocked) {
             return res.status(403).json({
                 message: "Account is blocked by admin",
@@ -130,7 +94,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        /* 5️⃣ Compare password */
         const isMatch = await bcrypt.compare(password, transporter.password);
         if (!isMatch) {
             return res.status(401).json({
@@ -139,7 +102,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        /* 6️⃣ Generate JWT */
         const token = jwt.sign(
             {
                 id: transporter._id,
@@ -149,7 +111,6 @@ export const loginTransportProvider = async (req, res) => {
             { expiresIn: "7d" }
         );
 
-        /* 7️⃣ Response */
         return res.status(200)
             .cookie("token", token, {
                 httpOnly: true,
@@ -266,6 +227,14 @@ export const changeTransporterPassword = async (req, res) => {
         transporter.password = hashedNewPassword;
         await transporter.save();
 
+        await Notification.create({
+            user: transporterId,
+            role: "transporter",
+            type: "password_change",
+            title: "Password Changed",
+            message: "Your password has been updated successfully.",
+        });
+
         return res.status(200).json({
             message: "Password changed successfully",
             success: true
@@ -282,17 +251,7 @@ export const updateTransportProviderProfile = async (req, res) => {
     try {
         const transporterId = req.user.id;
 
-        const {
-            name,
-            email,
-            phone,
-            serviceAreas,
-            pricePerKm,
-            isAvailable,
-            vehicle
-        } = req.body;
-
-        /* 1️⃣ Find transporter */
+        const { name, email, phone, serviceAreas, pricePerKm, isAvailable, vehicle } = req.body;
         const transporter = await TransportProvider.findById(transporterId);
 
         if (!transporter) {
@@ -302,7 +261,6 @@ export const updateTransportProviderProfile = async (req, res) => {
             });
         }
 
-        /* 2️⃣ Check email uniqueness (if updating email) */
         if (email && email !== transporter.email) {
             const emailExists = await TransportProvider.findOne({ email });
             if (emailExists) {
@@ -314,14 +272,12 @@ export const updateTransportProviderProfile = async (req, res) => {
             transporter.email = email;
         }
 
-        /* 3️⃣ Update allowed fields */
         if (name) transporter.name = name;
         if (phone) transporter.phone = phone;
         if (Array.isArray(serviceAreas)) transporter.serviceAreas = serviceAreas;
         if (pricePerKm) transporter.pricePerKm = pricePerKm;
         if (typeof isAvailable === "boolean") transporter.isAvailable = isAvailable;
 
-        /* 4️⃣ Update vehicle info (optional) */
         if (vehicle) {
             transporter.vehicle = {
                 ...transporter.vehicle,
@@ -331,7 +287,14 @@ export const updateTransportProviderProfile = async (req, res) => {
 
         await transporter.save();
 
-        /* 5️⃣ Response */
+        await Notification.create({
+            user: transporterId,
+            role: "trasporter",
+            type: "profile_update",
+            title: "Profile Updated",
+            message: "Your profile has been updated successfully.",
+        });
+
         return res.status(200).json({
             message: "Profile updated successfully",
             success: true,
@@ -418,7 +381,6 @@ export const getAssignedOrders = async (req, res) => {
             .populate("seller", "name phone")
             .sort({ createdAt: -1 });
 
-        /* 4️⃣ Response */
         return res.status(200).json({
             message: "Assigned orders fetched successfully",
             success: true,
@@ -451,13 +413,6 @@ export const acceptOrder = async (req, res) => {
 
         const order = await Order.findById(orderId);
 
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-                success: false
-            });
-        }
-
 
 
         if (!order) {
@@ -467,6 +422,12 @@ export const acceptOrder = async (req, res) => {
             });
         }
 
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found",
+                success: false
+            });
+        }
 
         if (order.status !== "pending") {
             return res.status(400).json({
@@ -475,8 +436,49 @@ export const acceptOrder = async (req, res) => {
             });
         }
 
+        const buyerId = order.buyer;
+        const sellerId = order.seller;
+
         order.status = "accepted";
         await order.save();
+
+        const notifications = [
+            {
+                user: buyerId,
+                role: "buyer",
+                type: "order",
+                title: "Order Accepted",
+                message: "Your order has been accepted by the transporter.",
+                relatedId: order._id,
+            },
+            {
+                user: sellerId,
+                role: "seller",
+                type: "order",
+                title: "Order Accepted",
+                message: "The transporter has accepted your order for delivery.",
+                relatedId: order._id,
+            },
+            {
+                user: transporterId,
+                role: "transporter",
+                type: "delivery",
+                title: "Order Accepted",
+                message: "You have accepted this order for delivery.",
+                relatedId: order._id,
+            },
+            {
+                user: null, // adminId if you have a specific admin
+                role: "admin",
+                type: "system",
+                title: "Order Accepted",
+                message: `Order #${order._id} has been accepted by the transporter.`,
+                relatedId: order._id,
+            },
+        ];
+
+
+        await Notification.insertMany(notifications);
 
         return res.status(200).json({
             message: "Order accepted successfully",
@@ -499,136 +501,222 @@ export const rejectOrder = async (req, res) => {
         const transporterId = req.user.id;
         const orderId = req.params.id;
 
+        // Check transporter
         const transporter = await TransportProvider.findById(transporterId);
         if (!transporter || transporter.isBlocked || !transporter.isActive) {
             return res.status(403).json({
                 message: "Transporter not authorized",
-                success: false
+                success: false,
             });
         }
 
+        // Find order
         const order = await Order.findById(orderId);
-
         if (!order) {
             return res.status(404).json({
                 message: "Order not found",
-                success: false
+                success: false,
             });
         }
 
+        // Ensure transporter is assigned to this order
         if (order.transporter.toString() !== transporterId) {
             return res.status(403).json({
                 message: "You are not assigned to this order",
-                success: false
+                success: false,
             });
         }
-
 
         if (order.status !== "pending") {
             return res.status(400).json({
                 message: `Order already ${order.status}`,
-                success: false
+                success: false,
             });
         }
 
+        // Update order status
         order.status = "rejected";
-        order.transporter = null;
+        order.transporter = null; // unassign transporter
         await order.save();
 
+        const buyerId = order.buyer;
+        const sellerId = order.seller;
+
+        // Notifications
+        const notifications = [
+            {
+                user: buyerId,
+                role: "buyer",
+                type: "order",
+                title: "Order Rejected",
+                message: "Your order delivery has been rejected by the transporter.",
+                relatedId: order._id,
+            },
+            {
+                user: sellerId,
+                role: "seller",
+                type: "order",
+                title: "Order Rejected",
+                message: "The transporter has rejected the delivery for your order.",
+                relatedId: order._id,
+            },
+            {
+                user: transporterId,
+                role: "transporter",
+                type: "delivery",
+                title: "Order Rejected",
+                message: "You have rejected this order for delivery.",
+                relatedId: order._id,
+            },
+            {
+                user: null, // adminId or all admins
+                role: "admin",
+                type: "system",
+                title: "Order Rejected",
+                message: `Order #${order._id} has been rejected by the transporter.`,
+                relatedId: order._id,
+            },
+        ];
+
+        await Notification.insertMany(notifications);
+
         return res.status(200).json({
-            message: "Order accepted successfully",
+            message: "Order rejected successfully",
             success: true,
+            order,
         });
-
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({
             message: "Internal Server Error",
-            success: false
-        });
-    }
-}
-
-export const updateOrderStatus = async (req, res) => {
-    try {
-        const transporterId = req.user.id;
-        const orderId = req.params.id;
-        const { status } = req.body;
-
-        const allowedStatuses = ["picked", "delivered"];
-
-        if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({
-                message: "Invalid status update",
-                success: false
-            });
-        }
-
-        const transporter = await TransportProvider.findById(transporterId);
-        if (!transporter || transporter.isBlocked || !transporter.isActive) {
-            return res.status(403).json({
-                message: "Transporter not authorized",
-                success: false
-            });
-        }
-
-        const order = await Order.findById(orderId);
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-                success: false
-            });
-        }
-
-        if (order.transporter.toString() !== transporterId) {
-            return res.status(403).json({
-                message: "You are not assigned to this order",
-                success: false
-            });
-        }
-
-        if (status === "picked" && order.status !== "accepted") {
-            return res.status(400).json({
-                message: "Order must be accepted before pickup",
-                success: false
-            });
-        }
-
-        if (status === "delivered" && order.status !== "picked") {
-            return res.status(400).json({
-                message: "Order must be picked before delivery",
-                success: false
-            });
-        }
-
-        order.status = status;
-   
-        if (status === "delivered") {
-            transporter.totalDeliveries += 1;
-            transporter.isAvailable = true;
-            await transporter.save();
-        }
-
-        await order.save();
-
-        return res.status(200).json({
-            message: `Order marked as ${status}`,
-            success: true,
-            order
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
+            success: false,
         });
     }
 };
 
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const transporterId = req.user.id;
+    const orderId = req.params.id;
+    const { status } = req.body;
 
+    const allowedStatuses = ["picked", "delivered"];
 
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid status update",
+        success: false,
+      });
+    }
+
+    const transporter = await TransportProvider.findById(transporterId);
+    if (!transporter || transporter.isBlocked || !transporter.isActive) {
+      return res.status(403).json({
+        message: "Transporter not authorized",
+        success: false,
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+        success: false,
+      });
+    }
+
+    if (order.transporter.toString() !== transporterId) {
+      return res.status(403).json({
+        message: "You are not assigned to this order",
+        success: false,
+      });
+    }
+
+    if (status === "picked" && order.status !== "accepted") {
+      return res.status(400).json({
+        message: "Order must be accepted before pickup",
+        success: false,
+      });
+    }
+
+    if (status === "delivered" && order.status !== "picked") {
+      return res.status(400).json({
+        message: "Order must be picked before delivery",
+        success: false,
+      });
+    }
+
+    // Update order status
+    order.status = status;
+
+    if (status === "delivered") {
+      transporter.totalDeliveries = (transporter.totalDeliveries || 0) + 1;
+      transporter.isAvailable = true;
+      await transporter.save();
+    }
+
+    await order.save();
+
+    // Create notifications dynamically based on status
+    const notifications = [
+      {
+        user: order.buyer,
+        role: "buyer",
+        type: "order",
+        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message:
+          status === "picked"
+            ? "Your order has been picked up by the transporter."
+            : "Your order has been delivered successfully.",
+        relatedId: order._id,
+      },
+      {
+        user: order.seller,
+        role: "seller",
+        type: "order",
+        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message:
+          status === "picked"
+            ? "Your order has been picked up by the transporter."
+            : "Your order has been delivered to the buyer.",
+        relatedId: order._id,
+      },
+      {
+        user: transporterId,
+        role: "transporter",
+        type: "delivery",
+        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message:
+          status === "picked"
+            ? "You have picked up the order for delivery."
+            : "You have successfully delivered the order.",
+        relatedId: order._id,
+      },
+      {
+        user: null, // optional adminId or all admins
+        role: "admin",
+        type: "system",
+        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message: `Order #${order._id} status updated to ${status} by transporter.`,
+        relatedId: order._id,
+      },
+    ];
+
+    await Notification.insertMany(notifications);
+
+    return res.status(200).json({
+      message: `Order marked as ${status}`,
+      success: true,
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
 
 
 

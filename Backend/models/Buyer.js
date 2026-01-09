@@ -1,32 +1,44 @@
 import mongoose from "mongoose";
+import validator from "validator";
 
 const buyerSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        minlength: [3, " buyer name must consist at least 3 characters in his name"]
     },
     email: {
         type: String,
         required: true,
-        unique: true
+        lowercase: true,
+        trim: true,
+        validate: {
+            validator: validator.isEmail,
+            message: "Invalid email format"
+        }
     },
     password: {
         type: String,
         required: true,
         select: false         // never send password to frontend by default
     },
-    address: {
-        type: String,
-
-        required: true
-    },
     phone: {
         type: String,
-        required: true
+        required: true,
+        match: [
+            /^(98|97)\d{8}$/,
+            "Please enter a valid Nepali mobile number"
+        ]
     },
-    profileImage:{
+    profileImage: {
         type: String
     },
+    notifications: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Notification",
+        },
+    ],
     location: {
         type: {
             type: String,

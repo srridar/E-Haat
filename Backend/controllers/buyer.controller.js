@@ -3,7 +3,9 @@ import { Seller } from '../models/Seller.js'
 import { Buyer } from '../models/Buyer.js'
 import { Product } from "../models/product.model.js";
 import { MAX_DISTANCE } from '../config/distance.config.js'
-
+import { Notification } from "../models/notification.model.js";
+import cloudinary from '../utils/cloudinary.js'
+import getDataUri from "../utils/dataUri.js";
 
 export const registerBuyer = async (req, res) => {
     try {
@@ -128,63 +130,98 @@ export const logoutBuyer = async (req, res) => {
 }
 
 //     updata buyer profile 
-
 export const updateBuyerProfile = async (req, res) => {
-    try {
-        const { name, email, address, phone } = req.body;
-        const buyerId = req.user.id;
+  try {
+    const { name, email, address, phone } = req.body;
+    const buyerId = req.user.id;
 
+    const buyer = await Buyer.findById(buyerId);
 
-        const buyer = await Buyer.findById(buyerId);
-
-        if (!buyer) {
-            return res.status(404).json({
-                message: "buyer is not found",
-                sucess: false
-            })
-        }
-
-        if (email && email !== buyer.email) {
-            const emailExists = await Buyer.findOne({ email });
-            if (emailExists) {
-                return res.status(400).json({
-                    message: "Email already in use",
-                    success: false
-                });
-            }
-            buyer.email = email;
-        }
-
-        if (name) buyer.name = name;
-        if (address) buyer.address = address;
-        if (phone) buyer.phone = phone;
-
-        if (req.file) {
-            buyer.profileImage = req.file.path; //  frontend  - >  multer middleware  ->  cloudinary upload  ->  req.file object created  ->Controller reads req.file.path  -> URL saved in MongoDB
-        }
-
-        await buyer.save();
-        const updatedBuyer = {
-            _id: buyer._id,
-            name: buyer.name,
-            email: buyer.email,
-            address: buyer.address,
-            phone: buyer.phone,
-            profileImage: buyer.profileImage,
-
-        }
-
-        return res.status(200).json({
-            message: "buyer Updated Successfully !",           // shows that the 
-            updatedBuyer,
-            success: true
-        })
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
+    if (!buyer) {
+      return res.status(404).json({
+        message: "Buyer not found",
+        success: false,
+      });
     }
-}
 
+    /* ---------- Email Check ---------- */
+    if (email && email !== buyer.email) {
+      const emailExists = await Buyer.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({
+          message: "Email already in use",
+          success: false,
+        });
+      }
+      buyer.email = email;
+    }
+
+    /* ---------- Update Fields ---------- */
+    if (name) buyer.name = name;
+    if (address) buyer.address = address;
+    if (phone) buyer.phone = phone;
+
+    /* ---------- Profile Image Upload ---------- */
+    if (req.file) {
+      // delete old image from cloudinary
+      if (buyer.profileImage?.public_id) {
+        await cloudinary.v2.uploader.destroy(
+          buyer.profileImage.public_id
+        );
+      }
+
+      // convert file buffer → data uri
+      const fileUri = getDataUri(req.file);
+
+      // upload to cloudinary
+      const uploadResult = await cloudinary.v2.uploader.upload(
+        fileUri.content,
+        {
+          folder: "buyers/profile",
+          resource_type: "image",
+        }
+      );
+
+      // save new image
+      buyer.profileImage = {
+        url: uploadResult.secure_url,
+        public_id: uploadResult.public_id,
+      };
+    }
+
+    await buyer.save();
+
+    const updatedBuyer = {
+      _id: buyer._id,
+      name: buyer.name,
+      email: buyer.email,
+      address: buyer.address,
+      phone: buyer.phone,
+      profileImage: buyer.profileImage?.url,
+    };
+
+    /* ---------- Notification ---------- */
+    await Notification.create({
+      user: buyerId,
+      role: "buyer",
+      type: "profile_update",
+      title: "Profile Updated",
+      message: "Your profile has been updated successfully.",
+    });
+
+    return res.status(200).json({
+      message: "Buyer updated successfully!",
+      updatedBuyer,
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
 
 //     change buyer password
 
@@ -224,6 +261,15 @@ export const changeBuyerPassword = async (req, res) => {
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         buyer.password = hashedNewPassword;
         await buyer.save();
+
+        // Create notification
+        await Notification.create({
+            user: buyerId,
+            role: "buyer",
+            type: "password_change",
+            title: "Password Changed",
+            message: "Your password has been updated successfully.",
+        });
 
         return res.status(200).json({
             message: "Password changed successfully",
@@ -299,13 +345,42 @@ export const createOrderByBuyer = async (req, res) => {
             return res.status(404).json({ message: "Transporter not found", success: false });
         }
 
-        await Order.create({
+        const order = await Order.create({
             buyer: buyerId,
             seller: sellerId,
             transporter: transporterId,
             products: products,
-            totalAmount: totalAmount
+            totalAmount: totalAmount,
         });
+
+        const notifications = [
+            {
+                user: buyerId,
+                role: "buyer",
+                type: "order",
+                title: "Order Placed",
+                message: "You have successfully placed an order.",
+                relatedId: order._id
+            },
+            {
+                user: sellerId,
+                role: "seller",
+                type: "order",
+                title: "New Order Received",
+                message: "You have received a new order from a buyer.",
+                relatedId: order._id
+            },
+            {
+                user: transporterId,
+                role: "transporter",
+                type: "delivery",
+                title: "Delivery Assigned",
+                message: "A new delivery has been assigned to you.",
+                relatedId: order._id
+            }
+        ];
+
+        await Notification.insertMany(notifications);
 
         return res.status(201).json({ message: "Order created successfully", success: true });
 
@@ -615,7 +690,8 @@ export const rateProductByBuyer = async (req, res) => {
 }
 
 
-export const recommendProducts = async (req, res) => {
+
+export const recommendedProducts = async (req, res) => {
     try {
         const buyerId = req.user.id;
         const { category } = req.query;

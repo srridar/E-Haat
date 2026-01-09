@@ -1,19 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
-import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
+import LocationPicker from '@/components/LocationPicker'
 import { SELLER_API_END_POINT } from '@/utils/constants';
 import axios from 'axios';
 import { Label } from '@/components/ui/label'
 
-const containerStyle = {
-  width: "100%",
-  height: "300px"
-};
-
-const center = {
-  lat: 27.7172,
-  lng: 85.3240
-};
 
 
 const SellerProfileUpdate = () => {
@@ -29,35 +20,48 @@ const SellerProfileUpdate = () => {
   }
 
   const [formData, setFormData] = useState(initialFormData);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  });
+  const handleLocationSelect = ([lat, lng]) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng
+    }))
+  }
 
   const changeFileHandler = (e) => {
-    setFormData({ ...formData, file: e.target.files?.[0] });
-  }
-
-  const onMapClick = (e) => {
-    setFormData({
-      ...formData,
-      latitude: e.latLng.lat(),
-      longitude: e.latLng.lng()
-    });
-  }
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData((prev) => ({
+      ...prev,
+      file: e.target.files?.[0] || null,
+    }));
   };
 
-  const handleSubmit = (e) => {
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value, });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Updated Seller Data:", formData);
-    // API call will go here
+    setLoading(true);
+    try {
+      const res = await axios.post(`${SELLER_API_END_POINT}/updateprofile`, formData, {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true
+      });
+
+      if (res.data.success) {
+        navigate('/seller/profile')
+      }
+    } catch (error) {
+      console.log(error);
+    }finally {
+      setLoading(false);
+    }
+
   };
 
   return (
@@ -151,53 +155,28 @@ const SellerProfileUpdate = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-base font-medium text-gray-700 mb-2">
+          <div className="bg-[var(--background-light)] rounded-2xl p-6">
+            <h3 className="font-semibold text-[var(--primary-green)] mb-3">
               Select Your Location
-            </label>
+            </h3>
 
-            <div className="overflow-hidden rounded-xl border border-gray-300">
-              {isLoaded ? (
-                <GoogleMap
-                  mapContainerStyle={containerStyle}
-                  center={center}
-                  zoom={10}
-                  onClick={onMapClick}
-                >
-                  {formData.latitude && (
-                    <Marker
-                      position={{
-                        lat: formData.latitude,
-                        lng: formData.longitude,
-                      }}
-                    />
-                  )}
-                </GoogleMap>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
-                  Loading map...
-                </div>
-              )}
+            <div className="rounded-xl overflow-hidden border border-gray-300">
+              <LocationPicker onSelect={handleLocationSelect} />
             </div>
 
-            <p className="text-xs text-gray-500 mt-1">
-              Click on the map to set your location
-            </p>
+            {formData.latitude && (
+              <p className="text-xs text-[var(--text-gray)] mt-2">
+                📍 Selected: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end pt-4 gap-8">
-            <button
-              onClick={() => setFormData(initialFormData)}
-              type="button"
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium shadow-md transition-all"
-            >
+            <button onClick={() => setFormData(initialFormData)} type="button" className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium shadow-md transition-all">
               Discard Changes
             </button>
-            <button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-medium shadow-md transition-all"
-            >
-              Save Changes
+            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-medium shadow-md transition-all" >
+              {loading ? "Saving changes" : "Save Changes"}
             </button>
           </div>
 

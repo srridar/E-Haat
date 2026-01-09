@@ -1,19 +1,9 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom';
-import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
-import { SELLER_API_END_POINT } from '@/utils/constants';
-import axios from 'axios';
-
-
-const containerStyle = {
-  width: "100%",
-  height: "300px"
-};
-
-const center = {
-  lat: 27.7172, 
-  lng: 85.3240
-};
+import { useNavigate } from 'react-router-dom'
+import { SELLER_API_END_POINT } from '@/utils/constants'
+import LocationPicker from '@/components/LocationPicker'
+import axios from 'axios'
+import { Label } from '@/components/ui/label'
 
 const SellerRegister = () => {
 
@@ -25,141 +15,116 @@ const SellerRegister = () => {
     city: "",
     latitude: null,
     longitude: null
-  });
+  })
 
-  const navigate = useNavigate();
-
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  });
+  const navigate = useNavigate()
 
   const changeEventHandler = (e) => {
-    setInput({ ...input, [e.target.name]: e.target.value });
+    setInput({ ...input, [e.target.name]: e.target.value })
   }
 
-  const onMapClick = (e) => {
-    setInput({
-      ...input,
-      latitude: e.latLng.lat(),
-      longitude: e.latLng.lng()
-    });
+  const handleLocationSelect = ([lat, lng]) => {
+    setInput(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng
+    }))
   }
 
   const submitHandler = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     try {
+      const res = await axios.post(
+        `${SELLER_API_END_POINT}/register`,
+        input,
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true
+        }
+      )
 
-      const res = await axios.post(`${SELLER_API_END_POINT}/register`, input, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        },
-        withCredentials: true
-      });
-      console.log(res.data.success)
-      if (res.data.success) {
-        navigate("/login");
-      }
-
+      if (res.data.success) navigate("/login")
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
-
   }
 
-  if (!isLoaded) return <p>Loading Map...</p>;
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--primary-greenn)] ">
+    <div className=" min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-200 to-green-200">
       <form
         onSubmit={submitHandler}
-        className="w-full max-w-[40rem] bg-white shadow-lg rounded-2xl p-6 space-y-5"
-      >
-        {/* Heading */}
+        className=" w-full max-w-4xl  bg-white overflow-scroll shadow-xl p-8 space-y-8">
+
+        {/* Header */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-3xl font-bold text-[var(--text-dark)]">
             Seller Registration
           </h2>
-        </div>
-
-        {/* Inputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            name="name"
-            placeholder="Full Name"
-            onChange={changeEventHandler}
-            className="input-style p-1"
-          />
-
-          <input
-            name="email"
-            placeholder="Email Address"
-            onChange={changeEventHandler}
-            className="input-style p-1"
-          />
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            onChange={changeEventHandler}
-            className="input-style p-1"
-          />
-
-          <input
-            name="phone"
-            placeholder="Phone Number"
-            onChange={changeEventHandler}
-            className="input-style p-1"
-          />
-
-          <input
-            name="city"
-            placeholder="City"
-            onChange={changeEventHandler}
-            className="input-style md:col-span-2"
-          />
-        </div>
-
-        {/* Map Section */}
-        <div>
-          <label className="block text-base font-medium text-gray-700 mb-2">
-            Select Your Location
-          </label>
-
-          <div className="overflow-hidden rounded-xl border border-gray-300">
-            <GoogleMap
-              mapContainerStyle={containerStyle}
-              center={center}
-              zoom={10}
-              onClick={onMapClick}
-            >
-              {input.latitude && (
-                <Marker
-                  position={{
-                    lat: input.latitude,
-                    lng: input.longitude
-                  }}
-                />
-              )}
-            </GoogleMap>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-1">
-            Click on the map to set your location
+          <p className="text-sm text-[var(--text-gray)] mt-1">
+            Join E-Haat and connect with nearby sellers
           </p>
         </div>
 
+        {/* User Info */}
+        <div className="bg-[var(--background-light)] rounded-2xl p-6">
+          <h3 className="font-semibold text-[var(--primary-green)] mb-4">
+            Personal Details
+          </h3>
 
-        <button
-          type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition duration-300"
-        >
-          Register Seller
-        </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {[
+              { label: "Name", name: "name", placeholder: "Your name / business" },
+              { label: "Email", name: "email", placeholder: "Email address" },
+              { label: "Password", name: "password", type: "password", placeholder: "Password" },
+              { label: "Phone", name: "phone", placeholder: "Phone number" },
+              { label: "City", name: "city", placeholder: "City" },
+            ].map((field, idx) => (
+              <div key={idx} className="flex flex-col gap-1">
+                <Label className="text-sm text-[var(--text-gray)]">
+                  {field.label}
+                </Label>
+                <input
+                  type={field.type || "text"}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  onChange={changeEventHandler}
+                  className="
+                    w-full
+                    rounded-xl
+                    border border-gray-300
+                    px-4 py-2
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-[var(--primary-green)]
+                  "
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Location Section */}
+        <div className="bg-[var(--background-light)] rounded-2xl p-6">
+          <h3 className="font-semibold text-[var(--primary-green)] mb-3">
+            Select Your Location
+          </h3>
+
+          <div className="rounded-xl overflow-hidden border border-gray-300">
+            <LocationPicker onSelect={handleLocationSelect} />
+          </div>
+
+          {input.latitude && (
+            <p className="text-xs text-[var(--text-gray)] mt-2">
+              📍 Selected: {input.latitude.toFixed(4)}, {input.longitude.toFixed(4)}
+            </p>
+          )}
+        </div>
+
+        {/* Submit */}
+       <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition duration-300" > Register </button>
       </form>
     </div>
-
   )
 }
 

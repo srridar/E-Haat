@@ -5,7 +5,7 @@ import { BUYER_API_END_POINT } from '@/utils/constants';
 import axios from "axios";
 
 
-const BuyerPasswordChange = () => {
+const SellerPasswordChange = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -173,4 +173,4 @@ const BuyerPasswordChange = () => {
   );
 };
 
-export default BuyerPasswordChange;
+export default SellerPasswordChange;

@@ -1,23 +1,34 @@
-import mongoose from "mongoose";           // checked
+import mongoose from "mongoose";  // checked
+
+function arrayLimit(val) {
+    return val.length > 0;
+}
+
 
 const productSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        minlength: [3, "Product name must be at least 3 characters long"]
     },
     description: {
-        type: String,   
-        required: true
+        type: String,
+        required: true,
+        minlength: [3, "Product name must be at least 3 characters long"],
+        maxlength: [150, "description length must be less than 150"]
     },
     price: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     category: {
         type: String,
-        required: true
+        required: true,
+        enum: ["Electronics", "Clothing", "Food", "Furniture", "vegetables", "Other"]
     },
-     rating: {
+    rating: {
         type: Number,
         default: 0
     },
@@ -27,18 +38,24 @@ const productSchema = new mongoose.Schema({
     },
     stock: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
+    },
+    images: {
+        url: String,
+        public_id: String
     },
     seller: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seller',
         required: true
     },
-    isActive :{
-         type: Boolean,
-         required: true
+    isActive: {
+        type: Boolean,
+        default: true,
+
     }
-   
+
 }, { timestamps: true })
 
 

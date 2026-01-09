@@ -53,3 +53,6 @@ const orderSchema = new monogoose.Schema({
         default: Date.now
     }
 }, { timestamps: true })
+
+
+export default Order = monogoose.model("Order",orderSchema)
