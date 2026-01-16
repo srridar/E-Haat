@@ -16,7 +16,7 @@ const BuyerLogin = () => {
 
     if (!email.trim()) {
       errors.email = "Email is required";
-    } else if (!emailReg.test(input.email)) {
+    } else if (!emailReg.test(email)) {
       errors.email = "Please enter a valid email address";
     }
 
@@ -25,7 +25,6 @@ const BuyerLogin = () => {
     } else if (password.length < 6) {
       errors.password = "Password must be at least 6 characters";
     }
-
     return errors;
   }
 
@@ -47,13 +46,13 @@ const BuyerLogin = () => {
     try {
       const res = await axios.post(`${BUYER_API_END_POINT}/login`, input, {
         headers: {
-          "Content-Type": "multipart/form-data"
+          "Content-Type": "application/json"
         },
         withCredentials: true
       });
       console.log(res.data.success)
       if (res.data.success) {
-        navigate("/");
+        navigate("/buyer/profile");
       }
     } catch (error) {
       console.log(error);
@@ -61,7 +60,6 @@ const BuyerLogin = () => {
     finally {
       setLoading(false);
     }
-
   }
 
 
@@ -90,6 +88,7 @@ const BuyerLogin = () => {
           <div>
             <input
               name="email"
+              type="email"
               value={input.email}
               placeholder="Email address"
               onChange={changeEventHandler}

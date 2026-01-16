@@ -1,8 +1,9 @@
 
 import Order from '../models/Order.js';
-import Seller from '../models/Seller.js'
-import Buyer from '../models/Buyer.js'
-import Product from '../models/Product.js'
+import { Seller } from '../models/Seller.js'
+import { Buyer } from '../models/Buyer.js'
+import { Product } from '../models/Product.js'
+import getDataUri from "../utils/getDataUri.js";
 
 
 export const CreateProduct = async (req, res) => {
@@ -36,14 +37,18 @@ export const CreateProduct = async (req, res) => {
 
         let images = [];
 
-        if (req.files && req.files.length > 0) {
-            for (let file of req.files) {
+        if (req.files?.length) {
+            for (const file of req.files) {
                 const fileUri = getDataUri(file);
-                const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content, { folder: "products", resource_type: " images" });
+
+                const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content, {
+                    folder: "products",
+                    resource_type: "image", // remove extra space
+                });
 
                 images.push({
                     url: uploadResult.secure_url,
-                    public_id: uploadResult.public_id
+                    public_id: uploadResult.public_id,
                 });
             }
         }
@@ -205,7 +210,7 @@ export const UpdateProduct = async (req, res) => {
 
         return res.status(200).json({
             message: "Product Updated Successfully !",           // shows that the 
-            updatedProduct : product,
+            updatedProduct: product,
             success: true
         })
 

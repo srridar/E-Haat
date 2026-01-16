@@ -1,18 +1,24 @@
-import { Order } from '../models/Order.js';
+import Order from '../models/Order.js';
 import { Seller } from '../models/Seller.js'
 import { Buyer } from '../models/Buyer.js'
-import { Product } from "../models/product.model.js";
-import { MAX_DISTANCE } from '../config/distance.config.js'
-import { Notification } from "../models/notification.model.js";
+import { Product } from "../models/Product.js";
+import MAX_DISTANCE from '../config/distance.config.js'
+import getDataUri from "../utils/getDataUri.js";
+import Notification from "../models/Notification.js";
 import cloudinary from '../utils/cloudinary.js'
-import getDataUri from "../utils/dataUri.js";
+import bcrypt from 'bcryptjs'
+import jwt from "jsonwebtoken";
 
 export const registerBuyer = async (req, res) => {
     try {
-        const { name, email, password, address, phone } = req.body;
-        if (!name || !email || !password || !address || !phone) {
-            return res.status(400).json({ message: "All fields are required", success: false });
+        const { name, email, password, phone, latitude, longitude, city } = req.body;
+        if (!name || !email || !password || !phone || !latitude || !longitude || !city) {
+            return res.status(400).json({
+                message: "All fields are required",
+                success: false
+            });
         }
+
         const existingBuyer = await Buyer.findOne({ email });
         if (existingBuyer) {
             return res.status(400).json({ message: "Buyer with this email already exists", success: false });
@@ -23,8 +29,12 @@ export const registerBuyer = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            address,
-            phone
+            phone,
+            location: {
+                type: "Point",
+                coordinates: [longitude, latitude], // IMPORTANT ORDER
+                city
+            }
         });
 
         await newBuyer.save();
@@ -72,7 +82,8 @@ export const loginBuyer = async (req, res) => {
             address: buyer.address,
             phone: buyer.phone
         }
-
+         
+        console.log(buyerData)
 
         return res.status(200).cookie('token', token, {
             httpOnly: true,
@@ -85,25 +96,6 @@ export const loginBuyer = async (req, res) => {
             buyer: buyerData
         });
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
-    }
-}
-
-
-
-export const getBuyerProfile = async (req, res) => {
-    try {
-        const buyerId = req.buyer.buyerId;
-        const buyer = await Buyer.findById(buyerId).select('-password');
-        if (!buyer) {
-            return res.status(404).json({ message: "Buyer not found", success: false });
-        }
-
-        return res.status(200).json({ buyer, success: true });
-    }
-
-    catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
@@ -129,14 +121,34 @@ export const logoutBuyer = async (req, res) => {
     }
 }
 
+
+export const getBuyerProfile = async (req, res) => {
+    try {
+        const buyerId = req.user.buyerId;
+        const buyer = await Buyer.findById(buyerId).select('-password');
+        if (!buyer) {
+            return res.status(404).json({ message: "Buyer not found", success: false });
+        }
+        return res.status(200).json({ data: buyer, success: true });
+    }
+
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error", success: false });
+    }
+}
+
+
 //     updata buyer profile 
+
+
 export const updateBuyerProfile = async (req, res) => {
   try {
-    const { name, email, address, phone } = req.body;
-    const buyerId = req.user.id;
+    const { name, phone,email, latitude, longitude, city } = req.body;
+    const buyerId = req.user.buyerId;
 
+    
     const buyer = await Buyer.findById(buyerId);
-
     if (!buyer) {
       return res.status(404).json({
         message: "Buyer not found",
@@ -144,7 +156,7 @@ export const updateBuyerProfile = async (req, res) => {
       });
     }
 
-    /* ---------- Email Check ---------- */
+   
     if (email && email !== buyer.email) {
       const emailExists = await Buyer.findOne({ email });
       if (emailExists) {
@@ -156,36 +168,23 @@ export const updateBuyerProfile = async (req, res) => {
       buyer.email = email;
     }
 
-    /* ---------- Update Fields ---------- */
-    if (name) buyer.name = name;
-    if (address) buyer.address = address;
-    if (phone) buyer.phone = phone;
 
-    /* ---------- Profile Image Upload ---------- */
+    if (name) buyer.name = name;
+    if (city) buyer.city = city;
+    if (phone) buyer.phone = phone;
+    if (longitude || longitude === 0) buyer.location.coordinates[0] = Number(longitude);
+    if (latitude || latitude === 0) buyer.location.coordinates[1] = Number(latitude);
+
+  
     if (req.file) {
-      // delete old image from cloudinary
+      // Delete old image if exists
       if (buyer.profileImage?.public_id) {
-        await cloudinary.v2.uploader.destroy(
-          buyer.profileImage.public_id
-        );
+        await cloudinary.v2.uploader.destroy(buyer.profileImage.public_id);
       }
 
-      // convert file buffer → data uri
-      const fileUri = getDataUri(req.file);
-
-      // upload to cloudinary
-      const uploadResult = await cloudinary.v2.uploader.upload(
-        fileUri.content,
-        {
-          folder: "buyers/profile",
-          resource_type: "image",
-        }
-      );
-
-      // save new image
-      buyer.profileImage = {
-        url: uploadResult.secure_url,
-        public_id: uploadResult.public_id,
+     buyer.profileImage = {
+        url: req.file.path,      // ✅ Cloudinary URL
+        public_id: req.file.filename, // ✅ Cloudinary public_id
       };
     }
 
@@ -194,8 +193,7 @@ export const updateBuyerProfile = async (req, res) => {
     const updatedBuyer = {
       _id: buyer._id,
       name: buyer.name,
-      email: buyer.email,
-      address: buyer.address,
+      city: buyer.city,
       phone: buyer.phone,
       profileImage: buyer.profileImage?.url,
     };
@@ -210,12 +208,12 @@ export const updateBuyerProfile = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Buyer updated successfully!",
+      message: "Buyer Profile Updated Successfully !",
       updatedBuyer,
       success: true,
     });
   } catch (error) {
-    console.error(error);
+    console.error("UpdateBuyerProfile Error:", error);
     return res.status(500).json({
       message: "Internal Server Error",
       success: false,
@@ -223,11 +221,14 @@ export const updateBuyerProfile = async (req, res) => {
   }
 };
 
+
+
+
 //     change buyer password
 
 export const changeBuyerPassword = async (req, res) => {
     try {
-        const buyerId = req.user.id;
+        const buyerId = req.user.buyerId;
         const { oldPassword, newPassword } = req.body;
 
         if (!oldPassword || !newPassword) {
@@ -319,7 +320,7 @@ export const getProductsFromVerifiedSellers = async (req, res) => {
 
 export const createOrderByBuyer = async (req, res) => {
     try {
-        const buyerId = req.user.id;
+        const buyerId = req.user.buyerId;
         const { sellerId, products, transporterId, totalAmount } = req.body;
 
         if (!Array.isArray(products) || products.length === 0) {
@@ -395,7 +396,7 @@ export const createOrderByBuyer = async (req, res) => {
 
 export const getMyOrdersByBuyer = async (req, res) => {
     try {
-        const buyerId = req.user.id;            //  it comes from authentication middleware
+        const buyerId = req.user.buyerId;            //  it comes from authentication middleware
         const allOrders = await Order.find({ buyer: buyerId })
             .populate("seller", "name phone email")           // seller details
             .populate("products.product", "name price");
@@ -445,7 +446,7 @@ export const getMyOrdersByBuyer = async (req, res) => {
 export const rateTransporterByBuyer = async (req, res) => {
     try {
         const { rating, transporterId, orderId } = req.body;
-        const buyerId = req.user.id;
+        const buyerId = req.user.buyerId;
 
         if (!rating || rating < 1 || rating > 5) {
             return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
@@ -519,7 +520,7 @@ export const rateSellerByBuyer = async (req, res) => {
         //  then rating value is sent to backend along with sellerId in request body togeter with orderId to verify that buyer has purchased from that seller
 
         const { rating, sellerId, orderId } = req.body;
-        const buyerId = req.user.id;
+        const buyerId = req.user.buyerId;
 
         // validate inputs - rating should be between 1 to 5
         if (!rating || rating < 1 || rating > 5) {
@@ -598,7 +599,7 @@ export const rateProductByBuyer = async (req, res) => {
     try {
 
         const { rating, productId, orderId } = req.body;
-        const buyerId = req.user.id;
+        const buyerId = req.user.buyerId;
 
         // validate inputs - rating should be between 1 to 5
         if (!rating || rating < 1 || rating > 5) {
@@ -693,7 +694,7 @@ export const rateProductByBuyer = async (req, res) => {
 
 export const recommendedProducts = async (req, res) => {
     try {
-        const buyerId = req.user.id;
+        const buyerId = req.user.buyerId;
         const { category } = req.query;
 
         const buyer = await Buyer.findById(buyerId);

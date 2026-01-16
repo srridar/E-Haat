@@ -32,7 +32,7 @@ const LoginAsk = () => {
             {/* Buyer */}
             <Button
               onClick={() => navigate("/buyer/login")}
-              className="flex items-center justify-center gap-3 w-full py-6 text-lg font-semibold bg-teal-200 hover:bg-teal-400 shadow-md hover:shadow-lg transition-all"
+              className="flex items-center justify-center gap-3 w-full py-6 text-lg font-semibold bg-green-300 hover:bg-green-400 shadow-md hover:shadow-lg transition-all"
             >
               <User className="w-5 h-5" />
               Buyer
@@ -41,7 +41,7 @@ const LoginAsk = () => {
             {/* Seller */}
             <Button
               onClick={() => navigate("/seller/login")}
-              className="flex items-center justify-center gap-3 w-full py-6 text-lg font-semibold bg-orange-200 hover:bg-orange-300 shadow-md hover:shadow-lg transition-all"
+              className="flex items-center justify-center gap-3 w-full py-6 text-lg font-semibold bg-orange-300 hover:bg-orange-400 shadow-md hover:shadow-lg transition-all"
             >
               <Store className="w-5 h-5" />
               Seller
@@ -50,7 +50,7 @@ const LoginAsk = () => {
             {/* Transporter */}
             <Button
               onClick={() => navigate("/transporter/login")}
-              className="flex items-center justify-center gap-3 w-full py-6 text-lg font-semibold bg-blue-200 hover:bg-blue-400 shadow-md hover:shadow-lg transition-all"
+              className="flex items-center justify-center gap-3 w-full py-6 text-lg font-semibold bg-blue-300 hover:bg-blue-400 shadow-md hover:shadow-lg transition-all"
             >
               <Truck className="w-5 h-5" />
               Transporter

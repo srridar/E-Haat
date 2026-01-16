@@ -1,16 +1,23 @@
-import express from 'express'
-import isAuthenticated from "../middlewares/isAuthenticated"
-import {registerAdmin, 
-        verifyUser , 
-        getAllProducts , 
-        getAllUsers , 
-        removeProduct} from "../controllers/admin.controller"
+import express from 'express';
+import isAuthenticated from "../middlewares/isAuthenticated.js";
+import {
+  registerAdmin,
+  verifyUser,
+  getAllProducts,
+  getAllUsers,
+  removeProduct
+} from "../controllers/admin.controller.js";
 
-const router=express.Router();
+const router = express.Router();
 
-router.route("/register").post(registerAdmin);
-router.route("/verifyUser/:id").post(verifyUser);
-router.route("/getallproducts").get(getAllProducts);
-router.route("/getallusers").get(getAllUsers);
-router.route("/removeproduct").post(removeProduct);
+router.post("/register", registerAdmin);
 
+router.post("/verify-user/:id", isAuthenticated, verifyUser);
+
+router.get("/products", isAuthenticated, getAllProducts);
+
+router.get("/users", isAuthenticated, getAllUsers);
+
+router.delete("/product/:id", isAuthenticated, removeProduct);
+
+export default router;

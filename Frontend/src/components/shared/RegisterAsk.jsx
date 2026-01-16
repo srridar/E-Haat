@@ -66,7 +66,7 @@ const RegisterAsk = () => {
 
           {/* Transporter */}
           <button
-            onClick={() => navigate("/transporter/login")}
+            onClick={() => navigate("/transporter/register")}
             className="group w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all shadow-sm"
           >
             <div className="text-left">

@@ -41,10 +41,10 @@ const productSchema = new mongoose.Schema({
         required: true,
         min: 0
     },
-    images: {
+    images: [{
         url: String,
         public_id: String
-    },
+    }],
     seller: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seller',

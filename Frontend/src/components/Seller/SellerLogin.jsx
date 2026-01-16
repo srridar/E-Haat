@@ -16,7 +16,7 @@ const SellerLogin = () => {
 
     if (!email.trim()) {
       errors.email = "Email is required";
-    } else if (!emailReg.test(input.email)) {
+    } else if (!emailReg.test(email)) {
       errors.email = "Please enter a valid email address";
     }
 
@@ -47,13 +47,13 @@ const SellerLogin = () => {
     try {
       const res = await axios.post(`${SELLER_API_END_POINT}/login`, input, {
         headers: {
-          "Content-Type": "multipart/form-data"
+          "Content-Type": "application/json"
         },
         withCredentials: true
       });
       console.log(res.data.success)
       if (res.data.success) {
-        navigate("/");
+        navigate("/seller/profile");
       }
     } catch (error) {
       console.log(error);
@@ -91,6 +91,7 @@ const SellerLogin = () => {
           <div>
             <input
               name="email"
+              type="email"
               value={input.email}
               placeholder="Email address"
               onChange={changeEventHandler}
@@ -141,7 +142,7 @@ const SellerLogin = () => {
         <p className="text-xs text-center text-gray-500 pt-2">
           New to E-Haat?{" "}
           <span className="text-[var(--secondary-orange)] font-medium cursor-pointer hover:underline">
-            Create a seller account
+            Create a buyer account
           </span>
         </p>
 

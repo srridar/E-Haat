@@ -22,10 +22,10 @@ const Navbar = () => {
             <Link to="/" className="text-dark hover:text-primary ">
               Home
             </Link>
-            <Link to="/farmers" className="text-dark hover:text-primary">
+            <Link to="/buyer/get-verified-products" className="text-dark hover:text-primary">
               Farmers
             </Link>
-            <Link to="/products" className="text-dark hover:text-primary">
+            <Link to="/buyer/get-verified-products" className="text-dark hover:text-primary">
               Products
             </Link>
             <Link to="/about" className="text-dark hover:text-primary">
@@ -59,7 +59,7 @@ const Navbar = () => {
           <SheetContent side="right">
             <div className="flex flex-col gap-6 mt-6">
               <Link to="/" className="text-lg">Home</Link>
-              <Link to="/farmers" className="text-lg">Farmers</Link>
+              <Link to="/buyer/get-verified-products" className="text-lg">Farmers</Link>
               <Link to="/products" className="text-lg">Products</Link>
               <Link to="/about" className="text-lg">About</Link>
 

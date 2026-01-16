@@ -1,13 +1,13 @@
 import express from 'express'
-import isAuthenticated from "../middlewares/isAuthenticated"
-import { upload } from "../middlewares/multer.js";
+import isAuthenticated from "../middlewares/isAuthenticated.js"
+import  upload  from "../middlewares/multer.js";
 import {CreateProduct, 
     GetAllProduct, 
     GetProductById, 
     UpdateProduct, 
     deleteProduct, 
     SearchFilterProduct, 
-    RateAndReviewProduct} from "../controllers/product.controller"
+    RateAndReviewProduct} from "../controllers/product.controller.js"
 
 const router=express.Router();
 
@@ -20,4 +20,4 @@ router.route("/searchfilterproduct").post(isAuthenticated,SearchFilterProduct);
 router.route("/rateandreviewproduct").post(isAuthenticated,RateAndReviewProduct);
 
 
-
+export default router;

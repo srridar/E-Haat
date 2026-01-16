@@ -1,4 +1,9 @@
-import { Seller } from '../models/Seller'
+import { Seller } from '../models/Seller.js';
+import Notification from '../models/Notification.js';
+import bcrypt from 'bcryptjs';
+import jwt from "jsonwebtoken";
+import cloudinary from '../utils/cloudinary.js'
+
 
 export const registerSeller = async (req, res) => {
     try {
@@ -12,7 +17,7 @@ export const registerSeller = async (req, res) => {
 
         const existingSeller = await Seller.findOne({ email });
         if (existingSeller) {
-            return res.status(400).json({ message: "Buyer with this email already exists", success: false });
+            return res.status(400).json({ message: "Seller with this email already exists", success: false });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -113,7 +118,7 @@ export const logoutSeller = async (req, res) => {
 
 export const getSellerProfile = async (req, res) => {
     try {
-        const sellerId = req.user.id; // from JWT middleware
+        const sellerId = req.user.sellerId; // from JWT middleware
 
         const seller = await Seller.findById(sellerId).select("-password");
 
@@ -127,7 +132,7 @@ export const getSellerProfile = async (req, res) => {
         return res.status(200).json({
             message: "Seller profile fetched successfully",
             success: true,
-            seller
+            data: seller
         });
 
     } catch (error) {
@@ -144,8 +149,8 @@ export const getSellerProfile = async (req, res) => {
 export const updateSellerProfile = async (req, res) => {
     try {
 
-        const { name, email, address, phone } = req.body;
-        const sellerId = req.user.id;
+        const { name, email, phone, latitude, longitude, city } = req.body;
+        const sellerId = req.user.sellerId;
 
 
         const seller = await Seller.findById(sellerId);
@@ -169,34 +174,22 @@ export const updateSellerProfile = async (req, res) => {
         }
 
         if (name) seller.name = name;
-        if (address) seller.address = address;
+        if (city) seller.city = city;
         if (phone) seller.phone = phone;
+
+        if (longitude || longitude === 0) seller.location.coordinates[0] = Number(longitude);
+        if (latitude || latitude === 0) seller.location.coordinates[1] = Number(latitude);
         //  frontend  - >  multer middleware  ->  cloudinary upload  ->  req.file object created  ->Controller reads req.file.path  -> URL saved in MongoDB
 
         if (req.file) {
-            // delete old image from cloudinary
+            // Delete old image if exists
             if (seller.profileImage?.public_id) {
-                await cloudinary.v2.uploader.destroy(
-                    seller.profileImage.public_id
-                );
+                await cloudinary.v2.uploader.destroy(seller.profileImage.public_id);
             }
 
-            // convert file buffer → data uri
-            const fileUri = getDataUri(req.file);
-
-            // upload to cloudinary
-            const uploadResult = await cloudinary.v2.uploader.upload(
-                fileUri.content,
-                {
-                    folder: "sellers/profile",
-                    resource_type: "image",
-                }
-            );
-
-            // save new image
             seller.profileImage = {
-                url: uploadResult.secure_url,
-                public_id: uploadResult.public_id,
+                url: req.file.path,      // ✅ Cloudinary URL
+                public_id: req.file.filename, // ✅ Cloudinary public_id
             };
         }
 
@@ -204,8 +197,7 @@ export const updateSellerProfile = async (req, res) => {
         const updatedSeller = {
             _id: seller._id,
             name: seller.name,
-            email: seller.email,
-            address: seller.address,
+            city: seller.city,
             phone: seller.phone,
             profileImage: seller.profileImage,
 
@@ -220,7 +212,7 @@ export const updateSellerProfile = async (req, res) => {
         });
 
         return res.status(200).json({
-            message: "Product Updated Successfully !",           // shows that the 
+            message: "Seller Profile Updated Successfully !",           // shows that the 
             updatedSeller,
             success: true
         })
@@ -238,7 +230,7 @@ export const updateSellerProfile = async (req, res) => {
 
 export const changeSellerPassword = async (req, res) => {
     try {
-        const sellerId = req.user.id;
+        const sellerId = req.user.sellerId;
         const { oldPassword, newPassword } = req.body;
 
         if (!oldPassword || !newPassword) {
@@ -296,7 +288,7 @@ export const changeSellerPassword = async (req, res) => {
 
 export const getSellerProducts = async (req, res) => {
     try {
-        const sellerId = req.user.id;
+        const sellerId = req.user.sellerId;
         const seller = await Seller.findById(sellerId);
         if (!seller) {
             return res.status(404).json({
@@ -332,7 +324,7 @@ export const getSellerProducts = async (req, res) => {
 
 export const deleteSellerAccount = async (req, res) => {
     try {
-        const sellerId = req.user.id;
+        const sellerId = req.user.sellerId;
         const seller = await Seller.findById(sellerId);
         if (!seller) {
             return res.status(400).json({
@@ -366,7 +358,7 @@ export const deleteSellerAccount = async (req, res) => {
 
 export const blockOrUnblockSeller = async (req, res) => {
     try {
-        const sellerId = req.params.id;
+        const sellerId = req.params.sellerId;
         const { action } = req.body; // "block" | "unblock"
 
         if (!["block", "unblock"].includes(action)) {

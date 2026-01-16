@@ -1,29 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UserIcon, Cog6ToothIcon, BellIcon, CubeIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
-import  Notification from '@/components/shared/Notification'
+import Notification from '@/components/shared/Notification'
 import { useNavigate } from 'react-router-dom';
+import useLogOut from '@/hooks/buyerHooks/useLogOut.js'
+import useGetProfile from '@/hooks/buyerHooks/useGetProfile'
+
 
 
 const SellerProfile = () => {
+
+  const [showNotification, setShowNotification] = useState(false);
+  const [seller, setSeller]=useState({});
+
   const [setting, setSetting] = useState(false);
-  const navigate= useNavigate();
+  const navigate = useNavigate();
+
+  const logout = useLogOut("seller");
+  const getProfile = useGetProfile("seller");
+
+  useEffect(() => {
+    const fetchprofile= async()=>{
+      const profile = await getProfile();
+      if(profile){
+        setSeller(profile);
+      }
+      console.log(profile)
+    }
+
+    fetchprofile();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-8 flex justify-start items-start gap-24 ">
-      
+
       <div className="h-[40rem] w-1/5 rounded-2xl bg-white shadow">
         <div className="bg-[var(--secondary-orange-lite)] rounded-2xl shadow p-6 flex flex-col md:flex-row items-center gap-6">
           <img
-            src="https://ui-avatars.com/api/?name=Seller&background=5A8F2B&color=fff"
+            src={`${seller?.profileImage || "https://ui-avatars.com/api/?name=Seller&background=5A8F2B&color=fff"}`}
             alt="Seller Profile"
             className="w-10 h-10 rounded-full border-2 border-green-600"
           />
 
           <div className="flex-1 text-center md:text-left">
             <h2 className="text-xl font-bold text-gray-900">
-              Seller Name
+              {seller?.name}
             </h2>
-            <p className="text-gray-700">seller@email.com</p>
+            <p className="text-gray-700">{seller?.email}</p>
           </div>
         </div>
         <div className="p-1 flex flex-col gap-6 mt-6">
@@ -35,18 +58,21 @@ const SellerProfile = () => {
             <Cog6ToothIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">Setting</h2>
           </div>
-          <div className="flex px-2 py-2 gap-4 items-center" onClick={()=>navigate("/seller/my-products")}>
+          <div className="flex px-2 py-2 gap-4 items-center" onClick={() => navigate("/seller/my-products")}>
             <CubeIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">My Products</h2>
           </div>
-          <div className="flex px-2 py-2 gap-4 items-center ">
+          <div className="flex px-2 py-2 gap-4 items-center " onClick={() => setShowNotification(true)}>
             <BellIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">Notification</h2>
           </div>
-          <div className="flex px-2 py-2 gap-4 items-center">
+          <button
+            onClick={logout}
+            className="flex px-2 py-2 gap-4 items-center w-full text-left"
+          >
             <ArrowRightOnRectangleIcon className="h-6 w-6" />
-            <h2 className="text-md cursor-pointer">log-out</h2>
-          </div>
+            <span>Log out</span>
+          </button>
         </div>
       </div>
 
@@ -55,16 +81,16 @@ const SellerProfile = () => {
         {/* Header */}
         <div className="bg-white rounded-2xl shadow p-6 flex flex-col md:flex-row items-center gap-6">
           <img
-            src="https://ui-avatars.com/api/?name=Seller&background=5A8F2B&color=fff"
+            src={`${seller?.profileImage || "https://ui-avatars.com/api/?name=Seller&background=5A8F2B&color=fff"}`}
             alt="Seller Profile"
             className="w-28 h-28 rounded-full border-4 border-green-600"
           />
 
           <div className="flex-1 text-center md:text-left">
             <h2 className="text-2xl font-bold text-gray-800">
-              Seller Name
+              {seller?.name}
             </h2>
-            <p className="text-gray-500">seller@email.com</p>
+            <p className="text-gray-500">{seller?.email}</p>
 
             <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
               <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-700 font-medium">
@@ -74,12 +100,12 @@ const SellerProfile = () => {
                 ⭐ 4.5 Rating
               </span>
               <span className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 font-medium">
-                📍 Butwal
+                📍 {seller?.location?.city}
               </span>
             </div>
           </div>
 
-          <button className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition">
+          <button onClick={()=>navigate("/seller/profile/update")} className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition">
             Edit Profile
           </button>
         </div>
@@ -94,9 +120,8 @@ const SellerProfile = () => {
             </h3>
 
             <div className="space-y-3 text-sm text-gray-600">
-              <p><span className="font-medium text-gray-800">Phone:</span> +977-9847434512</p>
-              <p><span className="font-medium text-gray-800">City:</span> Butwal</p>
-              <p><span className="font-medium text-gray-800">Postcode:</span> 32907</p>
+              <p><span className="font-medium text-gray-800">Phone:</span> {seller?.phone}</p>
+              <p><span className="font-medium text-gray-800">City:</span> {seller?.location?.city}</p>
             </div>
           </div>
 
@@ -125,7 +150,7 @@ const SellerProfile = () => {
 
         {/* Actions */}
         <div className="bg-white rounded-2xl shadow p-6 flex flex-wrap gap-4 justify-center md:justify-end">
-          <button className="px-5 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition">
+          <button onClick={()=>navigate("/seller/change-password")} className="px-5 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition">
             Change Password
           </button>
           <button className="px-5 py-2 border border-red-500 text-red-500 rounded-xl hover:bg-red-50 transition">
@@ -135,7 +160,7 @@ const SellerProfile = () => {
 
       </div>
 
-      <Notification/>
+      {showNotification && <Notification onClose={() => setShowNotification(false)} />}
 
       {setting && (<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 ">
         <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">

@@ -6,7 +6,7 @@ const transportProviderSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        minlength: [3, " buyer name must consist at least 3 characters in his name"]
+        minlength: [4, " Transporter name must consist at least 4 characters in his name"]
     },
     email: {
         type: String,
@@ -43,12 +43,18 @@ const transportProviderSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+
     notifications: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Notification",
         },
     ],
+    
+    isKycCompleted: {
+        type: Boolean,
+        default: false
+    },
 
     verificationStatus: {
         type: String,

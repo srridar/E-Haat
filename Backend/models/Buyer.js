@@ -31,7 +31,8 @@ const buyerSchema = new mongoose.Schema({
         ]
     },
     profileImage: {
-        type: String
+        url: String,
+        public_id: String,
     },
     notifications: [
         {

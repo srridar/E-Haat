@@ -15,13 +15,12 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Backend API call will go here
     console.log(formData);
   };
 
   return (
     <div className="bg-background-light text-text-dark">
-      {/* ================= HERO ================= */}
+  
       <section className="bg-gradient-to-r from-green-700 to-green-600 text-white py-16">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h1 className="text-4xl font-bold mb-3">Contact Us</h1>
@@ -32,7 +31,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* ================= CONTENT ================= */}
+      
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12">
 
@@ -65,7 +64,7 @@ const Contact = () => {
             </div>
           </div>
 
-          {/* ---------- CONTACT FORM ---------- */}
+         
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h3 className="text-2xl font-semibold mb-6">
               Send Us a Message

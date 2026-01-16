@@ -13,6 +13,8 @@ import GetAllUsers from "@/components/Admin/GetAllUser"
 import GetUser from "@/components/Admin/GetUser"
 import AllOrders from '@/components/Admin/AllOrders'
 import ReportAdmin from '@/components/Admin/ReportAdmin'
+import GetAllContactForm from '@/components/Admin/GetAllContactForm'
+import GetSingleContactForm from '@/components/Admin/GetSingleContactForm'
 
 import BuyerRegister from "@/components/Buyer/BuyerRegister";
 import BuyerLogin from "@/components/Buyer/BuyerLogin";
@@ -42,6 +44,9 @@ import TransporterLogin from "@/components/Transporter/TransporterLogin";
 import TransporterProfile from "@/components/Transporter/TransporterProfile";
 import TransporterPasswordUpdation from "@/components/Transporter/TransporterPasswordUpdation ";
 import TransporterProfileUpdate from "@/components/Transporter/TransporterProfileUpdate";
+import TransporterDashboard from "@/components/Transporter/TransporterDashBoard";
+import TransporterKycForm from "@/components/Transporter/TransporterKycForm";
+
 
 
 const appRouter = createBrowserRouter([
@@ -74,9 +79,15 @@ const appRouter = createBrowserRouter([
       { path: "getuser", element: <GetUser /> },
       { path: "dashboard", element: <DashBoard /> },
       { path: "allorders", element: <AllOrders/>},
-      { path: "report", element: <ReportAdmin/>}
+      { path: "report", element: <ReportAdmin/>},
+      { path: "single-contact-data", element: <GetSingleContactForm/>},
+      { path: "all-contact-data", element: <GetAllContactForm/>}
+
+
     ],
   },
+
+  
 
   {
     path: "/seller",
@@ -90,7 +101,8 @@ const appRouter = createBrowserRouter([
     ],
   },
 
-  // Buyer Routes
+
+
   {
     path: "/buyer",
     children: [
@@ -99,13 +111,13 @@ const appRouter = createBrowserRouter([
       { path: "profile", element: <BuyerProfile /> },
       { path: "profile/update", element: <BuyerProfileUpdate /> },
       { path: "change-password", element: <BuyerPasswordChange /> },
-      { path: "getverifiedproducts", element: <GetVerifiedProducts /> },
+      { path: "get-verified-products", element: <GetVerifiedProducts /> },
       { path: "create-order", element: <CreateOrderByBuyer /> },
       { path: "all-orders", element: <GetAllOrders /> },
     ],
   },
 
-  // Product Routes
+
   {
     path: "/product",
     children: [
@@ -116,7 +128,7 @@ const appRouter = createBrowserRouter([
     ],
   },
 
-  // Transporter Routes
+
   {
     path: "/transporter",
     children: [
@@ -125,8 +137,22 @@ const appRouter = createBrowserRouter([
       { path: "profile", element: <TransporterProfile /> },
       { path: "profile/update", element: <TransporterProfileUpdate /> },
       { path: "password-change", element: <TransporterPasswordUpdation /> },
+      { path: "dashboard", element: <TransporterDashboard /> },
+      { path: "kyc-form", element: <TransporterKycForm /> },
     ],
   },
+
+
+  {
+    path: "/contact",
+    children: [
+      { path: "create", element: <TransporterRegistration /> },
+      { path: "getall", element: <TransporterLogin /> },
+      { path: "get-single", element: <TransporterProfile /> },
+      { path: "profile/update", element: <TransporterProfileUpdate /> },
+     
+    ],
+  }
 ]);
 
 

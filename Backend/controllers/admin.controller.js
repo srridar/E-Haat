@@ -1,10 +1,10 @@
-import Admin from '../models/Admin.js'
-import Seller from '../models/Seller.js'
-import Buyer from '../models/Buyer.js'
-import Product from '../models/Product.js'
+import {Admin} from '../models/Admin.js'
+import {Seller} from '../models/Seller.js'
+import {Buyer} from '../models/Buyer.js'
+import {Product} from '../models/Product.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken';
-import getDataUri from "../utils/datauri.js";
+import getDataUri from "../utils/getDataUri.js";
 import cloudinary from "../utils/cloudinary.js";
 
 export const registerAdmin = async () => {

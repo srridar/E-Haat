@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const notificationsData = [
   {
@@ -58,22 +59,28 @@ const getTypeStyles = (type) => {
   }
 };
 
-const Notification = () => {
+const Notification = ({ onClose }) => {
   const [notifications, setNotifications] = useState(notificationsData);
 
   const markAsRead = (id) => {
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, read: true } : n
-      )
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background-light)] px-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 relative">
 
-        {/* Header */}
+        
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1 rounded hover:bg-gray-100"
+        >
+          <XMarkIcon className="h-6 w-6 text-gray-600" />
+        </button>
+
+       
         <div className="mb-6 border-b pb-3">
           <h2 className="text-2xl font-bold text-[var(--primary-green)]">
             Notifications
@@ -83,7 +90,7 @@ const Notification = () => {
           </p>
         </div>
 
-        {/* Notification List */}
+        
         <div className="space-y-4">
           {notifications.length === 0 ? (
             <p className="text-center text-gray-500 py-10">

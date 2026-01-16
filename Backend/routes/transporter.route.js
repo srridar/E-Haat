@@ -1,5 +1,5 @@
 import express from 'express';
-import isAuthenticated from "../middlewares/isAuthenticated";
+import isAuthenticated from "../middlewares/isAuthenticated.js";
 import {
     registerTransportProvider,
     loginTransportProvider,
@@ -12,7 +12,7 @@ import {
     acceptOrder,
     rejectOrder,
     updateOrderStatus
-} from "../controllers/TransportProvider";
+} from "../controllers/TransportProvider.js";
 
 const router = express.Router();
 

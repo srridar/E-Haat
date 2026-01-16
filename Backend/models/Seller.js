@@ -41,7 +41,8 @@ const sellerSchema = new mongoose.Schema({
         default: 0
     },
     profileImage: {
-        type: String,   // Cloudinary URL
+        url: String,
+        public_id: String,
     },
     isBlocked: {
         type: Boolean,

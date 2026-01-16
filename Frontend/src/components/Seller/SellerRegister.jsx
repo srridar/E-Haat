@@ -44,7 +44,7 @@ const SellerRegister = () => {
         }
       )
 
-      if (res.data.success) navigate("/login")
+      if (res.data.success) navigate("/seller/login")
     } catch (error) {
       console.log(error)
     }
