@@ -8,16 +8,12 @@ const AllMyProducts = () => {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-
   const fetchMyProducts = async () => {
     try {
-      const res = await axios.get(
-        `${SELLER_API_END_POINT}/my-products`,
-        { withCredentials: true }
-      );
-
+      const res = await axios.get(`${SELLER_API_END_POINT}/products`, { withCredentials: true });
+      console.log(res.data);
       if (res.data.success) {
-        setProducts(res.data.products);
+        setProducts(res.data.sellerProducts);
       }
     } catch (error) {
       console.error(error);
@@ -29,6 +25,23 @@ const AllMyProducts = () => {
   useEffect(() => {
     fetchMyProducts();
   }, []);
+
+
+  const fetchVerifiedProducts = async () => {
+
+    setLoading(true);
+    try {
+      const res = await axios.get(`${SELLER_API_END_POINT}/verified-products`, { withCredentials: true });
+      if (res.data.success) {
+        setProducts(res.data.sellerVerifiedProducts);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+
+  }
 
   const handleEdit = (id) => {
     navigate(`/seller/products/update/${id}`);
@@ -72,8 +85,25 @@ const AllMyProducts = () => {
           </p>
         </div>
 
+        <div className="flex justify-center gap-4 mb-6">
+          <button
+            onClick={fetchMyProducts}
+            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 hover:-translate-y-1 transform transition-all duration-300"
+          >
+            All Products
+          </button>
+
+          <button
+            onClick={fetchVerifiedProducts}
+            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 hover:-translate-y-1 transform transition-all duration-300"
+          >
+            Verified Products
+          </button>
+        </div>
+
+
         <button
-          onClick={() => navigate("/seller/add-product")}
+          onClick={() => navigate("/product/create")}
           className="mt-4 md:mt-0 bg-[var(--primary-green)] hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow transition"
         >
           + Add New Product
@@ -98,7 +128,7 @@ const AllMyProducts = () => {
               {/* Image */}
               <div className="h-48 bg-gray-100 overflow-hidden">
                 <img
-                  src={product.images?.[0] || "/placeholder.png"}
+                  src={product.images?.[0]?.url || "/placeholder.png"}
                   alt={product.name}
                   className="h-full w-full object-cover"
                 />

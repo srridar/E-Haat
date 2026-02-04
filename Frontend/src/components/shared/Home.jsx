@@ -1,8 +1,9 @@
 import React from 'react'
 import Navbar from '@/components/shared/Navbar'
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-
+  const navigate = useNavigate();
   const features = [
     {
       title: "Direct Farmer Connection",
@@ -101,7 +102,7 @@ const Home = () => {
                 Explore Products
               </button>
 
-              <button className="border border-[var(--secondary-orange)] text-[var(--secondary-orange)] px-6 py-3 rounded-lg hover:bg-[var(--secondary-orange)] hover:text-white transition">
+              <button  onClick={() => navigate("/transporter/login")} className="border border-[var(--secondary-orange)] text-[var(--secondary-orange)] px-6 py-3 rounded-lg hover:bg-[var(--secondary-orange)] hover:text-white transition">
                 Join as Farmer
               </button>
             </div>

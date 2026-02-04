@@ -3,14 +3,13 @@ import { UserIcon, Cog6ToothIcon, BellIcon, CubeIcon, ArrowRightOnRectangleIcon 
 import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Notification from '@/components/shared/Notification'
 import { useNavigate } from 'react-router-dom';
-import useLogOut from '@/hooks/buyerHooks/useLogOut.js'
-import useGetProfile from '@/hooks/buyerHooks/useGetProfile'
+import useLogOut from '@/hooks/sharedHooks/useLogOut.js'
+import useGetProfile from '@/hooks/sharedHooks/useGetProfile'
 
 
 
 const SellerProfile = () => {
 
-  const [showNotification, setShowNotification] = useState(false);
   const [seller, setSeller]=useState({});
 
   const [setting, setSetting] = useState(false);
@@ -49,6 +48,7 @@ const SellerProfile = () => {
             <p className="text-gray-700">{seller?.email}</p>
           </div>
         </div>
+
         <div className="p-1 flex flex-col gap-6 mt-6">
           <div className="flex px-2 py-2 gap-4 items-center">
             <UserIcon className="h-6 w-6" />
@@ -62,14 +62,11 @@ const SellerProfile = () => {
             <CubeIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">My Products</h2>
           </div>
-          <div className="flex px-2 py-2 gap-4 items-center " onClick={() => setShowNotification(true)}>
+          <div className="flex px-2 py-2 gap-4 items-center " onClick={()=>navigate("/seller/notifications") }>
             <BellIcon className="h-6 w-6" />
             <h2 className="text-md cursor-pointer">Notification</h2>
           </div>
-          <button
-            onClick={logout}
-            className="flex px-2 py-2 gap-4 items-center w-full text-left"
-          >
+          <button onClick={() => logout()} className="flex px-2 py-2 gap-4 items-center w-full text-left" >
             <ArrowRightOnRectangleIcon className="h-6 w-6" />
             <span>Log out</span>
           </button>
@@ -77,8 +74,6 @@ const SellerProfile = () => {
       </div>
 
       <div className="max-w-5xl space-y-8">
-
-        {/* Header */}
         <div className="bg-white rounded-2xl shadow p-6 flex flex-col md:flex-row items-center gap-6">
           <img
             src={`${seller?.profileImage || "https://ui-avatars.com/api/?name=Seller&background=5A8F2B&color=fff"}`}
@@ -160,7 +155,7 @@ const SellerProfile = () => {
 
       </div>
 
-      {showNotification && <Notification onClose={() => setShowNotification(false)} />}
+
 
       {setting && (<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 ">
         <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">

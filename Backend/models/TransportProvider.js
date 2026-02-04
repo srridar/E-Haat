@@ -1,143 +1,131 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 import validator from "validator";
 
-const transportProviderSchema = new mongoose.Schema({
+const transportProviderSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        required: true,
-        trim: true,
-        minlength: [4, " Transporter name must consist at least 4 characters in his name"]
+      type: String,
+      required: true,
+      trim: true,
+      minlength: [4, "Transporter name must consist at least 4 characters"],
     },
+
     email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        validate: {
-            validator: validator.isEmail,
-            message: "Invalid email format"
-        }
-
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      validate: {
+        validator: validator.isEmail,
+        message: "Invalid email format",
+      },
     },
+
     password: {
-        type: String,
-        required: true,
-        select: false
-    },
-    phone: {
-        type: String,
-        required: true,
-        match: [
-            /^(98|97)\d{8}$/,
-            "Please enter a valid Nepali mobile number"
-        ]
-    },
-    role: {
-        type: String,
-        default: "transporter"
+      type: String,
+      required: true,
+      select: false,
     },
 
-    //          verification fields
+    phone: {
+      type: String,
+      required: true,
+      match: [/^(98|97)\d{8}$/, "Please enter a valid Nepali mobile number"],
+    },
+
+    profileImage: {
+      url: String,
+      public_id: String,
+    },
 
     isVerified: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
 
     notifications: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Notification",
-        },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Notification",
+      },
     ],
-    
+
     isKycCompleted: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
 
     verificationStatus: {
-        type: String,
-        enum: ["pending", "approved", "rejected"],
-        default: "pending"
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
 
-    veritedAt: Date,
-
-    //        KYC means Know Your Customer details 
+    verifiedAt: Date,
 
     documents: {
-        citizenshipId: {
-            type: String   // Cloudinary URL
-        },
-        drivingLicense: {
-            type: String
-        },
-        vehicleRegistration: {
-            type: String
-        }
+      citizenshipCard: String,
+      drivingLicense: String,
+      vehicleRegistration: String,
     },
 
-    /* ================= VEHICLE INFO ================= */
+    /* ================= VEHICLE ================= */
     vehicle: {
-        type: {
-            type: String,
-            enum: ["Bike", "Pickup", "Truck", "Mini Truck"],
-            required: true
-        },
-        numberPlate: {
-            type: String,
-            required: true
-        },
-        capacityKg: {
-            type: Number,
-            required: true
-        }
+      type: {
+        type: String,
+        enum: ["Bike", "Pickup", "Truck", "Mini Truck"],
+        required: false, // ✅ FIX
+      },
+      numberPlate: {
+        type: String,
+        required: false, // ✅ FIX
+      },
+      capacityKg: {
+        type: Number,
+        required: false, // ✅ FIX
+      },
     },
 
-
-    //     service area details 
-
+    /* ================= SERVICE AREAS ================= */
     serviceAreas: [
-        {
-            type: String  // Example: Kathmandu, Lalitpur
-        }
+      {
+        type: String,
+      },
     ],
 
-
-    /* ================= PRICING ================= */
+    /* ================= PRICE ================= */
     pricePerKm: {
-        type: Number,
-        required: true
+      type: Number,
+      required: false, // ✅ FIX
     },
 
-
-    /* ================= STATUS ================= */
     isAvailable: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
     },
 
-    isBlocked: {              // if isBlocked is true then transporter cannot accept new delivery requests
-        type: Boolean,
-        default: false
+    isBlocked: {
+      type: Boolean,
+      default: false,
     },
 
-    /* ================= RATING ================= */
     rating: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
 
     totalDeliveries: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
 
-    isActive: {              // it helps to soft delete the user if isActive is false then user is deleted
-        type: Boolean,
-        default: true
-    }
-}, { timestamps: true });
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { timestamps: true }
+);
 
-export const TransportProvider = mongoose.model('TransportProvider', transportProviderSchema);
+export const TransportProvider = mongoose.model( "TransportProvider",transportProviderSchema);
+

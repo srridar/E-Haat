@@ -3,8 +3,8 @@ import { UserIcon, Cog6ToothIcon, BellIcon, CubeIcon, ArrowRightOnRectangleIcon 
 import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Notification from '@/components/shared/Notification'
 import { useNavigate } from 'react-router-dom';
-import useLogOut from '@/hooks/buyerHooks/useLogOut.js'
-import useGetProfile from '@/hooks/buyerHooks/useGetProfile'
+import useLogOut from '@/hooks/sharedHooks/useLogOut.js'
+import useGetProfile from '@/hooks/sharedHooks/useGetProfile'
 
 
 const BuyerProfile = () => {

@@ -3,6 +3,8 @@ import Notification from '../models/Notification.js';
 import bcrypt from 'bcryptjs';
 import jwt from "jsonwebtoken";
 import cloudinary from '../utils/cloudinary.js'
+import { Product } from '../models/Product.js';
+import mongoose from 'mongoose';
 
 
 export const registerSeller = async (req, res) => {
@@ -116,6 +118,10 @@ export const logoutSeller = async (req, res) => {
 }
 
 
+
+
+
+
 export const getSellerProfile = async (req, res) => {
     try {
         const sellerId = req.user.sellerId; // from JWT middleware
@@ -142,32 +148,32 @@ export const getSellerProfile = async (req, res) => {
             success: false
         });
     }
-};
+}
+
+
 
 
 
 export const updateSellerProfile = async (req, res) => {
     try {
-
         const { name, email, phone, latitude, longitude, city } = req.body;
         const sellerId = req.user.sellerId;
 
-
         const seller = await Seller.findById(sellerId);
-
         if (!seller) {
             return res.status(404).json({
-                message: "seller is not found",
-                sucess: false
-            })
+                message: "Seller not found",
+                success: false,
+            });
         }
 
+        // Email update with uniqueness check
         if (email && email !== seller.email) {
             const emailExists = await Seller.findOne({ email });
             if (emailExists) {
                 return res.status(400).json({
                     message: "Email already in use",
-                    success: false
+                    success: false,
                 });
             }
             seller.email = email;
@@ -177,33 +183,33 @@ export const updateSellerProfile = async (req, res) => {
         if (city) seller.city = city;
         if (phone) seller.phone = phone;
 
-        if (longitude || longitude === 0) seller.location.coordinates[0] = Number(longitude);
-        if (latitude || latitude === 0) seller.location.coordinates[1] = Number(latitude);
-        //  frontend  - >  multer middleware  ->  cloudinary upload  ->  req.file object created  ->Controller reads req.file.path  -> URL saved in MongoDB
+        // Ensure location object exists
+        if (!seller.location) {
+            seller.location = { type: "Point", coordinates: [0, 0] };
+        }
 
+        if (longitude !== undefined)
+            seller.location.coordinates[0] = Number(longitude);
+
+        if (latitude !== undefined)
+            seller.location.coordinates[1] = Number(latitude);
+
+        // Profile image update (Cloudinary)
         if (req.file) {
-            // Delete old image if exists
             if (seller.profileImage?.public_id) {
-                await cloudinary.v2.uploader.destroy(seller.profileImage.public_id);
+                await cloudinary.v2.uploader.destroy(
+                    seller.profileImage.public_id
+                );
             }
 
             seller.profileImage = {
-                url: req.file.path,      // ✅ Cloudinary URL
-                public_id: req.file.filename, // ✅ Cloudinary public_id
+                url: req.file.path,
+                public_id: req.file.filename,
             };
         }
 
-        await seller.save();
-        const updatedSeller = {
-            _id: seller._id,
-            name: seller.name,
-            city: seller.city,
-            phone: seller.phone,
-            profileImage: seller.profileImage,
-
-        }
-
-        await Notification.create({
+        // Create notification
+        const notification = await Notification.create({
             user: sellerId,
             role: "seller",
             type: "profile_update",
@@ -211,21 +217,31 @@ export const updateSellerProfile = async (req, res) => {
             message: "Your profile has been updated successfully.",
         });
 
+        seller.notifications.push(notification._id);
+        await seller.save();
+
         return res.status(200).json({
-            message: "Seller Profile Updated Successfully !",           // shows that the 
-            updatedSeller,
-            success: true
-        })
-
-
+            message: "Seller Profile Updated Successfully!",
+            updatedSeller: {
+                _id: seller._id,
+                name: seller.name,
+                city: seller.city,
+                phone: seller.phone,
+                profileImage: seller.profileImage?.url,
+            },
+            success: true,
+        });
     } catch (error) {
-        console.log(error)
+        console.error("UpdateSellerProfile Error:", error);
         return res.status(500).json({
             message: "Internal Server Error",
-            success: false
-        })
+            success: false,
+        });
     }
-}
+};
+
+
+
 
 
 export const changeSellerPassword = async (req, res) => {
@@ -245,7 +261,7 @@ export const changeSellerPassword = async (req, res) => {
             });
         }
 
-        const isOldPasswordCorrect = await bcrypt.compare(oldPassword, buyer.password);
+        const isOldPasswordCorrect = await bcrypt.compare(oldPassword, seller.password);
         if (!isOldPasswordCorrect) {
             return res.status(400).json({
                 message: "Old password is incorrect",
@@ -253,7 +269,7 @@ export const changeSellerPassword = async (req, res) => {
             });
         }
 
-        const isSamePassword = await bcrypt.compare(newPassword, buyer.password);
+        const isSamePassword = await bcrypt.compare(newPassword, seller.password);
         if (isSamePassword) {
             return res.status(400).json({
                 message: "New password must be different from old password",
@@ -265,13 +281,18 @@ export const changeSellerPassword = async (req, res) => {
         seller.password = hashedNewPassword;
         await seller.save();
 
-        await Notification.create({
+        const notification = await Notification.create({
             user: sellerId,
             role: "seller",
             type: "password_change",
             title: "Password Changed",
             message: "Your password has been updated successfully.",
         });
+
+
+        seller.notifications.push(notification._id);
+        await seller.save();
+
 
         return res.status(200).json({
             message: "Password changed successfully",
@@ -286,10 +307,20 @@ export const changeSellerPassword = async (req, res) => {
 }
 
 
+
+
+
 export const getSellerProducts = async (req, res) => {
     try {
         const sellerId = req.user.sellerId;
-        const seller = await Seller.findById(sellerId);
+
+        if (!mongoose.Types.ObjectId.isValid(sellerId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid seller ID",
+            });
+        }
+        const seller = await Seller.findById(sellerId).select("isBlocked");
         if (!seller) {
             return res.status(404).json({
                 message: "seller does not exist 1",
@@ -304,12 +335,11 @@ export const getSellerProducts = async (req, res) => {
             });
         }
 
-        const sellerProducts = await Product.find({ seller: sellerId });
-
-
+        const sellerProducts = await Product.find({ seller: sellerId })
+            .sort({ createdAt: -1 });
 
         return res.status(200).json({
-            message: " sellerProducts are fetched successfully !",
+            message: " SellerProducts are fetched successfully !",
             success: true,
             totalProducts: sellerProducts.length,
             sellerProducts
@@ -320,6 +350,51 @@ export const getSellerProducts = async (req, res) => {
         return res.status(500).send("Internal Server Error");
     }
 }
+
+
+
+
+export const getSellerVerifiedProducts = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
+
+        if (!mongoose.Types.ObjectId.isValid(sellerId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid seller ID",
+            });
+        }
+        const seller = await Seller.findById(sellerId).select("isBlocked");
+        if (!seller) {
+            return res.status(404).json({
+                message: "seller does not exist 1",
+                success: false
+            })
+        }
+
+        if (seller.isBlocked) {
+            return res.status(403).json({
+                message: "Seller account is blocked",
+                success: false
+            });
+        }
+
+        const sellerVerifiedProducts = await Product.find({ seller: sellerId, isVerified: true })
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: " SellerVerifiedProducts are fetched successfully !",
+            success: true,
+            totalProducts: sellerVerifiedProducts.length,
+            sellerVerifiedProducts
+        })
+
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).send("Internal Server Error");
+    }
+}
+
 
 
 export const deleteSellerAccount = async (req, res) => {
@@ -356,58 +431,31 @@ export const deleteSellerAccount = async (req, res) => {
 
 
 
-export const blockOrUnblockSeller = async (req, res) => {
+export const getAllVerifiedSellerProfiles = async (req, res) => {
     try {
-        const sellerId = req.params.sellerId;
-        const { action } = req.body; // "block" | "unblock"
+        const verifiedSellers = await Seller.find({ isVerified: true })
+            .select(
+                "-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus -verifiedAt"
+            );
 
-        if (!["block", "unblock"].includes(action)) {
-            return res.status(400).json({
-                message: "Invalid action",
-                success: false
-            });
-        }
-
-        const seller = await Seller.findById(sellerId);
-        if (!seller) {
+        if (!verifiedSellers || verifiedSellers.length === 0) {
             return res.status(404).json({
-                message: "Seller not found",
-                success: false
+                success: false,
+                message: "No verified sellers found",
             });
         }
-
-        if (action === "block") {
-            if (seller.isBlocked) {
-                return res.status(400).json({
-                    message: "Seller is already blocked",
-                    success: false
-                });
-            }
-            seller.isBlocked = true;
-        }
-
-        if (action === "unblock") {
-            if (!seller.isBlocked) {
-                return res.status(400).json({
-                    message: "Seller is already unblocked",
-                    success: false
-                });
-            }
-            seller.isBlocked = false;
-        }
-
-        await seller.save();
 
         return res.status(200).json({
-            message: `Seller ${action}ed successfully`,
-            success: true
+            success: true,
+            message: "Verified sellers fetched successfully",
+            verifiedSellers,
         });
 
     } catch (error) {
         console.error(error);
         return res.status(500).json({
+            success: false,
             message: "Internal Server Error",
-            success: false
         });
     }
 };
@@ -415,8 +463,102 @@ export const blockOrUnblockSeller = async (req, res) => {
 
 
 
+export const getVerifiedSellerProfile = async (req, res) => {
+    try {
+        const sellerId = req.params.id;
+
+        const seller = await Seller.findOne({ _id: sellerId, isVerified: true })
+            .select(
+                "-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus -verifiedAt"
+            );
+        if (!seller) {
+            return res.status(404).json({
+                success: false,
+                message: "Verified seller not found",
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Verified seller profile fetched successfully",
+            seller,
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+}
 
 
+
+export const getAllUnVerifiedSellerProfile = async (req, res) => {
+    try {
+        const unverifiedSellers = await Seller.find({ isVerified: false })
+            .select(
+                "-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus "
+            );
+
+        if (!unverifiedSellers || unverifiedSellers.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No verified sellers found",
+            });
+
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Verified seller profile fetched successfully",
+            unverifiedSellers,
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+}
+
+
+
+
+
+export const getSellerNotifications = async (req, res) => {
+  try {
+    const sellerId = req.user.sellerId;
+
+    const seller = await Seller.findById(sellerId)
+      .populate({
+        path: "notifications",
+        options: { sort: { createdAt: -1 } } // latest first
+      });
+
+    if (!seller) {
+      return res.status(404).json({
+        message: "Seller not found",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Notifications fetched successfully",
+      success: true,
+      notifications: seller.notifications || [],
+    });
+
+  } catch (error) {
+    console.error("GetSellerNotifications Error:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
 
 
 

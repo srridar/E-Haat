@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import { Seller } from '../models/Seller.js'
 import { Buyer } from '../models/Buyer.js'
+import { TransportProvider } from '../models/TransportProvider.js'
 import { Product } from "../models/Product.js";
 import MAX_DISTANCE from '../config/distance.config.js'
 import getDataUri from "../utils/getDataUri.js";
@@ -8,6 +9,9 @@ import Notification from "../models/Notification.js";
 import cloudinary from '../utils/cloudinary.js'
 import bcrypt from 'bcryptjs'
 import jwt from "jsonwebtoken";
+
+
+
 
 export const registerBuyer = async (req, res) => {
     try {
@@ -47,6 +51,9 @@ export const registerBuyer = async (req, res) => {
 }
 
 
+
+
+
 export const loginBuyer = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -82,7 +89,7 @@ export const loginBuyer = async (req, res) => {
             address: buyer.address,
             phone: buyer.phone
         }
-         
+
         console.log(buyerData)
 
         return res.status(200).cookie('token', token, {
@@ -100,6 +107,7 @@ export const loginBuyer = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
+
 
 
 
@@ -122,6 +130,10 @@ export const logoutBuyer = async (req, res) => {
 }
 
 
+
+
+
+
 export const getBuyerProfile = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
@@ -139,92 +151,99 @@ export const getBuyerProfile = async (req, res) => {
 }
 
 
-//     updata buyer profile 
+
+
 
 
 export const updateBuyerProfile = async (req, res) => {
-  try {
-    const { name, phone,email, latitude, longitude, city } = req.body;
-    const buyerId = req.user.buyerId;
+    try {
+        const { name, phone, email, latitude, longitude, city } = req.body;
+        const buyerId = req.user.buyerId;
 
-    
-    const buyer = await Buyer.findById(buyerId);
-    if (!buyer) {
-      return res.status(404).json({
-        message: "Buyer not found",
-        success: false,
-      });
-    }
 
-   
-    if (email && email !== buyer.email) {
-      const emailExists = await Buyer.findOne({ email });
-      if (emailExists) {
-        return res.status(400).json({
-          message: "Email already in use",
-          success: false,
+        const buyer = await Buyer.findById(buyerId);
+        if (!buyer) {
+            return res.status(404).json({
+                message: "Buyer not found",
+                success: false,
+            });
+        }
+
+
+        if (email && email !== buyer.email) {
+            const emailExists = await Buyer.findOne({ email });
+            if (emailExists) {
+                return res.status(400).json({
+                    message: "Email already in use",
+                    success: false,
+                });
+            }
+            buyer.email = email;
+        }
+
+
+        if (name) buyer.name = name;
+        if (city) buyer.city = city;
+        if (phone) buyer.phone = phone;
+
+        if (!buyer.location) {
+            buyer.location = { type: "Point", coordinates: [0, 0] };
+        }
+
+        if (longitude || longitude === 0)
+            buyer.location.coordinates[0] = Number(longitude);
+        if (latitude || latitude === 0)
+            buyer.location.coordinates[1] = Number(latitude);
+
+        if (req.file) {
+            // Delete old image if exists
+            if (buyer.profileImage?.public_id) {
+                await cloudinary.v2.uploader.destroy(buyer.profileImage.public_id);
+            }
+
+            buyer.profileImage = {
+                url: req.file.path,      // ✅ Cloudinary URL
+                public_id: req.file.filename, // ✅ Cloudinary public_id
+            };
+        }
+
+
+        const notification = await Notification.create({
+            user: buyerId,
+            role: "buyer",
+            type: "profile_update",
+            title: "Profile Updated",
+            message: "Your profile has been updated successfully.",
         });
-      }
-      buyer.email = email;
+
+        buyer.notifications.push(notification._id);
+        await buyer.save();
+
+        return res.status(200).json({
+            message: "Buyer Profile Updated Successfully!",
+            success: true,
+            updatedBuyer: {
+                _id: buyer._id,
+                name: buyer.name,
+                email: buyer.email,
+                city: buyer.city,
+                phone: buyer.phone,
+                profileImage: buyer.profileImage?.url,
+            },
+        });
+    } catch (error) {
+        console.error("UpdateBuyerProfile Error:", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
     }
-
-
-    if (name) buyer.name = name;
-    if (city) buyer.city = city;
-    if (phone) buyer.phone = phone;
-    if (longitude || longitude === 0) buyer.location.coordinates[0] = Number(longitude);
-    if (latitude || latitude === 0) buyer.location.coordinates[1] = Number(latitude);
-
-  
-    if (req.file) {
-      // Delete old image if exists
-      if (buyer.profileImage?.public_id) {
-        await cloudinary.v2.uploader.destroy(buyer.profileImage.public_id);
-      }
-
-     buyer.profileImage = {
-        url: req.file.path,      // ✅ Cloudinary URL
-        public_id: req.file.filename, // ✅ Cloudinary public_id
-      };
-    }
-
-    await buyer.save();
-
-    const updatedBuyer = {
-      _id: buyer._id,
-      name: buyer.name,
-      city: buyer.city,
-      phone: buyer.phone,
-      profileImage: buyer.profileImage?.url,
-    };
-
-    /* ---------- Notification ---------- */
-    await Notification.create({
-      user: buyerId,
-      role: "buyer",
-      type: "profile_update",
-      title: "Profile Updated",
-      message: "Your profile has been updated successfully.",
-    });
-
-    return res.status(200).json({
-      message: "Buyer Profile Updated Successfully !",
-      updatedBuyer,
-      success: true,
-    });
-  } catch (error) {
-    console.error("UpdateBuyerProfile Error:", error);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      success: false,
-    });
-  }
 };
 
 
 
 
-//     change buyer password
+
 
 export const changeBuyerPassword = async (req, res) => {
     try {
@@ -261,16 +280,19 @@ export const changeBuyerPassword = async (req, res) => {
 
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         buyer.password = hashedNewPassword;
-        await buyer.save();
+
 
         // Create notification
-        await Notification.create({
+        const notification = await Notification.create({
             user: buyerId,
             role: "buyer",
             type: "password_change",
             title: "Password Changed",
             message: "Your password has been updated successfully.",
         });
+
+        buyer.notifications.push(notification._id);
+        await buyer.save();
 
         return res.status(200).json({
             message: "Password changed successfully",
@@ -285,7 +307,6 @@ export const changeBuyerPassword = async (req, res) => {
 }
 
 
-//      get all products of  veriefied sellers
 
 
 export const getProductsFromVerifiedSellers = async (req, res) => {
@@ -316,7 +337,7 @@ export const getProductsFromVerifiedSellers = async (req, res) => {
 }
 
 
-//        create order by buyer
+
 
 export const createOrderByBuyer = async (req, res) => {
     try {
@@ -326,42 +347,54 @@ export const createOrderByBuyer = async (req, res) => {
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({
                 message: "Products must be a non-empty array",
-                success: false
+                success: false,
             });
         }
 
-        // validate inputs
-        if (!sellerId || !products || products.length === 0 || !transporterId || !totalAmount) {
-            return res.status(400).json({ message: "All fields are required", success: false });
+        if (!sellerId || !transporterId || !totalAmount) {
+            return res.status(400).json({
+                message: "All fields are required",
+                success: false,
+            });
         }
 
-        // verify seller exists
+        const buyer = await Buyer.findById(buyerId);
+        if (!buyer) {
+            return res.status(404).json({ message: "Buyer not found", success: false });
+        }
+
         const seller = await Seller.findOne({ _id: sellerId, isVerified: true });
         if (!seller) {
             return res.status(404).json({ message: "Seller not found", success: false });
         }
-        // verify transporter exists
-        const transporter = await TransportProvider.findOne({ _id: transporterId, isVerified: true, isActive: true });
+
+        const transporter = await TransportProvider.findOne({
+            _id: transporterId,
+            isVerified: true,
+            isActive: true,
+        });
         if (!transporter) {
             return res.status(404).json({ message: "Transporter not found", success: false });
         }
 
+        // 1️⃣ Create Order
         const order = await Order.create({
             buyer: buyerId,
             seller: sellerId,
             transporter: transporterId,
-            products: products,
-            totalAmount: totalAmount,
+            products,
+            totalAmount,
         });
 
-        const notifications = [
+        // 2️⃣ Create Notifications
+        const createdNotifications = await Notification.insertMany([
             {
                 user: buyerId,
                 role: "buyer",
                 type: "order",
                 title: "Order Placed",
                 message: "You have successfully placed an order.",
-                relatedId: order._id
+                relatedId: order._id,
             },
             {
                 user: sellerId,
@@ -369,7 +402,7 @@ export const createOrderByBuyer = async (req, res) => {
                 type: "order",
                 title: "New Order Received",
                 message: "You have received a new order from a buyer.",
-                relatedId: order._id
+                relatedId: order._id,
             },
             {
                 user: transporterId,
@@ -377,22 +410,38 @@ export const createOrderByBuyer = async (req, res) => {
                 type: "delivery",
                 title: "Delivery Assigned",
                 message: "A new delivery has been assigned to you.",
-                relatedId: order._id
-            }
-        ];
+                relatedId: order._id,
+            },
+        ]);
 
-        await Notification.insertMany(notifications);
+        // 3️⃣ Push notifications to each user
+        buyer.notifications.push(createdNotifications[0]._id);
+        seller.notifications.push(createdNotifications[1]._id);
+        transporter.notifications.push(createdNotifications[2]._id);
 
-        return res.status(201).json({ message: "Order created successfully", success: true });
+        // 4️⃣ Save all
+        await Promise.all([
+            buyer.save(),
+            seller.save(),
+            transporter.save(),
+        ]);
 
+        return res.status(201).json({
+            message: "Order created successfully",
+            success: true,
+            orderId: order._id,
+        });
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
+        console.error("CreateOrder Error:", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
     }
-}
+};
 
 
-//       getMyOrders  history of orders by buyer
+
 
 export const getMyOrdersByBuyer = async (req, res) => {
     try {
@@ -441,7 +490,6 @@ export const getMyOrdersByBuyer = async (req, res) => {
 }
 
 
-//         rate transporter by buyer
 
 export const rateTransporterByBuyer = async (req, res) => {
     try {
@@ -513,7 +561,6 @@ export const rateTransporterByBuyer = async (req, res) => {
 
 
 
-//       rate seller by buyer
 export const rateSellerByBuyer = async (req, res) => {
     try {
         //  rating is done when buyer has received the product . technically after order is delivered . buyer can rate the seller by clicking on rate button in frontend. 
@@ -593,7 +640,6 @@ export const rateSellerByBuyer = async (req, res) => {
 }
 
 
-//        rate product by buyer
 
 export const rateProductByBuyer = async (req, res) => {
     try {
@@ -737,6 +783,42 @@ export const recommendedProducts = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+
+
+
+export const getBuyerNotifications = async (req, res) => {
+    try {
+        const buyerId = req.user.buyerId;
+        const buyer = await Buyer.findById(buyerId).populate({
+            path: "notifications",
+            options: { sort: { createdAt: -1 } } // newest first
+        });
+
+        if (!buyer) {
+            return res.status(404).json({
+                message: "Buyer not found ",
+                success: false
+            })
+        }
+
+        const notifications = buyer.notifications || [];
+
+        return res.status(200).json({
+            message: "Notifications fetched successfully",
+            success: true,
+            notifications
+        })
+
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false
+        });
     }
 }
 

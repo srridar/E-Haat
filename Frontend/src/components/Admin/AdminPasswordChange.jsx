@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -7,9 +8,9 @@ import {
 } from "@heroicons/react/24/outline";
 import useChangePassword from "@/hooks/sharedHooks/useChangePassword";
 
-const TransporterPasswordChange = () => {
+const AdminPasswordChange = () => {
   const navigate = useNavigate();
-  const changePassword = useChangePassword("transporter");
+  const changePassword = useChangePassword("admin");
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,6 +20,7 @@ const TransporterPasswordChange = () => {
     newPassword: "",
     confirmPassword: "",
   });
+
 
   const validateInput = ({ oldPassword, newPassword, confirmPassword }) => {
     const errors = {};
@@ -45,7 +47,8 @@ const TransporterPasswordChange = () => {
     return errors;
   };
 
- 
+
+
   const handleChange = (e) => {
     setPasswords({ ...passwords, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: "" });
@@ -63,7 +66,7 @@ const TransporterPasswordChange = () => {
 
     setLoading(true);
     try {
-      await changePassword(passwords.oldPassword,passwords.newPassword);
+      await changePassword(passwords.oldPassword, passwords.newPassword);
     } catch (err) {
       console.error(err);
     } finally {
@@ -72,16 +75,23 @@ const TransporterPasswordChange = () => {
   };
 
 
-  return (
-    <div className="min-h-screen flex flex-col gap-12 md:gap-40 p-12 md:flex-row lg:flex-row items-center justify-center bg-gray-100 px-4">
 
-      <div className="border-2 rounded-full border-orange-500 p-8 md:p-12  bg-white shadow-xl">
-        <img src="/padlock.png" alt="crop" className="w-14 md:w-28 lg:w-40 object-contain" />
+  return (
+    <div className=" relative min-h-screen flex items-center justify-center bg-gray-100 px-4">
+
+      <div className="flex absolute top-14 md:left-[25rem] rounded bg-green-200 p-1 hover:bg-green-300">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-gray-600 hover:text-black transition"
+        >
+          <ArrowLeft size={20} />
+        </button>
       </div>
+
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <LockClosedIcon className="h-7 w-7 text-orange-600" />
+          <LockClosedIcon className="h-7 w-7 text-green-600" />
           <h2 className="text-2xl font-bold text-gray-800">
             Change Password
           </h2>
@@ -92,7 +102,6 @@ const TransporterPasswordChange = () => {
         </p>
 
         <form onSubmit={submitHandler} className="space-y-5">
-          {/* Current Password */}
           <div>
             <label className="text-sm font-medium text-gray-700">
               Current Password
@@ -174,6 +183,13 @@ const TransporterPasswordChange = () => {
 
           {/* Buttons */}
           <div className="flex gap-4 pt-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl font-semibold"
+            >
+              {loading ? "Updating..." : "Update Password"}
+            </button>
 
             <button
               type="button"
@@ -182,24 +198,11 @@ const TransporterPasswordChange = () => {
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-orange-400 hover:bg-orange-500 text-white py-2 rounded-xl font-semibold"
-            >
-              {loading ? "Updating..." : "Update Password"}
-            </button>
-
-
           </div>
         </form>
       </div>
-      <div className="border-2 rounded-full border-orange-500 p-8 md:p-12   bg-white shadow-xl hidden md:block lg:block">
-        <img src="/password.png" alt="crop" className="w-14 md:w-28 lg:w-40 object-contain" />
-      </div>
-
     </div>
   );
 };
 
-export default TransporterPasswordChange;
+export default AdminPasswordChange;

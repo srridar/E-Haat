@@ -1,5 +1,7 @@
 import { ContactData } from "../models/Contact.js";
 
+
+
 export const storeContact = async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
@@ -106,6 +108,7 @@ export const deleteContact = async (req, res) => {
     });
   }
 };
+
 
 export const markAsRead = async (req, res) => {
   try {

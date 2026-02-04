@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 const isAuthenticated = (req, res, next) => {
     try {
         const token = req.cookies.token;
-        console.log(token)
         if (!token) {
             return res.status(401).json({ message: 'Unauthorized: No token provided', success: false });
         }
@@ -12,10 +11,9 @@ const isAuthenticated = (req, res, next) => {
         if (!decoded) {
             return res.status(401).json({ message: 'Unauthorized: Invalid token', success: false });
         }
-        console.log(decoded)
         req.user = decoded;
-        console.log(req.user)  // Attach user info to request object . it helps to access user info in next middlewares or route handlers.
-        next();
+        next();                    // Attach user info to request object . it helps to access user info in next middlewares or route handlers.
+        
     }catch (error) {
         console.error('Authentication error:', error);
     }

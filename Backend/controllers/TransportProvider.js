@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { TransportProvider } from "../models/TransportProvider.js";
+import Notification from "../models/Notification.js";
 import Order from "../models/Order.js"
 
 
@@ -53,6 +54,7 @@ export const registerTransportProvider = async (req, res) => {
 
 
 
+
 export const loginTransportProvider = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -100,13 +102,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        if (!transporter.isKycCompleted) {
-            return res.status(403).json({
-                success: false,
-                message: "KYC not completed",
-                kycRequired: true
-            });
-        }
 
         const token = jwt.sign(
             {
@@ -146,80 +141,6 @@ export const loginTransportProvider = async (req, res) => {
 
 
 
-export const submitTransporterKyc = async (req, res) => {
-    try {
-        const transporterId = req.user.id;
-
-        const { citizenshipId, drivingLicense, vehicleRegistration, vehicleType, numberPlate, capacityKg, serviceAreas, pricePerKm } = req.body;
-
-      
-        if (!citizenshipId || !drivingLicense || !vehicleRegistration || !vehicleType || !numberPlate || !capacityKg || !pricePerKm) {
-            return res.status(400).json({
-                success: false,
-                message: "All KYC, vehicle, and pricing fields are required"
-            });
-        }
-
-        if (typeof serviceAreas === 'string') {
-            serviceAreas = serviceAreas.split(',').map(area => area.trim()).filter(area => area.length > 0);
-        }
-
-        const transporter = await TransportProvider.findById(transporterId);
-
-        if (!transporter) {
-            return res.status(404).json({
-                success: false,
-                message: "Transport provider not found"
-            });
-        }
-
-  
-        if (transporter.isKycCompleted) {
-            return res.status(400).json({
-                success: false,
-                message: "KYC already submitted"
-            });
-        }
-
-        transporter.documents = {
-            citizenshipId,
-            drivingLicense,
-            vehicleRegistration
-        };
-
-        transporter.vehicle = {
-            type: vehicleType,
-            numberPlate,
-            capacityKg
-        };
-
-     
-        transporter.serviceAreas = serviceAreas || [];
-        transporter.pricePerKm = pricePerKm;
-
-
-        transporter.isKycCompleted = true;
-        transporter.verificationStatus = "pending";
-        transporter.isVerified = false;
-
-        await transporter.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "KYC submitted successfully. Verification pending."
-        });
-
-    } catch (error) {
-        console.error("KYC Submission Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal Server Error"
-        });
-    }
-};
-
-
-
 
 export const logoutTransporter = async (req, res) => {
     try {
@@ -241,6 +162,7 @@ export const logoutTransporter = async (req, res) => {
 
 
 
+
 export const getTransporterProfile = async (req, res) => {
 
     try {
@@ -255,7 +177,7 @@ export const getTransporterProfile = async (req, res) => {
         }
 
         return res.status(200).json({
-            message: "Seller profile fetched successfully",
+            message: "Transporter profile fetched successfully",
             success: true,
             transporter
         });
@@ -333,77 +255,173 @@ export const changeTransporterPassword = async (req, res) => {
 
 
 
-export const updateTransportProviderProfile = async (req, res) => {
+
+export const submitTransporterKyc = async (req, res) => {
     try {
         const transporterId = req.user.id;
 
-        const { name, email, phone, serviceAreas, pricePerKm, isAvailable, vehicle } = req.body;
+        const { citizenshipCard, drivingLicense, vehicleRegistration } = req.files || {};
+        let { vehicleType, numberPlate, capacityKg, serviceAreas, pricePerKm } = req.body;
+
+        if (!citizenshipCard || !drivingLicense || !vehicleRegistration || !vehicleType || !numberPlate || !capacityKg || !pricePerKm) {
+            return res.status(400).json({
+                success: false,
+                message: "All KYC, vehicle, and pricing fields are required"
+            });
+        }
+
+
+        if (typeof serviceAreas === 'string') {
+            serviceAreas = serviceAreas.split(',').map(area => area.trim()).filter(area => area.length > 0);
+        }
+
         const transporter = await TransportProvider.findById(transporterId);
 
         if (!transporter) {
             return res.status(404).json({
-                message: "Transport provider not found",
-                success: false
+                success: false,
+                message: "Transport provider not found"
             });
         }
 
-        if (email && email !== transporter.email) {
-            const emailExists = await TransportProvider.findOne({ email });
-            if (emailExists) {
-                return res.status(400).json({
-                    message: "Email already in use",
-                    success: false
-                });
-            }
-            transporter.email = email;
+
+        if (transporter.isKycCompleted) {
+            return res.status(400).json({
+                success: false,
+                message: "KYC already submitted"
+            });
         }
 
-        if (name) transporter.name = name;
-        if (phone) transporter.phone = phone;
-        if (Array.isArray(serviceAreas)) transporter.serviceAreas = serviceAreas;
-        if (pricePerKm) transporter.pricePerKm = pricePerKm;
-        if (typeof isAvailable === "boolean") transporter.isAvailable = isAvailable;
+        transporter.documents = {
+            citizenshipCard: citizenshipCard[0].path,
+            drivingLicense: drivingLicense[0].path,
+            vehicleRegistration: vehicleRegistration[0].path,
+        };
 
-        if (vehicle) {
-            transporter.vehicle = {
-                ...transporter.vehicle,
-                ...vehicle
-            };
-        }
+
+        transporter.vehicle = {
+            type: vehicleType,
+            numberPlate,
+            capacityKg
+        };
+
+
+        transporter.serviceAreas = serviceAreas || [];
+        transporter.pricePerKm = pricePerKm;
+
+
+        transporter.isKycCompleted = true;
+        transporter.verificationStatus = "pending";
+        transporter.isVerified = false;
 
         await transporter.save();
 
-        await Notification.create({
-            user: transporterId,
-            role: "trasporter",
-            type: "profile_update",
-            title: "Profile Updated",
-            message: "Your profile has been updated successfully.",
-        });
-
         return res.status(200).json({
-            message: "Profile updated successfully",
             success: true,
-            transporter: {
-                _id: transporter._id,
-                name: transporter.name,
-                email: transporter.email,
-                phone: transporter.phone,
-                serviceAreas: transporter.serviceAreas,
-                vehicle: transporter.vehicle,
-                pricePerKm: transporter.pricePerKm,
-                isAvailable: transporter.isAvailable
-            }
+            message: "KYC submitted successfully. Verification pending."
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("KYC Submission Error:", error);
         return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
+            success: false,
+            message: "Internal Server Error"
         });
     }
 };
+
+
+
+
+
+export const updateTransportProviderProfile = async (req, res) => {
+  try {
+    const transporterId = req.user.id;
+
+    const { name, email, phone, pricePerKm } = req.body;
+    let { serviceAreas, isAvailable } = req.body;
+
+    const transporter = await TransportProvider.findById(transporterId);
+
+    if (!transporter) {
+      return res.status(404).json({
+        success: false,
+        message: "Transport provider not found"
+      });
+    }
+
+    // Email uniqueness
+    if (email && email !== transporter.email) {
+      const emailExists = await TransportProvider.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already in use"
+        });
+      }
+      transporter.email = email;
+    }
+
+    if (name) transporter.name = name;
+    if (phone) transporter.phone = phone;
+
+    // Service Areas
+    if (typeof serviceAreas === "string") {
+      transporter.serviceAreas = serviceAreas
+        .split(",")
+        .map(area => area.trim())
+        .filter(Boolean);
+    }
+
+    // Price
+    if (pricePerKm !== undefined) {
+      transporter.pricePerKm = Number(pricePerKm);
+    }
+
+    // Availability (string → boolean)
+    if (isAvailable !== undefined) {
+      transporter.isAvailable = isAvailable === "true";
+    }
+
+    // Profile Image
+    if (req.file) {
+      if (transporter.profileImage?.public_id) {
+        await cloudinary.v2.uploader.destroy(
+          transporter.profileImage.public_id
+        );
+      }
+
+      transporter.profileImage = {
+        url: req.file.path,
+        public_id: req.file.filename
+      };
+    }
+
+    await transporter.save();
+
+    await Notification.create({
+      user: transporterId,
+      role: "transporter",
+      type: "profile_update",
+      title: "Profile Updated",
+      message: "Your profile has been updated successfully."
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      transporter
+    });
+
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
+  }
+};
+
 
 
 
@@ -439,10 +457,10 @@ export const updateAvailabilityStatus = async (req, res) => {
 
 
 
+
 export const getTransporterDashboard = async (req, res) => {
     try {
         const transporterId = req.user.id;
-
         const transporter = await TransportProvider.findById(transporterId);
 
         if (!transporter) {
@@ -457,7 +475,7 @@ export const getTransporterDashboard = async (req, res) => {
             status: "pending"
         });
 
-        const activeOrders = await Order.countDocument({
+        const activeOrders = await Order.countDocuments({
             transporter: transporterId,
             status: { $in: ["accepted", "picked"] }
         })
@@ -490,7 +508,8 @@ export const getTransporterDashboard = async (req, res) => {
         });
     }
 };
-// 
+
+
 
 
 
@@ -577,7 +596,6 @@ export const getAssignedOrders = async (req, res) => {
         });
     }
 }
-
 
 
 
@@ -683,7 +701,6 @@ export const acceptOrder = async (req, res) => {
 
 
 
-
 export const rejectOrder = async (req, res) => {
     try {
         const transporterId = req.user.id;
@@ -781,7 +798,6 @@ export const rejectOrder = async (req, res) => {
         });
     }
 };
-
 
 
 
@@ -912,6 +928,37 @@ export const updateOrderStatus = async (req, res) => {
 
 
 
+export const getTransporterNotifications = async (req, res) => {
+  try {
+    const transporterId = req.user.transporterId;
+
+    const transporter = await TransportProvider.findById(transporterId)
+      .populate({
+        path: "notifications",
+        options: { sort: { createdAt: -1 } } 
+      });
+
+    if (!transporter) {
+      return res.status(404).json({
+        message: "Transporter not found",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Notifications fetched successfully",
+      success: true,
+      notifications: transporter.notifications || [],
+    });
+
+  } catch (error) {
+    console.error("GetTransporterNotifications Error:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
 
 
 

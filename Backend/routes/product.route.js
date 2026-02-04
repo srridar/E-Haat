@@ -12,7 +12,7 @@ import {CreateProduct,
 const router=express.Router();
 
 router.route("/create-product").post(isAuthenticated,upload.array("images", 5),  CreateProduct);
-router.route("/get-all-product").post(GetAllProduct);
+router.route("/get-all-product").get(GetAllProduct);
 router.route("/get-productbyid").get(isAuthenticated,GetProductById);
 router.route("/update-product").get(isAuthenticated,upload.array("images", 5), UpdateProduct);
 router.route("/delete-product").post(isAuthenticated, deleteProduct);

@@ -26,7 +26,23 @@ const productSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ["Electronics", "Clothing", "Food", "Furniture", "vegetables", "Other"]
+        enum: [
+            "Vegetables",
+            "Fruits",
+            "Grains",
+            "Dairy",
+            "Electronics",
+            "Clothing",
+            "Food",
+            "Furniture",
+            "Other"
+        ]
+
+    },
+    brand: {
+        type: String,
+        trim: true,
+        default: "Generic"
     },
     rating: {
         type: Number,
@@ -40,6 +56,14 @@ const productSchema = new mongoose.Schema({
         type: Number,
         required: true,
         min: 0
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin'
     },
     images: [{
         url: String,

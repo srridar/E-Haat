@@ -7,7 +7,12 @@ const LoginAsk = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="w-full min-h-[100vh] bg-gradient-to-br from-orange-300 to-green-100 flex items-center justify-center px-4">
+    <section className="w-full min-h-[100vh] bg-gradient-to-br from-orange-300 to-green-100 flex flex-col md:flex-row lg:flex-row gap-12 items-center justify-center px-4">
+        <img
+        src="/crop1.png"
+        alt="crop"
+        className="w-24 md:w-32 lg:w-60 object-contain"
+      />
       <div className="bg-white/95 backdrop-blur shadow-2xl rounded-2xl p-8 md:p-12 max-w-lg w-full text-center">
         
         {/* Header */}
@@ -65,6 +70,11 @@ const LoginAsk = () => {
         </p>
 
       </div>
+      <img
+        src="/crop1.png"
+        alt="crop"
+        className="w-24 md:w-32 lg:w-60 object-contain"
+      />
     </section>
   );
 };

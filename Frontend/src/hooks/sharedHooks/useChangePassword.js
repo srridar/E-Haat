@@ -9,7 +9,6 @@ const useChangePassword = (role) => {
             const res = await axios.post(`http://localhost:8000/api/v4/${role}/change-password`,
                 {oldPassword, newPassword}, { withCredentials: true });
             if (res.data.success) {
-                console.log("successfully log out");
                 navigate(`/${role}/login`)
             }
         } catch (error) {

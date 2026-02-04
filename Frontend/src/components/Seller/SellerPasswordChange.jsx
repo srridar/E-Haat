@@ -5,7 +5,7 @@ import {
   EyeSlashIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
-import useChangePassword from "@/hooks/buyerHooks/useChangePassword";
+import useChangePassword from "@/hooks/sharedHooks/useChangePassword";
 
 const SellerPasswordChange = () => {
   const navigate = useNavigate();
@@ -20,11 +20,10 @@ const SellerPasswordChange = () => {
     confirmPassword: "",
   });
 
-  /* ===================== VALIDATION ===================== */
+
   const validateInput = ({ oldPassword, newPassword, confirmPassword }) => {
     const errors = {};
-    const strongPassRegex =
-      /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+    const strongPassRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 
     if (!oldPassword.trim()) {
       errors.oldPassword = "Current password is required";
@@ -47,7 +46,7 @@ const SellerPasswordChange = () => {
     return errors;
   };
 
-  /* ===================== HANDLERS ===================== */
+
   const handleChange = (e) => {
     setPasswords({ ...passwords, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: "" });
@@ -65,10 +64,7 @@ const SellerPasswordChange = () => {
 
     setLoading(true);
     try {
-      await changePassword(
-        passwords.oldPassword,
-        passwords.newPassword
-      );
+      await changePassword( passwords.oldPassword, passwords.newPassword );
     } catch (err) {
       console.error(err);
     } finally {
@@ -76,7 +72,7 @@ const SellerPasswordChange = () => {
     }
   };
 
-  /* ===================== UI ===================== */
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">

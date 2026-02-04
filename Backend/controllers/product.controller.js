@@ -7,80 +7,72 @@ import getDataUri from "../utils/getDataUri.js";
 
 
 export const CreateProduct = async (req, res) => {
-    try {
-        const { name, description, category, price, stock } = req.body;
-        const sellerId = req.user.id;
+  try {
+    const { name, description, category, price, stock, brand } = req.body;
+    const sellerId = req.user.sellerId;
 
-        if (!name || !description || !category || !price || !stock) {
-            return res.status(400).json({
-                message: "All fields are required",
-                success: false
-            });
-        }
-
-        // verifying the seller
-
-        const seller = await Seller.findById(sellerId);
-        if (!seller) {
-            return res.status(404).json({
-                message: "Seller not found",
-                success: false
-            })
-        }
-
-        if (!seller.isVerified) {
-            return res.status(403).json({
-                message: "Only verified sellers can create products",
-                success: false
-            });
-        }
-
-        let images = [];
-
-        if (req.files?.length) {
-            for (const file of req.files) {
-                const fileUri = getDataUri(file);
-
-                const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content, {
-                    folder: "products",
-                    resource_type: "image", // remove extra space
-                });
-
-                images.push({
-                    url: uploadResult.secure_url,
-                    public_id: uploadResult.public_id,
-                });
-            }
-        }
-
-        const newProduct = await Product.create({
-            name,
-            description,
-            price,
-            stock,
-            category,
-            seller: sellerId,
-            images
-        });
-
-        seller.productsOwned.push(newProduct._id);
-        await seller.save();
-
-        return res.status(201).json({
-            message: "Product created successfully",
-            success: true,
-            product: newProduct
-        });
-
-
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
-        })
+    if (!name || !description || !category || !price || !stock || !brand) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
-}
+
+    // Verify seller
+    const seller = await Seller.findById(sellerId);
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
+
+    if (!seller.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Only verified sellers can create products",
+      });
+    }
+
+    // Images from Cloudinary (via multer)
+    let images = [];
+    if (req.files?.length) {
+      images = req.files.map(file => ({
+        url: file.path,       // Cloudinary secure URL
+        public_id: file.filename,
+      }));
+    }
+ 
+  
+    const product = await Product.create({
+      name,
+      description,
+      category,
+      price,
+      stock,
+      brand,
+      seller: sellerId,
+      images,
+    });
+    console.log("i reach here too");
+    
+    seller.productsOwned.push(product._id);
+    await seller.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Product created successfully",
+      product,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 
 
@@ -271,6 +263,7 @@ export const deleteProduct = async (req, res) => {
 };
 
 
+
 export const SearchFilterProduct = async (req, res) => {
     try {
 
@@ -321,6 +314,7 @@ export const SearchFilterProduct = async (req, res) => {
         })
     }
 }
+
 
 
 export const RateAndReviewProduct = async (req, res) => {
@@ -394,3 +388,5 @@ export const RateAndReviewProduct = async (req, res) => {
         })
     }
 }
+
+

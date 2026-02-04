@@ -3,7 +3,6 @@ import {
   Package,
   Clock,
   CheckCircle2,
-  TrendingUp,
   Star,
   AlertCircle,
   ChevronRight,

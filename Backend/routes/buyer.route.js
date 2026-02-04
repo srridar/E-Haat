@@ -14,14 +14,15 @@ import {
     createOrderByBuyer,
     rateTransporterByBuyer,
     rateSellerByBuyer,
-    recommendedProducts
+    recommendedProducts,
+    getBuyerNotifications
 } from "../controllers/buyer.controller.js"
 
 const router = express.Router();
 
 router.route("/register").post(registerBuyer);
 router.route("/login").post(loginBuyer);
-router.route("/logout").get(isAuthenticated, logoutBuyer);
+router.route("/logout").post(isAuthenticated, logoutBuyer);
 router.route("/profile").get(isAuthenticated, getBuyerProfile);
 router.route("/update-profile").put(isAuthenticated, isBuyer, upload.single("profileImage"), updateBuyerProfile);       //
 router.route("/change-password").post(isAuthenticated, changeBuyerPassword);          
@@ -31,6 +32,7 @@ router.route("/make-order").post(isAuthenticated, createOrderByBuyer);
 router.route("/rating-seller").post(isAuthenticated, rateSellerByBuyer);
 router.route("/rating-transporter").post(isAuthenticated, rateTransporterByBuyer);
 router.get("/recommendations", isAuthenticated, recommendedProducts);
+router.get("/notifications",isAuthenticated,getBuyerNotifications)
 
 
 export default router;

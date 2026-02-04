@@ -5,7 +5,7 @@ import {
   EyeSlashIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
-import useChangePassword from "@/hooks/buyerHooks/useChangePassword";
+import useChangePassword from "@/hooks/sharedHooks/useChangePassword";
 
 const BuyerPasswordChange = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ const BuyerPasswordChange = () => {
     confirmPassword: "",
   });
 
-  /* ===================== VALIDATION ===================== */
+
   const validateInput = ({ oldPassword, newPassword, confirmPassword }) => {
     const errors = {};
     const strongPassRegex =

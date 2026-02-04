@@ -4,7 +4,7 @@ const About = () => {
   return (
     <div className="bg-background-light text-text-dark">
       {/* ================= HERO SECTION ================= */}
-      <section className="bg-gradient-to-r from-green-700 to-green-600 text-white py-20">
+      <section className="bg-gradient-to-r from-orange-600 to-orange-500 text-white py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             About E-Haat

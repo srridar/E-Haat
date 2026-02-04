@@ -1,10 +1,24 @@
 import React from "react";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+
 
 const GetAllProduct = () => {
+  const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="relative min-h-screen bg-gray-100 p-12">
 
       {/* Page Header */}
+      <div className="flex absolute top-3 md:left-[1rem] rounded bg-green-200 p-1 hover:bg-green-300">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-gray-600 hover:text-black transition"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      </div>
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
           All Products

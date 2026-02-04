@@ -51,7 +51,12 @@ const SellerRegister = () => {
   }
 
   return (
-    <div className=" min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-200 to-green-200">
+    <div className=" min-h-screen flex flex-col md:flex-row lg:flex-row items-center justify-center bg-gradient-to-br from-orange-200 to-green-200">
+      <img
+        src="/crop1.png"
+        alt="crop"
+        className="w-24 md:w-32 lg:w-60 object-contain"
+      />
       <form
         onSubmit={submitHandler}
         className=" w-full max-w-4xl  bg-white overflow-scroll shadow-xl p-8 space-y-8">
@@ -124,6 +129,11 @@ const SellerRegister = () => {
         {/* Submit */}
        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition duration-300" > Register </button>
       </form>
+      <img
+        src="/crop1.png"
+        alt="crop"
+        className="w-24 md:w-32 lg:w-60 object-contain"
+      />
     </div>
   )
 }

@@ -1,10 +1,21 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const GetAllUser = () => {
+  const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="relative min-h-screen bg-gray-100 p-12">
 
-      {/* Page Header */}
+      <div className="flex absolute top-3 md:left-[1rem] rounded bg-green-200 p-1 hover:bg-green-300">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-gray-600 hover:text-black transition"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      </div>
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
           All Users
@@ -16,7 +27,7 @@ const GetAllUser = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        
+
         <input
           type="text"
           placeholder="Search by name or email"

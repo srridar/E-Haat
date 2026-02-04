@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { CONTACT_API_END_POINT } from "@/utils/constants";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -13,15 +15,30 @@ const Contact = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try{
+        const res = await axios.post(`${CONTACT_API_END_POINT}/create`, formData);
+        if(res.data.success){
+          alert("Your message has been sent successfully!");
+          setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            subject: "",
+            message: ""
+          });
+        }
+    }catch(error){
+      console.error("Error submitting contact form:", error);
+    }
     console.log(formData);
   };
 
   return (
     <div className="bg-background-light text-text-dark">
   
-      <section className="bg-gradient-to-r from-green-700 to-green-600 text-white py-16">
+      <section className="bg-gradient-to-r from-orange-600 to-orange-500 text-white py-16">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h1 className="text-4xl font-bold mb-3">Contact Us</h1>
           <p className="max-w-2xl mx-auto opacity-90">

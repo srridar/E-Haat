@@ -6,7 +6,7 @@ const useLogOut = (role) => {
 
     const logout = async () => {
         try {
-            const res = await axios(`http://localhost:8000/api/v4/${role}/logout`, { withCredentials: true });
+            const res = await axios.post(`http://localhost:8000/api/v4/${role}/logout`, {}, { withCredentials: true });
             if (res.data.success) {
                 console.log("successfully log out");
                 navigate(`/${role}/login`)

@@ -67,7 +67,12 @@ const SellerLogin = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-300 to-green-100  px-4">
+    <div className="min-h-screen flex flex-col md:flex-row lg:flex-row items-center justify-center bg-gradient-to-br from-orange-300 to-green-100  px-4">
+      <img
+        src="/crop1.png"
+        alt="crop"
+        className="w-24 md:w-32 lg:w-60 object-contain"
+      />
       <form
         onSubmit={submitHandler}
         className="w-full max-w-md bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl p-8 space-y-6"
@@ -147,6 +152,11 @@ const SellerLogin = () => {
         </p>
 
       </form>
+      <img
+        src="/crop1.png"
+        alt="crop"
+        className="w-24 md:w-32 lg:w-60 object-contain"
+      />
     </div>
 
   )
