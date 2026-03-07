@@ -34,9 +34,35 @@ const transportProviderSchema = new mongoose.Schema(
     },
 
     profileImage: {
-      url: String,
-      public_id: String,
+      url: {
+        type: String,
+        default: "",
+      },
+      public_id: {
+        type: String,
+        default: "",
+      },
     },
+
+
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+        default: "Point"
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+        default: [85.3240, 27.7172]
+      },
+      address: {
+        type: String,
+        default: "Kathmandu, Nepal"
+      }
+    },
+
 
     isVerified: {
       type: Boolean,
@@ -50,10 +76,12 @@ const transportProviderSchema = new mongoose.Schema(
       },
     ],
 
+
     isKycCompleted: {
       type: Boolean,
       default: false,
     },
+
 
     verificationStatus: {
       type: String,
@@ -69,35 +97,41 @@ const transportProviderSchema = new mongoose.Schema(
       vehicleRegistration: String,
     },
 
-    /* ================= VEHICLE ================= */
+
     vehicle: {
       type: {
         type: String,
         enum: ["Bike", "Pickup", "Truck", "Mini Truck"],
-        required: false, // ✅ FIX
+        required: false, 
       },
+      
+      vehiclePhoto:{
+          type: String,
+      },
+
       numberPlate: {
         type: String,
-        required: false, // ✅ FIX
+        required: false, 
       },
       capacityKg: {
         type: Number,
-        required: false, // ✅ FIX
+        required: false,
       },
     },
 
-    /* ================= SERVICE AREAS ================= */
+
     serviceAreas: [
       {
         type: String,
       },
     ],
 
-    /* ================= PRICE ================= */
+
     pricePerKm: {
       type: Number,
-      required: false, // ✅ FIX
+      required: false, 
     },
+
 
     isAvailable: {
       type: Boolean,
@@ -125,7 +159,8 @@ const transportProviderSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
+
 );
 
-export const TransportProvider = mongoose.model( "TransportProvider",transportProviderSchema);
+export const TransportProvider = mongoose.model("TransportProvider", transportProviderSchema);
 

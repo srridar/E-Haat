@@ -16,22 +16,25 @@ import {
     rejectOrder,
     updateOrderStatus,
     submitTransporterKyc,
-    getTransporterNotifications
+    getTransporterNotifications,
+    setLocation,
+    getTransportRequests,
+    getTransportRequest,
+    getAllTransportationRequests,
+    updateRequestStatus
+
 } from "../controllers/TransportProvider.js";
 
 const router = express.Router();
 
-//   PATCH – “Update small part”
-//   PUT  - “Replace existing data”
-//   POST – “Create something new”
-//   GET – “Give me data”
 
 router.route("/register").post(registerTransportProvider);               
 router.route("/login").post(loginTransportProvider);                    
 router.route("/logout").post(isAuthenticated, logoutTransporter);  
-router.route("/profile").get(isAuthenticated, getTransporterProfile);         //  tested 
+router.route("/profile").get(isAuthenticated, getTransporterProfile);
+router.route("/setlocation").put(isAuthenticated, setLocation);
 router.route("/profile/update").patch(isAuthenticated,upload.single("profileImage"),updateTransportProviderProfile); 
-router.route("/profile/changepassword").post(isAuthenticated, changeTransporterPassword); 
+router.route("/change-password").post(isAuthenticated, changeTransporterPassword); 
 router.route("/delete").delete(isAuthenticated, deleteTransporterAccount);    
 router.post("/submitkyc",
   isAuthenticated,
@@ -51,11 +54,16 @@ router.post("/submitkyc",
   submitTransporterKyc
 );
 router.put("/availability-status", isAuthenticated, updateAvailabilityStatus);
-router.get("/dashboard", isAuthenticated, getTransporterDashboard); // to fetch data for dashboard
+router.get("/dashboard", isAuthenticated, getTransporterDashboard); 
 router.route("/products").get(isAuthenticated, getAssignedOrders);         
 router.route("/acceptorder/:id").patch(isAuthenticated, acceptOrder); 
 router.route("/rejectorder/:id").patch(isAuthenticated, rejectOrder); 
 router.route("/updateorderstatus/:id").patch(isAuthenticated, updateOrderStatus);
 router.get("/notifications",isAuthenticated,getTransporterNotifications)
+router.get("/get-transports-req",isAuthenticated,getTransportRequests);
+router.get("/get-transport-req/:id",isAuthenticated,getTransportRequest);
+router.get("/get-all-requests", isAuthenticated, getAllTransportationRequests);
+router.put("/request/:id/status",isAuthenticated,updateRequestStatus);
+
 
 export default router;

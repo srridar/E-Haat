@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -45,7 +46,7 @@ const TransporterPasswordChange = () => {
     return errors;
   };
 
- 
+
   const handleChange = (e) => {
     setPasswords({ ...passwords, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: "" });
@@ -63,7 +64,7 @@ const TransporterPasswordChange = () => {
 
     setLoading(true);
     try {
-      await changePassword(passwords.oldPassword,passwords.newPassword);
+      await changePassword(passwords.oldPassword, passwords.newPassword);
     } catch (err) {
       console.error(err);
     } finally {
@@ -73,8 +74,12 @@ const TransporterPasswordChange = () => {
 
 
   return (
-    <div className="min-h-screen flex flex-col gap-12 md:gap-40 p-12 md:flex-row lg:flex-row items-center justify-center bg-gray-100 px-4">
-
+    <div className="relative min-h-screen flex flex-col gap-12 md:gap-40 p-12 md:flex-row lg:flex-row items-center justify-center bg-gray-100 px-4">
+      <div className="absolute top-3 left-4 bg-orange-200 p-1 rounded hover:bg-orange-300">
+        <button onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </button>
+      </div>
       <div className="border-2 rounded-full border-orange-500 p-8 md:p-12  bg-white shadow-xl">
         <img src="/padlock.png" alt="crop" className="w-14 md:w-28 lg:w-40 object-contain" />
       </div>

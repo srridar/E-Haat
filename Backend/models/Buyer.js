@@ -5,13 +5,15 @@ const buyerSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        minlength: [3, " buyer name must consist at least 3 characters in his name"]
+        minlength: [3, " buyer name must consist at least 3 characters in his name"],
+        trim: true
     },
     email: {
         type: String,
         required: true,
         lowercase: true,
         trim: true,
+        unique: true,
         validate: {
             validator: validator.isEmail,
             message: "Invalid email format"
@@ -19,20 +21,27 @@ const buyerSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
-        select: false         // never send password to frontend by default
+        required: [true, "Password is required"],
+        select: false,
+        minlength: [8, "Password must be at least 8 characters"],
     },
     phone: {
         type: String,
-        required: true,
+        required: [true, "Phone number is required"],
         match: [
-            /^(98|97)\d{8}$/,
-            "Please enter a valid Nepali mobile number"
-        ]
+            /^(?:\+977|977)?(98|97)\d{8}$/,
+            "Please enter a valid Nepali mobile number",
+        ],
     },
     profileImage: {
-        url: String,
-        public_id: String,
+        url: {
+            type: String,
+            default: "",
+        },
+        public_id: {
+            type: String,
+            default: "",
+        },
     },
     notifications: [
         {
@@ -44,13 +53,17 @@ const buyerSchema = new mongoose.Schema({
         type: {
             type: String,
             enum: ["Point"],
-            required: true
+            default: "Point",
         },
         coordinates: {
             type: [Number], // [longitude, latitude]
-            required: true
+            required: [true, "Location coordinates are required"],
         },
-        city: String
+        city: {
+            type: String,
+            required: [true, "City is required"],
+            trim: true,
+        },
     },
 
     isActive: {

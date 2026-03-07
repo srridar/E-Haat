@@ -4,8 +4,13 @@ import { ArrowLeft, Save, Camera, Truck, MapPin, User, Phone } from "lucide-reac
 import { Label } from '@/components/ui/label';
 import { TRANSPORTER_API_END_POINT } from '@/utils/constants'
 import axios from 'axios';
+import { toast } from "react-toastify";
 
 const TransporterProfileUpdate = () => {
+
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [initialData, setInitialData] = useState({});
 
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -16,12 +21,7 @@ const TransporterProfileUpdate = () => {
     pricePerKm: "",
     isAvailable: false,
     profileImage: null,
-
   });
-
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [initialData, setInitialData] = useState({});
 
 
   useEffect(() => {
@@ -31,8 +31,7 @@ const TransporterProfileUpdate = () => {
 
         if (res.data.success) {
           const b = res.data.transporter;
-          console.log(res.data.transporter);
-          setFormData({
+          const data = {
             name: b.name || "",
             email: b.email || "",
             phone: b.phone || "",
@@ -40,16 +39,10 @@ const TransporterProfileUpdate = () => {
             pricePerKm: b.pricePerKm || "",
             isAvailable: b.isAvailable || false,
             profileImage: null,
-          });
-          setInitialData({
-            name: b.name || "",
-            email: b.email || "",
-            phone: b.phone || "",
-            serviceAreas: b.serviceAreas || "",
-            pricePerKm: b.pricePerKm || "",
-            isAvailable: b.isAvailable || false,
-            profileImage: null,
-          });
+            existingImage: b.profileImage || ""
+          };
+          setFormData(data);
+          setInitialData(data);
         }
       } catch (error) {
         console.error("Profile fetch failed", error);
@@ -63,23 +56,30 @@ const TransporterProfileUpdate = () => {
 
   const validateInput = () => {
     const errors = {};
-    const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneReg = /^(?:\+977|977)?9[678]\d{8}$/;
+    const emailReg = /^[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/;
+    const phoneReg = /^(98|97)\d{8}$/;
 
-    if (formData.name && formData.name.length < 3) {
-      errors.name = "Name must be at least 3 characters";
+    if (!formData.name.trim()) errors.name = "Business name is required";
+    if (formData.name.trim().length < 3) errors.name = "Name seems too short";
+    if (/[^a-zA-Z\s]/.test(formData.name.trim())) errors.name = "Name cannot contain special characters or numbers";
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!emailReg.test(formData.email)) {
+      errors.email = "Invalid email format";
     }
-    if (formData.email && !emailReg.test(formData.email)) {
-      errors.email = "Please enter a valid email address";
-    }
-    if (formData.phone && !phoneReg.test(formData.phone)) {
+
+    if (formData.phone.trim() && !phoneReg.test(formData.phone)) {
       errors.phone = "Please enter a valid Nepali phone number";
     }
     if (formData.pricePerKm && formData.pricePerKm < 0) {
       errors.pricePerKm = "Price per KM cannot be negative";
     }
-    if (formData.pricePerKm && formData.pricePerKm > 100) {
+    if (formData.pricePerKm && (formData.pricePerKm > 100)) {
       errors.pricePerKm = "Price per KM cannot be greater than 100";
+    }
+    if (formData.pricePerKm && !/^\d+(\.\d{1,2})?$/.test(formData.pricePerKm)) {
+      errors.pricePerKm = "Price per KM must be a valid number with up to 2 decimal places";
     }
 
     return errors;
@@ -94,9 +94,10 @@ const TransporterProfileUpdate = () => {
   };
 
   const changeFileHandler = (e) => {
+    const file = e.target.files?.[0] || null;
     setFormData(prev => ({
       ...prev,
-      profileImage: e.target.files?.[0] || null
+      profileImage: file
     }));
   };
 
@@ -107,6 +108,7 @@ const TransporterProfileUpdate = () => {
     const validationErrors = validateInput();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      toast.error("Please fix the errors in the form");
       return;
     }
 
@@ -122,17 +124,19 @@ const TransporterProfileUpdate = () => {
       if (formData.serviceAreas) data.append("serviceAreas", formData.serviceAreas);
       if (formData.pricePerKm) data.append("pricePerKm", formData.pricePerKm);
       data.append("isAvailable", formData.isAvailable);
-      console.log(data);
+
       const res = await axios.patch(`${TRANSPORTER_API_END_POINT}/profile/update`, data, {
         withCredentials: true, headers: {
           "Content-Type": "multipart/form-data"
         }
       });
       if (res.data.success) {
+        toast.success("Profile updated successfully!");
         navigate('/transporter/profile');
       }
     } catch (error) {
-      console.log(error);
+      const msg = error.response?.data?.message || "Updation failed";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -142,8 +146,6 @@ const TransporterProfileUpdate = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="max-w-4xl mx-auto">
-
-
         <div className="flex items-center justify-between mb-8">
           <button className="flex items-center gap-2 text-slate-600 hover:text-orange-600 transition-colors font-medium" onClick={() => navigate(-1)}>
             <ArrowLeft size={20} /> Back to Profile
@@ -161,16 +163,23 @@ const TransporterProfileUpdate = () => {
               <div className="relative group">
                 <div className="h-32 w-32 bg-slate-100 rounded-2xl overflow-hidden border-4 border-white shadow-md">
                   <div className="h-full w-full flex items-center justify-center text-slate-400">
-                    <User size={48} />
+                    {formData.profileImage ? (
+                      <img
+                        src={formData.profileImage?.url || `https://ui-avatars.com/api/?name=${formData?.name || 'User'}&background=10b981&color=fff` }
+                        alt="Profile Preview"
+                        className="h-full w-full object-cover"
+                      />
+                    )  : (
+                      <User size={48} />
+                    )}
                   </div>
                 </div>
                 <button className="absolute -bottom-2 -right-2 bg-orange-500 p-2 rounded-xl text-white shadow-lg hover:scale-110 transition-transform">
                   <Camera size={18} />
                 </button>
               </div>
-              <h3 className="mt-4 font-bold text-slate-800">{formData.name || "No Name"}</h3>
+              <h3 className="mt-4 font-bold text-slate-800">{formData?.name || "No Name"}</h3>
               <p className="text-xs text-slate-400 uppercase tracking-widest mt-1">Transporter ID: #9921</p>
-
             </div>
           </div>
 
@@ -188,7 +197,7 @@ const TransporterProfileUpdate = () => {
                   <input
                     type="text"
                     name="name"
-                    value={formData.name}
+                    value={formData?.name}
                     onChange={handleChange}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-slate-700"
                   />
@@ -203,7 +212,7 @@ const TransporterProfileUpdate = () => {
                     <input
                       type="text"
                       name="email"
-                      value={formData.email}
+                      value={formData?.email}
                       onChange={handleChange}
                       className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-slate-700"
                     />
@@ -219,7 +228,7 @@ const TransporterProfileUpdate = () => {
                     <input
                       type="text"
                       name="phone"
-                      value={formData.phone}
+                      value={formData?.phone}
                       onChange={handleChange}
                       className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-slate-700"
                     />
@@ -242,8 +251,8 @@ const TransporterProfileUpdate = () => {
                         Upload Image
                       </span>
                     </label>
-                    {formData.profileImage && (
-                      <span className="text-sm">{formData.profileImage.name}</span>
+                    {formData?.profileImage && (
+                      <span className="text-sm">{formData?.profileImage?.name.substring(0, 10)}</span>
                     )}
                   </div>
                 </div>
@@ -254,7 +263,7 @@ const TransporterProfileUpdate = () => {
                     <input
                       type="text"
                       name="serviceAreas"
-                      value={formData.serviceAreas}
+                      value={formData?.serviceAreas}
                       onChange={handleChange}
                       placeholder="e.g. Kathmandu, Bhaktapur"
                       className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all text-slate-700"
@@ -280,7 +289,7 @@ const TransporterProfileUpdate = () => {
                   <input
                     type="number"
                     name="pricePerKm"
-                    value={formData.pricePerKm}
+                    value={formData?.pricePerKm}
                     onChange={handleChange}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-700 font-bold text-emerald-600"
                   />
@@ -293,7 +302,7 @@ const TransporterProfileUpdate = () => {
                   <input
                     type="checkbox"
                     name="isAvailable"
-                    checked={formData.isAvailable}
+                    checked={formData?.isAvailable}
                     onChange={handleChange}
                     className="h-5 w-5 rounded border-slate-300 focus:ring-2 focus:ring-blue-500"
                   />

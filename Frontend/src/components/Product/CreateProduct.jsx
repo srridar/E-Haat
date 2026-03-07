@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Upload, X, Image as ImageIcon, Plus, RotateCcw, PackagePlus } from 'lucide-react';
 import axios from "axios";
 import { PRODUCT_API_END_POINT } from "@/utils/constants";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
 const CreateProduct = () => {
@@ -15,10 +16,13 @@ const CreateProduct = () => {
     price: "",
     stock: "",
     brand: "",
+    unit:""
   });
 
   const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(false);
 
 
   const handleChange = (e) => {
@@ -61,6 +65,7 @@ const CreateProduct = () => {
       price: "",
       stock: "",
       description: "",
+      unit: "",
     });
     setImages([]);
     setErrors({});
@@ -70,7 +75,7 @@ const CreateProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setSubmitError("");
     const validationErrors = {};
 
     if (!formData.name.trim())
@@ -88,6 +93,9 @@ const CreateProduct = () => {
     if (!formData.stock || Number(formData.stock) <= 0)
       validationErrors.stock = "Quantity must be greater than 0";
 
+    if (!formData.unit)
+      validationErrors.unit = "Unit is required";
+
     if (images.length === 0)
       validationErrors.images = "At least one image is required";
 
@@ -99,6 +107,7 @@ const CreateProduct = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const data = new FormData();
 
@@ -107,20 +116,24 @@ const CreateProduct = () => {
       );
 
       images.forEach((img) => data.append("images", img));
-      console.log(data);
-
       const res = await axios.post(`${PRODUCT_API_END_POINT}/create-product`, data, { withCredentials: true });
-
       if (res.data.success) {
         navigate("/seller/my-products");
       }
     } catch (err) {
       console.error("Product creation failed:", err);
+    } finally {
+      setLoading(false); // End loading
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6">
+    <div className="relative min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6">
+      <div className="absolute top-3 left-4 bg-green-200 p-1 rounded hover:bg-green-300">
+        <button onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </button>
+      </div>
       <div className="max-w-5xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -141,6 +154,13 @@ const CreateProduct = () => {
             </button>
           </div>
         </div>
+
+        {submitError && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <AlertCircle className="text-red-500 shrink-0" size={20} />
+            <p className="text-red-700 text-sm font-medium">{submitError}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -282,6 +302,7 @@ const CreateProduct = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Stock Quantity</label>
+                <span></span>
                 <input
                   type="number"
                   name="stock"
@@ -292,13 +313,45 @@ const CreateProduct = () => {
                 {errors.stock && <span className="text-red-500 text-sm">{errors.stock}</span>}
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Unit</label>
+                <select
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleChange}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-emerald-500/20"
+                >
+                  <option value="">Select Unit</option>
+                  <option value="Kg">Kg</option>
+                  <option value="Gram">gram</option>
+                  <option value="Liter">Liter</option>
+                  <option value="Pack">Pack</option>
+                  <option value="Piece">Piece</option>
+                  <option value="Dozen">Dozen</option>
+                  <option value="Furniture">Furniture</option>
+                  <option value="Other">Other</option>
+                </select>
+
+                {errors.unit && <span className="text-red-500 text-sm">{errors.unit}</span>}
+              </div>
+
+
             </section>
 
             <button
               type="submit"
-              className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <Plus size={20} /> Publish Product
+              {loading ? (
+                <>
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <Plus size={20} /> Publish Product
+                </>
+              )}
             </button>
           </div>
         </form>

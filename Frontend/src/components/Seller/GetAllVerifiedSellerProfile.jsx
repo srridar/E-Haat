@@ -20,7 +20,6 @@ const GetAllVerifiedSellerProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold text-orange-500">E-Haat Verified Sellers</h1>
         <p className="text-gray-600 mt-2">
@@ -28,35 +27,28 @@ const GetAllVerifiedSellerProfile = () => {
         </p>
       </div>
 
-      {/* Loading State */}
       {loading && (
         <div className="text-center text-gray-500 text-lg">Loading sellers...</div>
       )}
 
-      {/* Empty State */}
       {!loading && sellers.length === 0 && (
         <div className="text-center text-gray-500 text-lg">
           No verified sellers found
         </div>
       )}
 
-      {/* Seller Cards */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {sellers.map((seller) => (
-          <div
-            key={seller._id}
-            className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden border"
-          >
-            {/* Profile Image */}
+          <div key={seller._id} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden border">
             <div className="h-40 bg-orange-100 flex items-center justify-center">
               <img
-                src={seller.profileImage || "/avatar.png"}
+                src={seller.profileImage || `https://ui-avatars.com/api/?name=${seller?.name || 'User'}&background=10b981&color=fff`}
                 alt={seller.shopName}
                 className="h-28 w-28 rounded-full object-cover border-4 border-white"
               />
             </div>
 
-            {/* Info */}
             <div className="p-5">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-semibold text-gray-800">
@@ -87,7 +79,6 @@ const GetAllVerifiedSellerProfile = () => {
                 </div>
               </div>
 
-              {/* Action */}
               <button className="mt-4 w-full rounded-xl bg-orange-500 py-2 text-white font-medium hover:bg-orange-600 transition">
                 View Products
               </button>
@@ -95,6 +86,7 @@ const GetAllVerifiedSellerProfile = () => {
           </div>
         ))}
       </div>
+      
     </div>
   );
 };

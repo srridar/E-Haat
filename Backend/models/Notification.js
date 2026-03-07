@@ -7,7 +7,6 @@ const notificationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
     role: {
       type: String,
       enum: ["buyer", "seller", "transporter", "admin"],
@@ -42,7 +41,7 @@ const notificationSchema = new mongoose.Schema(
 
     relatedId: {
       type: mongoose.Schema.Types.ObjectId,
-      default: null, // orderId / productId etc
+      default: null,
     },
 
     isRead: {

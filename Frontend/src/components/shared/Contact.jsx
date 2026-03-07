@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { CONTACT_API_END_POINT } from "@/utils/constants";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { toast } from "react-toastify";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -11,25 +14,72 @@ const Contact = () => {
     message: ""
   });
 
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+
+  const validateForm = () => {
+    const { name, email, phone, subject, message } = formData;
+
+    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
+      toast.error("Please fill in all required fields.");
+      return false;
+    }
+
+    if (name.trim().length < 3) {
+      toast.error("Name must be at least 3 characters long.");
+      return false;
+    }
+
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(name)) {
+      toast.error("Name can only contain letters and spaces.");
+      return false;
+    }
+
+    if (subject.trim().length < 10) {
+      toast.error("Subject must be at least 10 characters long.");
+      return false;
+    }
+
+    if (message.trim().length < 20) {
+      toast.error("Message must be at least 20 characters long.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return false;
+    }
+
+    if (phone && !/^(98|97)\d{8}$/.test(phone)) {
+      toast.error("Enter a valid Nepali phone number.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try{
-        const res = await axios.post(`${CONTACT_API_END_POINT}/create`, formData);
-        if(res.data.success){
-          alert("Your message has been sent successfully!");
-          setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            subject: "",
-            message: ""
-          });
-        }
-    }catch(error){
+    if (!validateForm()) return;
+    try {
+      const res = await axios.post(`${CONTACT_API_END_POINT}/create`, formData);
+      if (res.data.success) {
+        toast.success("Your message has been sent successfully!");
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: ""
+        });
+      }
+    } catch (error) {
       console.error("Error submitting contact form:", error);
     }
     console.log(formData);
@@ -37,22 +87,27 @@ const Contact = () => {
 
   return (
     <div className="bg-background-light text-text-dark">
-  
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 text-white hover:text-gray-300 transition-colors font-bold"
+      >
+        <ArrowLeft size={20} />
+      </button>
+
       <section className="bg-gradient-to-r from-orange-600 to-orange-500 text-white py-16">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h1 className="text-4xl font-bold mb-3">Contact Us</h1>
           <p className="max-w-2xl mx-auto opacity-90">
-            Have questions, feedback, or need assistance?  
+            Have questions, feedback, or need assistance?
             We are here to help you.
           </p>
         </div>
       </section>
 
-      
+
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12">
 
-          {/* ---------- CONTACT INFO ---------- */}
           <div>
             <h2 className="text-3xl font-semibold mb-6">
               Get in Touch
@@ -66,7 +121,7 @@ const Contact = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <span className="text-2xl">📍</span>
-                <span>Kathmandu, Nepal</span>
+                <span>Butwal, Nepal</span>
               </div>
 
               <div className="flex items-center gap-4">
@@ -81,7 +136,7 @@ const Contact = () => {
             </div>
           </div>
 
-         
+
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h3 className="text-2xl font-semibold mb-6">
               Send Us a Message

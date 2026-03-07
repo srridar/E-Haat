@@ -16,6 +16,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-google-maps/api": "^2.20.8",
+    "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^1.41.3",
@@ -23,6 +24,7 @@
     "framer-motion": "^12.30.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
+    "motion": "^12.34.0",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "react": "^19.2.0",
@@ -31,10 +33,13 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.11.0",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.7.0",
     "redux-persist": "^6.0.0",
+    "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "validator": "^13.15.26"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

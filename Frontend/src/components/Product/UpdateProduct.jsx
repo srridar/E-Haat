@@ -18,7 +18,7 @@ const UpdateProduct = () => {
 
   const [images, setImages] = useState([]);
 
-  /* ---------------- GET PRODUCT DETAILS ---------------- */
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {

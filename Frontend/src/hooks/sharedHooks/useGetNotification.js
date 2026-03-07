@@ -1,6 +1,5 @@
 import axios from "axios";
 
-
 const useGetNotification = (role) => {
     let url;
     if (role === "admin") {

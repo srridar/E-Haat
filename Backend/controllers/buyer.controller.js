@@ -3,14 +3,13 @@ import { Seller } from '../models/Seller.js'
 import { Buyer } from '../models/Buyer.js'
 import { TransportProvider } from '../models/TransportProvider.js'
 import { Product } from "../models/Product.js";
+import { TransportRequestInfo } from "../models/TransportRequestInfo.js"
+
 import MAX_DISTANCE from '../config/distance.config.js'
-import getDataUri from "../utils/getDataUri.js";
 import Notification from "../models/Notification.js";
 import cloudinary from '../utils/cloudinary.js'
 import bcrypt from 'bcryptjs'
 import jwt from "jsonwebtoken";
-
-
 
 
 export const registerBuyer = async (req, res) => {
@@ -50,10 +49,6 @@ export const registerBuyer = async (req, res) => {
     }
 }
 
-
-
-
-
 export const loginBuyer = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -86,11 +81,12 @@ export const loginBuyer = async (req, res) => {
             id: buyer._id,
             name: buyer.name,
             email: buyer.email,
-            address: buyer.address,
-            phone: buyer.phone
+            phone: buyer.phone,
+            role: "buyer",
+            profileImage: buyer.profileImage?.url,
+            location:buyer.location
         }
 
-        console.log(buyerData)
 
         return res.status(200).cookie('token', token, {
             httpOnly: true,
@@ -107,9 +103,6 @@ export const loginBuyer = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
-
-
-
 
 export const logoutBuyer = async (req, res) => {
     try {
@@ -129,11 +122,6 @@ export const logoutBuyer = async (req, res) => {
     }
 }
 
-
-
-
-
-
 export const getBuyerProfile = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
@@ -150,16 +138,10 @@ export const getBuyerProfile = async (req, res) => {
     }
 }
 
-
-
-
-
-
 export const updateBuyerProfile = async (req, res) => {
     try {
         const { name, phone, email, latitude, longitude, city } = req.body;
         const buyerId = req.user.buyerId;
-
 
         const buyer = await Buyer.findById(buyerId);
         if (!buyer) {
@@ -168,7 +150,6 @@ export const updateBuyerProfile = async (req, res) => {
                 success: false,
             });
         }
-
 
         if (email && email !== buyer.email) {
             const emailExists = await Buyer.findOne({ email });
@@ -183,27 +164,29 @@ export const updateBuyerProfile = async (req, res) => {
 
 
         if (name) buyer.name = name;
-        if (city) buyer.city = city;
+        if (city) buyer.location.city = city;
         if (phone) buyer.phone = phone;
 
         if (!buyer.location) {
             buyer.location = { type: "Point", coordinates: [0, 0] };
         }
 
-        if (longitude || longitude === 0)
+        if (longitude !== undefined)
             buyer.location.coordinates[0] = Number(longitude);
-        if (latitude || latitude === 0)
+
+        if (latitude !== undefined)
             buyer.location.coordinates[1] = Number(latitude);
 
         if (req.file) {
-            // Delete old image if exists
             if (buyer.profileImage?.public_id) {
-                await cloudinary.v2.uploader.destroy(buyer.profileImage.public_id);
+                await cloudinary.uploader.destroy(
+                    buyer.profileImage.public_id
+                );
             }
 
             buyer.profileImage = {
-                url: req.file.path,      // ✅ Cloudinary URL
-                public_id: req.file.filename, // ✅ Cloudinary public_id
+                url: req.file.path,        // Cloudinary secure_url
+                public_id: req.file.filename, // Cloudinary public_id
             };
         }
 
@@ -226,7 +209,7 @@ export const updateBuyerProfile = async (req, res) => {
                 _id: buyer._id,
                 name: buyer.name,
                 email: buyer.email,
-                city: buyer.city,
+                city: buyer.location.city,
                 phone: buyer.phone,
                 profileImage: buyer.profileImage?.url,
             },
@@ -239,11 +222,6 @@ export const updateBuyerProfile = async (req, res) => {
         });
     }
 };
-
-
-
-
-
 
 export const changeBuyerPassword = async (req, res) => {
     try {
@@ -306,18 +284,14 @@ export const changeBuyerPassword = async (req, res) => {
 
 }
 
-
-
-
 export const getProductsFromVerifiedSellers = async (req, res) => {
     try {
-        const products = await Product.find()
+        const products = await Product.find({isVerified : true})
             .populate({
                 path: "seller",
-                match: { isVerified: true },   // only verified sellers
-                select: "name email phone"
-            });     // verifiedSellers contains list of all verified sellers along with their products
-
+                match: { isVerified: true },   
+                select: "name email phone location"
+            });     
 
         const verifiedProducts = products.filter(product => product.seller !== null);
 
@@ -336,101 +310,133 @@ export const getProductsFromVerifiedSellers = async (req, res) => {
     }
 }
 
-
-
-
 export const createOrderByBuyer = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
-        const { sellerId, products, transporterId, totalAmount } = req.body;
-
-        if (!Array.isArray(products) || products.length === 0) {
+         const { transporter,  products,   totalAmount,   deliveryCost, totalCost,    deliveryLocation } = req.body;
+    
+        if ( !transporter || !products || products.length === 0 || !totalAmount || !deliveryCost || !totalCost || !deliveryLocation?.pickupLocation || !deliveryLocation?.destinationLocation ) {
             return res.status(400).json({
-                message: "Products must be a non-empty array",
-                success: false,
-            });
-        }
-
-        if (!sellerId || !transporterId || !totalAmount) {
-            return res.status(400).json({
-                message: "All fields are required",
-                success: false,
+                message: "Missing required fields",
+                success: false
             });
         }
 
         const buyer = await Buyer.findById(buyerId);
         if (!buyer) {
-            return res.status(404).json({ message: "Buyer not found", success: false });
+            return res.status(404).json({
+                message: "Buyer not found",
+                success: false
+            });
         }
 
-        const seller = await Seller.findOne({ _id: sellerId, isVerified: true });
-        if (!seller) {
-            return res.status(404).json({ message: "Seller not found", success: false });
-        }
-
-        const transporter = await TransportProvider.findOne({
-            _id: transporterId,
+        const transporterData = await TransportProvider.findOne({
+            _id: transporter,
             isVerified: true,
-            isActive: true,
+            isActive: true
         });
-        if (!transporter) {
-            return res.status(404).json({ message: "Transporter not found", success: false });
+
+        if (!transporterData) {
+            return res.status(404).json({
+                message: "Transporter not found or inactive",
+                success: false
+            });
         }
 
-        // 1️⃣ Create Order
-        const order = await Order.create({
+        const verifiedProducts = [];
+        const sellerSet = new Set();
+
+        for (const item of products) {
+            const product = await Product.findById(item.product);
+            if (!product) {
+                return res.status(404).json({
+                    message: "Product not found",
+                    success: false
+                });
+            }
+
+            if (product.stock < item.quantity) {
+                return res.status(400).json({
+                    message: `${product.name} is out of stock`,
+                    success: false
+                });
+            }
+
+            product.stock -= item.quantity;
+            await product.save();
+            sellerSet.add(product.seller.toString());
+            verifiedProducts.push({
+                product: product._id,
+                seller: product.seller,
+                quantity: item.quantity,
+            });
+        }
+
+        const newOrder = await Order.create({
             buyer: buyerId,
-            seller: sellerId,
-            transporter: transporterId,
-            products,
+            transporter,
+            products: verifiedProducts,
             totalAmount,
+            deliveryCost,
+            totalCost,
+            deliveryLocation
         });
 
-        // 2️⃣ Create Notifications
-        const createdNotifications = await Notification.insertMany([
-            {
-                user: buyerId,
-                role: "buyer",
-                type: "order",
-                title: "Order Placed",
-                message: "You have successfully placed an order.",
-                relatedId: order._id,
-            },
-            {
-                user: sellerId,
+        const sellers = await Seller.find({
+            _id: { $in: Array.from(sellerSet) },
+            isVerified: true
+        });
+
+        const notifications = [];
+        notifications.push({
+            user: buyerId,
+            role: "buyer",
+            type: "order",
+            title: "Order Placed",
+            message: "You have successfully placed an order.",
+            relatedId: newOrder._id,
+        });
+
+        sellers.forEach((seller) => {
+            notifications.push({
+                user: seller._id,
                 role: "seller",
                 type: "order",
                 title: "New Order Received",
-                message: "You have received a new order from a buyer.",
-                relatedId: order._id,
-            },
-            {
-                user: transporterId,
-                role: "transporter",
-                type: "delivery",
-                title: "Delivery Assigned",
-                message: "A new delivery has been assigned to you.",
-                relatedId: order._id,
-            },
-        ]);
+                message: "You have received a new order.",
+                relatedId: newOrder._id,
+            });
+        });
 
-        // 3️⃣ Push notifications to each user
+        notifications.push({
+            user: transporterData._id,
+            role: "transporter",
+            type: "delivery",
+            title: "Delivery Assigned",
+            message: "A new delivery has been assigned to you.",
+            relatedId: newOrder._id,
+        });
+
+        const createdNotifications = await Notification.insertMany(notifications);
         buyer.notifications.push(createdNotifications[0]._id);
-        seller.notifications.push(createdNotifications[1]._id);
-        transporter.notifications.push(createdNotifications[2]._id);
+        await buyer.save();
 
-        // 4️⃣ Save all
-        await Promise.all([
-            buyer.save(),
-            seller.save(),
-            transporter.save(),
-        ]);
+        for (let i = 0; i < sellers.length; i++) {
+            sellers[i].notifications.push(createdNotifications[i + 1]._id);
+            await sellers[i].save();
+        }
+
+        transporterData.notifications.push(
+            createdNotifications[createdNotifications.length - 1]._id
+        );
+        await transporterData.save();
 
         return res.status(201).json({
             message: "Order created successfully",
             success: true,
-            orderId: order._id,
+            orderId: newOrder._id,
         });
+
     } catch (error) {
         console.error("CreateOrder Error:", error);
         return res.status(500).json({
@@ -440,14 +446,10 @@ export const createOrderByBuyer = async (req, res) => {
     }
 };
 
-
-
-
 export const getMyOrdersByBuyer = async (req, res) => {
     try {
-        const buyerId = req.user.buyerId;            //  it comes from authentication middleware
-        const allOrders = await Order.find({ buyer: buyerId })
-            .populate("seller", "name phone email")           // seller details
+        const buyerId = req.user.buyerId;           
+        const allOrders = await Order.find({ buyer: buyerId })         
             .populate("products.product", "name price");
 
 
@@ -471,7 +473,7 @@ export const getMyOrdersByBuyer = async (req, res) => {
                     seller: order.seller,
                     orderStatus: order.status,
                     isSellerRated: order.isSellerRated,
-                    isTransportRated: order.isTransportRated
+                    isTransportRated: order.isTransporterRated
                 })
             })
         })
@@ -489,7 +491,51 @@ export const getMyOrdersByBuyer = async (req, res) => {
 
 }
 
+export const getOrderById = async (req, res) => {
+    try {
+        const { id } = req.params; 
+        const order = await Order.findById(id).populate("products.product", "name price");
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found",
+                success: false
+            });
+        }
 
+        if (order.buyer.toString() !== req.user.buyerId.toString()) {
+            return res.status(403).json({
+                message: "Unauthorized access to this order",
+                success: false
+            });
+        }
+
+        const formattedOrder = {
+            orderId: order._id,
+            productName: order.products[0]?.product?.name, 
+            productPrice: order.products[0]?.product?.price,
+            quantity: order.products[0]?.quantity,
+            totalPrice: order.products.reduce((acc, item) => acc + (item.product.price * item.quantity), 0),
+            orderStatus: order.status,
+            seller: order.seller,
+            isSellerRated: order.isSellerRated,
+            isTransportRated: order.isTransporterRated,
+            createdAt: order.createdAt,
+            shippingDetails: order.deliveryLocation
+        };
+
+        return res.status(200).json({
+            success: true,
+            order: formattedOrder
+        });
+
+    } catch (error) {
+        console.error("Error fetching single order:", error);
+        return res.status(500).json({ 
+            message: "Internal Server Error", 
+            success: false 
+        });
+    }
+};
 
 export const rateTransporterByBuyer = async (req, res) => {
     try {
@@ -500,7 +546,6 @@ export const rateTransporterByBuyer = async (req, res) => {
             return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
         }
 
-        // check if order exists and belongs to buyer
         const order = await Order.findOne({
             _id: orderId,
             buyer: buyerId,
@@ -518,30 +563,25 @@ export const rateTransporterByBuyer = async (req, res) => {
             });
         }
 
-        // 4️⃣ Prevent double rating
-        if (order.isTransportRated) {
+        if (order.isTransporterRated) {
             return res.status(400).json({
                 message: "Transporter already rated for this order",
                 success: false
             });
         }
 
-
-        // check if transporter exists
         const transporter = await TransportProvider.findById(transporterId);
         if (!transporter) {
             return res.status(404).json({ message: "Transporter not found", success: false });
         }
 
-
-        // update transporter's rating
         const newTotalRatings = transporter.totalRatings + 1;
         const newRating = ((transporter.rating * transporter.totalRatings) + rating) / newTotalRatings;
 
         transporter.rating = Number(newRating.toFixed(1));
         transporter.totalRatings = newTotalRatings;
 
-        order.isTransportRated = true;
+        order.isTransporterRated = true;
 
         await transporter.save();
         await order.save();
@@ -559,22 +599,15 @@ export const rateTransporterByBuyer = async (req, res) => {
     }
 }
 
-
-
 export const rateSellerByBuyer = async (req, res) => {
     try {
-        //  rating is done when buyer has received the product . technically after order is delivered . buyer can rate the seller by clicking on rate button in frontend. 
-        //  then rating value is sent to backend along with sellerId in request body togeter with orderId to verify that buyer has purchased from that seller
-
         const { rating, sellerId, orderId } = req.body;
         const buyerId = req.user.buyerId;
 
-        // validate inputs - rating should be between 1 to 5
         if (!rating || rating < 1 || rating > 5) {
             return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
         }
-
-        // check if order exists and belongs to buyer
+  
         const order = await Order.findOne({
             _id: orderId,
             buyer: buyerId,
@@ -592,7 +625,7 @@ export const rateSellerByBuyer = async (req, res) => {
             });
         }
 
-        // 4️⃣ Prevent double rating
+
         if (order.isSellerRated) {
             return res.status(400).json({
                 message: "Seller already rated for this order",
@@ -600,7 +633,6 @@ export const rateSellerByBuyer = async (req, res) => {
             });
         }
 
-        // 5️⃣ Verify seller belongs to this order
         if (order.seller.toString() !== sellerId) {
             return res.status(403).json({
                 message: "You are not allowed to rate this seller",
@@ -608,14 +640,11 @@ export const rateSellerByBuyer = async (req, res) => {
             });
         }
 
-
-        // check if seller exists
         const seller = await Seller.findById(sellerId);
         if (!seller) {
             return res.status(404).json({ message: "Seller not found", success: false });
         }
 
-        // update seller's rating
         const newTotalRatings = seller.totalRatings + 1;
         const newRating = ((seller.rating * seller.totalRatings) + rating) / newTotalRatings;
 
@@ -639,15 +668,11 @@ export const rateSellerByBuyer = async (req, res) => {
     }
 }
 
-
-
 export const rateProductByBuyer = async (req, res) => {
     try {
-
         const { rating, productId, orderId } = req.body;
         const buyerId = req.user.buyerId;
 
-        // validate inputs - rating should be between 1 to 5
         if (!rating || rating < 1 || rating > 5) {
             return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
         }
@@ -675,7 +700,6 @@ export const rateProductByBuyer = async (req, res) => {
             });
         }
 
-        // 5️⃣ Prevent double rating
         if (order.isProductRated) {
             return res.status(400).json({
                 success: false,
@@ -683,12 +707,9 @@ export const rateProductByBuyer = async (req, res) => {
             });
         }
 
-
-        // Check product exists in order
         const productInOrder = order.products.find(
             (item) => item.product.toString() === productId
         );
-
 
         if (!productInOrder) {
             return res.status(400).json({
@@ -696,7 +717,6 @@ export const rateProductByBuyer = async (req, res) => {
                 message: "This product is not part of the order",
             });
         }
-
 
         const product = await Product.findById(productId);
 
@@ -736,8 +756,6 @@ export const rateProductByBuyer = async (req, res) => {
     }
 }
 
-
-
 export const recommendedProducts = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
@@ -764,8 +782,6 @@ export const recommendedProducts = async (req, res) => {
         })
 
         const sellerIds = nearbySellers.map(s => s._id);
-
-        // 2️⃣ Fetch products
         const products = await Product.find({
             seller: { $in: sellerIds },
             category,
@@ -778,25 +794,21 @@ export const recommendedProducts = async (req, res) => {
             products
         });
 
-
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
 
-
-
-
 export const getBuyerNotifications = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
         const buyer = await Buyer.findById(buyerId).populate({
             path: "notifications",
-            options: { sort: { createdAt: -1 } } // newest first
+            model: "Notification",
+            options: { sort: { createdAt: -1 } }
         });
-
+ 
         if (!buyer) {
             return res.status(404).json({
                 message: "Buyer not found ",
@@ -812,7 +824,6 @@ export const getBuyerNotifications = async (req, res) => {
             notifications
         })
 
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -822,4 +833,99 @@ export const getBuyerNotifications = async (req, res) => {
     }
 }
 
+export const getTransporterById = async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Transporter ID",
+            });
+        }
+
+        const transporter = await TransportProvider.findById(id);
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "transporter not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            transporter,
+        });
+    } catch (error) {
+        console.error("Get product by ID error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+
+export const getMyAllRequests = async (req, res) => {
+    try {
+        const buyerId = req.user.buyerId;
+        const allmyrequest = await TransportRequestInfo.find({ customer: buyerId }).populate("transporter")
+
+        if (!allmyrequest || allmyrequest.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No requests found",
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            allmyrequest
+        })
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+}
+
+export const getMyTransportRequestData = async (req, res) => {
+    try {
+        const buyerId = req.user.buyerId;
+        const requestId = req.params.id;
+
+        const buyerData = await Buyer.findById(buyerId);
+        if (!buyerData) {
+            return res.status(404).json({
+                message: "Buyer not found in database",
+                success: false
+            });
+        }
+
+        const transportRequest = await TransportRequestInfo
+            .findOne({
+                _id: requestId,
+                customer: buyerId
+            })
+            .populate("transporter", "name email phone").populate("transporter");
+
+        if (!transportRequest) {
+            return res.status(404).json({
+                message: "Transport request not found or unauthorized access",
+                success: false
+            });
+        }
+
+        return res.status(200).json({
+            message: "Transport request fetched successfully",
+            success: true,
+            request: transportRequest
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};

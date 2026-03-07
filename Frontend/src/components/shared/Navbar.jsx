@@ -1,56 +1,72 @@
-import React from 'react'
-import { Link } from "react-router-dom";
+import React from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
-
+import { Menu, User } from "lucide-react";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  // ✅ Get auth state from Redux
+  const { isAuthenticated, user  } = useSelector((state) => state.auth);
+  
+
   return (
-    <header className='sticky top-0 z-50 w-full bg-background border-b'>
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between  px-4">
+    <header className="sticky top-0 z-50 w-full bg-background border-b">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4">
+        {/* Logo */}
         <Link to="/" className="text-2xl font-bold text-primary">
-          <img src="logo.png" alt="e-haat" className='rounded-full h-[65px] w-[75px]' />
+          <img src="logo.png" alt="e-haat" className="rounded-full h-[65px] w-[75px]" />
         </Link>
 
+        {/* Navigation Links */}
         <div className="flex gap-12 justify-center items-center">
-          <nav className='gap-8 flex  mx-auto font-normal'>
-            <Link to="/" className="text-dark hover:text-primary ">
-              Home
-            </Link>
-            <Link to="/buyer/get-verified-products" className="text-dark hover:text-primary">
-              Farmers
-            </Link>
-            <Link to="/buyer/get-verified-products" className="text-dark hover:text-primary">
-              Products
-            </Link>
-            <Link to="/about" className="text-dark hover:text-primary">
-              About
-            </Link>
-             <Link to="/contact" className="text-dark hover:text-primary">
-              Contact
-            </Link>
+          <nav className="gap-8 flex mx-auto font-normal">
+            <Link to="/" className="text-dark hover:text-primary">Home</Link>
+            <Link to="/farmers" className="text-dark hover:text-primary">Farmers</Link>
+            <Link to="/product/all" className="text-dark hover:text-primary">Products</Link>
+            <Link to="/about" className="text-dark hover:text-primary">About</Link>
+            <Link to="/contact" className="text-dark hover:text-primary">Contact</Link>
           </nav>
 
+          {/* Search */}
           <div className="flex justify-center items-center">
-            <input type="text" placeholder='Search' className='border-gray-500 border h-[30px] p-2 ' />
+            <input type="text" placeholder="Search" className="border-gray-500 border h-[30px] p-2" />
           </div>
 
+          {/* Auth Buttons or User Profile */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="outline"><Link to="/login-as">Log In</Link></Button>
-            <Button className="bg-secondary text-white hover:bg-secondary/90">
-             <Link to="/register-as">Sign In</Link>
-            </Button>
+            {isAuthenticated ? (
+              // ✅ Show user profile image if authenticated
+              <button
+                onClick={() => navigate(`/${user?.role}/profile`)}
+                className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-300"
+              >
+                <img
+                  src={user?.profileImage || `https://ui-avatars.com/api/?name=${user?.name}&background=10b981&color=fff`}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ) : (
+              <>
+                <Button variant="outline">
+                  <Link to="/login-as">Log In</Link>
+                </Button>
+                <Button className="bg-secondary text-white hover:bg-secondary/90">
+                  <Link to="/register-as">Sign In</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
-
-
-        {/* i need to manually implement this section */}
+        {/* Mobile Menu */}
         <Sheet>
           <SheetTrigger className="md:hidden">
             <Menu className="h-6 w-6" />
@@ -63,18 +79,32 @@ const Navbar = () => {
               <Link to="/products" className="text-lg">Products</Link>
               <Link to="/about" className="text-lg">About</Link>
 
+              {/* Mobile Auth Buttons or Profile */}
               <div className="flex flex-col gap-3 pt-4">
-                <Button variant="outline">Login</Button>
-                <Button className="bg-secondary text-white">
-                  Register
-                </Button>
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => navigate(`/${user?.role}/profile`)}
+                    className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-300 mx-auto"
+                  >
+                    <img
+                      src={user?.profileImage?.url || `https://ui-avatars.com/api/?name=${user?.name}&background=10b981&color=fff`}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ) : (
+                  <>
+                    <Button variant="outline">Login</Button>
+                    <Button className="bg-secondary text-white">Register</Button>
+                  </>
+                )}
               </div>
             </div>
           </SheetContent>
         </Sheet>
       </div>
-    </header >
-  )
-}
+    </header>
+  );
+};
 
-export default Navbar
+export default Navbar;

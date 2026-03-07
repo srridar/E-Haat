@@ -30,7 +30,7 @@ export const registerSeller = async (req, res) => {
             phone,
             location: {
                 type: "Point",
-                coordinates: [longitude, latitude], // IMPORTANT ORDER
+                coordinates: [longitude, latitude],
                 city
             }
         });
@@ -43,7 +43,6 @@ export const registerSeller = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
-
 
 export const loginSeller = async (req, res) => {
     try {
@@ -77,8 +76,10 @@ export const loginSeller = async (req, res) => {
             id: seller._id,
             name: seller.name,
             email: seller.email,
-            address: seller.address,
-            phone: seller.phone
+            city: seller.location.city,
+            phone: seller.phone,
+            role: "seller",
+            profileImage: seller.profileImage?.url,
         }
 
 
@@ -98,7 +99,6 @@ export const loginSeller = async (req, res) => {
     }
 }
 
-
 export const logoutSeller = async (req, res) => {
     try {
         return res.status(200).cookie("token", "", {
@@ -117,15 +117,9 @@ export const logoutSeller = async (req, res) => {
     }
 }
 
-
-
-
-
-
 export const getSellerProfile = async (req, res) => {
     try {
-        const sellerId = req.user.sellerId; // from JWT middleware
-
+        const sellerId = req.user.sellerId; 
         const seller = await Seller.findById(sellerId).select("-password");
 
         if (!seller) {
@@ -150,10 +144,6 @@ export const getSellerProfile = async (req, res) => {
     }
 }
 
-
-
-
-
 export const updateSellerProfile = async (req, res) => {
     try {
         const { name, email, phone, latitude, longitude, city } = req.body;
@@ -167,7 +157,6 @@ export const updateSellerProfile = async (req, res) => {
             });
         }
 
-        // Email update with uniqueness check
         if (email && email !== seller.email) {
             const emailExists = await Seller.findOne({ email });
             if (emailExists) {
@@ -180,10 +169,9 @@ export const updateSellerProfile = async (req, res) => {
         }
 
         if (name) seller.name = name;
-        if (city) seller.city = city;
+        if (city) seller.location.city = city;
         if (phone) seller.phone = phone;
 
-        // Ensure location object exists
         if (!seller.location) {
             seller.location = { type: "Point", coordinates: [0, 0] };
         }
@@ -194,7 +182,7 @@ export const updateSellerProfile = async (req, res) => {
         if (latitude !== undefined)
             seller.location.coordinates[1] = Number(latitude);
 
-        // Profile image update (Cloudinary)
+      
         if (req.file) {
             if (seller.profileImage?.public_id) {
                 await cloudinary.v2.uploader.destroy(
@@ -239,10 +227,6 @@ export const updateSellerProfile = async (req, res) => {
         });
     }
 };
-
-
-
-
 
 export const changeSellerPassword = async (req, res) => {
     try {
@@ -306,10 +290,6 @@ export const changeSellerPassword = async (req, res) => {
 
 }
 
-
-
-
-
 export const getSellerProducts = async (req, res) => {
     try {
         const sellerId = req.user.sellerId;
@@ -351,9 +331,6 @@ export const getSellerProducts = async (req, res) => {
     }
 }
 
-
-
-
 export const getSellerVerifiedProducts = async (req, res) => {
     try {
         const sellerId = req.user.sellerId;
@@ -379,9 +356,7 @@ export const getSellerVerifiedProducts = async (req, res) => {
             });
         }
 
-        const sellerVerifiedProducts = await Product.find({ seller: sellerId, isVerified: true })
-            .sort({ createdAt: -1 });
-
+        const sellerVerifiedProducts = await Product.find({ seller: sellerId, isVerified: true }).sort({ createdAt: -1 });
         return res.status(200).json({
             message: " SellerVerifiedProducts are fetched successfully !",
             success: true,
@@ -394,8 +369,6 @@ export const getSellerVerifiedProducts = async (req, res) => {
         return res.status(500).send("Internal Server Error");
     }
 }
-
-
 
 export const deleteSellerAccount = async (req, res) => {
     try {
@@ -429,84 +402,15 @@ export const deleteSellerAccount = async (req, res) => {
     }
 }
 
-
-
-export const getAllVerifiedSellerProfiles = async (req, res) => {
-    try {
-        const verifiedSellers = await Seller.find({ isVerified: true })
-            .select(
-                "-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus -verifiedAt"
-            );
-
-        if (!verifiedSellers || verifiedSellers.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No verified sellers found",
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Verified sellers fetched successfully",
-            verifiedSellers,
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal Server Error",
-        });
-    }
-};
-
-
-
-
-export const getVerifiedSellerProfile = async (req, res) => {
-    try {
-        const sellerId = req.params.id;
-
-        const seller = await Seller.findOne({ _id: sellerId, isVerified: true })
-            .select(
-                "-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus -verifiedAt"
-            );
-        if (!seller) {
-            return res.status(404).json({
-                success: false,
-                message: "Verified seller not found",
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            message: "Verified seller profile fetched successfully",
-            seller,
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal Server Error",
-        });
-    }
-}
-
-
-
 export const getAllUnVerifiedSellerProfile = async (req, res) => {
     try {
-        const unverifiedSellers = await Seller.find({ isVerified: false })
-            .select(
-                "-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus "
-            );
+        const unverifiedSellers = await Seller.find({ isVerified: false }).select("-password -isBlocked -createdAt -updatedAt -notifications -verificationStatus");
 
         if (!unverifiedSellers || unverifiedSellers.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "No verified sellers found",
             });
-
         }
 
         return res.status(200).json({
@@ -524,40 +428,37 @@ export const getAllUnVerifiedSellerProfile = async (req, res) => {
     }
 }
 
-
-
-
-
 export const getSellerNotifications = async (req, res) => {
-  try {
-    const sellerId = req.user.sellerId;
+    try {
+        const sellerId = req.user.sellerId;
+        const seller = await Seller.findById(sellerId).populate({
+            path: "notifications",
+            model: "Notification",
+            options: { sort: { createdAt: -1 } }
+        });
 
-    const seller = await Seller.findById(sellerId)
-      .populate({
-        path: "notifications",
-        options: { sort: { createdAt: -1 } } // latest first
-      });
+        if (!seller) {
+            return res.status(404).json({
+                message: "Seller not found",
+                success: false,
+            });
+        }
 
-    if (!seller) {
-      return res.status(404).json({
-        message: "Seller not found",
-        success: false,
-      });
+        const notifications = seller.notifications || [];
+
+        return res.status(200).json({
+            message: "Notifications fetched successfully",
+            success: true,
+            notifications
+        });
+
+    } catch (error) {
+        console.error("GetSellerNotifications Error:", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
     }
-
-    return res.status(200).json({
-      message: "Notifications fetched successfully",
-      success: true,
-      notifications: seller.notifications || [],
-    });
-
-  } catch (error) {
-    console.error("GetSellerNotifications Error:", error);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      success: false,
-    });
-  }
 };
 
 

@@ -1,128 +1,118 @@
-import React from "react";
-import { ArrowLeft } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { ADMIN_API_END_POINT } from "@/utils/constants";
+import { LayoutDashboard, FileText, ExternalLink } from "lucide-react";
 
-
-const AllOrders = () => {
+const GetAllOrder = () => {
   const navigate = useNavigate();
+  const [orders, setOrders] = useState([]); // Initialize as empty array
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await axios.get(`${ADMIN_API_END_POINT}/get-all-orders`, { withCredentials: true });
+        if (res.data.success) {
+          setOrders(res.data.orders);
+        }
+      } catch (error) {
+        console.error("Error fetching orders", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      accepted: 'bg-blue-100 text-blue-700 border-blue-200',
+      picked: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      delivered: 'bg-green-100 text-green-700 border-green-200',
+      cancelled: 'bg-red-100 text-red-700 border-red-200',
+      rejected: 'bg-gray-100 text-gray-700 border-gray-200',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-600';
+  };
+
+  if (loading) return (
+    <div className="flex flex-col justify-center items-center h-screen text-slate-600">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-900 mb-4"></div>
+      <p className="font-medium">Loading orders...</p>
+    </div>
+  );
+
   return (
-    <div className="relative min-h-screen bg-gray-100 p-12">
-      
-      <div className="flex absolute top-3 md:left-[1rem] rounded bg-green-200 p-1 hover:bg-green-300">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-black transition"
-        >
-          <ArrowLeft size={20} />
-        </button>
-      </div>
-
- 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          All Orders
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Monitor and manage all platform orders
-        </p>
-      </div>
-
-      {/* Order Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">Total Orders</p>
-          <h2 className="text-3xl font-bold text-gray-800 mt-2">1,420</h2>
+    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <LayoutDashboard size={24} /> Order Management
+            </h1>
+            <p className="text-slate-500 text-sm">Monitor and manage all customer shipments</p>
+          </div>
+          <button className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition shadow-sm flex items-center gap-2">
+            <FileText size={16} /> Export CSV
+          </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">Pending</p>
-          <h2 className="text-3xl font-bold text-yellow-600 mt-2">86</h2>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">Completed</p>
-          <h2 className="text-3xl font-bold text-green-600 mt-2">1,210</h2>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">Cancelled</p>
-          <h2 className="text-3xl font-bold text-red-600 mt-2">124</h2>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Order ID</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Destination</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Items</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Revenue</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {orders.length > 0 ? orders.map((order) => (
+                  <tr key={order._id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs font-bold text-slate-400 group-hover:text-slate-900">
+                        #{order._id.slice(-8).toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                      {order.deliveryLocation.destinationLocation.district}, {order.deliveryLocation.destinationLocation.province}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold">{order.products.length}</span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-slate-900">Rs. {order.totalCost.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => navigate(`/admin/order/${order._id}`)}
+                        className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-bold text-xs bg-indigo-50 px-3 py-1.5 rounded-lg transition"
+                      >
+                        Manage <ExternalLink size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">No orders found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-
-        <input
-          type="text"
-          placeholder="Search by Order ID, Buyer or Seller"
-          className="w-full md:w-1/3 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-        />
-
-        <select className="w-full md:w-1/4 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
-          <option>All Status</option>
-          <option>Pending</option>
-          <option>Completed</option>
-          <option>Cancelled</option>
-        </select>
-
-      </div>
-
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-100 text-gray-600">
-            <tr>
-              <th className="px-4 py-3">Order ID</th>
-              <th className="px-4 py-3">Buyer</th>
-              <th className="px-4 py-3">Seller</th>
-              <th className="px-4 py-3">Amount</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-center">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr className="border-b hover:bg-gray-50 transition">
-              <td className="px-4 py-3">#ORD1023</td>
-              <td className="px-4 py-3">Hotel Annapurna</td>
-              <td className="px-4 py-3">Ram Bahadur</td>
-              <td className="px-4 py-3">Rs. 25,000</td>
-              <td className="px-4 py-3">
-                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs">
-                  Pending
-                </span>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button className="text-blue-600 hover:underline">
-                  View
-                </button>
-              </td>
-            </tr>
-
-            <tr className="border-b hover:bg-gray-50 transition">
-              <td className="px-4 py-3">#ORD1024</td>
-              <td className="px-4 py-3">Everest Traders</td>
-              <td className="px-4 py-3">Sita Devi</td>
-              <td className="px-4 py-3">Rs. 18,500</td>
-              <td className="px-4 py-3">
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
-                  Completed
-                </span>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button className="text-blue-600 hover:underline">
-                  View
-                </button>
-              </td>
-            </tr>
-
-          </tbody>
-        </table>
-      </div>
-
     </div>
   );
 };
 
-export default AllOrders;
+export default GetAllOrder;

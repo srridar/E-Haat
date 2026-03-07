@@ -23,8 +23,8 @@ const adminSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["superadmin", "admin"],
-    default: "admin"
+    enum: ["superadmin", "Admin"],
+    default: "Admin"
   },
 
   permissions: [String],
@@ -34,7 +34,16 @@ const adminSchema = new mongoose.Schema({
     required: true
   },
 
-  profileImage: String,
+  profileImage: {
+    url: {
+        type: String,
+        default: ""
+    },
+    public_id: {
+        type: String,
+        default: ""
+    }
+},
 
   emailVerified: {
     type: Boolean,

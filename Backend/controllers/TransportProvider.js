@@ -1,8 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { TransportProvider } from "../models/TransportProvider.js";
+import { TransportRequestInfo } from "../models/TransportRequestInfo.js"
+import { Buyer } from "../models/Buyer.js";
+import { Seller } from "../models/Seller.js";
 import Notification from "../models/Notification.js";
 import Order from "../models/Order.js"
+import cloudinary from "cloudinary";
 
 
 export const registerTransportProvider = async (req, res) => {
@@ -52,9 +56,6 @@ export const registerTransportProvider = async (req, res) => {
     }
 };
 
-
-
-
 export const loginTransportProvider = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -66,9 +67,7 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-        const transporter = await TransportProvider
-            .findOne({ email })
-            .select("+password");
+        const transporter = await TransportProvider.findOne({ email }).select("+password");
 
         if (!transporter) {
             return res.status(401).json({
@@ -91,8 +90,6 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-
-
         const isMatch = await bcrypt.compare(password, transporter.password);
 
         if (!isMatch) {
@@ -102,10 +99,9 @@ export const loginTransportProvider = async (req, res) => {
             });
         }
 
-
         const token = jwt.sign(
             {
-                id: transporter._id,
+                transporterId: transporter._id,
                 role: "transporter"
             },
             process.env.JWT_SECRET,
@@ -127,6 +123,8 @@ export const loginTransportProvider = async (req, res) => {
                     name: transporter.name,
                     email: transporter.email,
                     phone: transporter.phone,
+                    role: "transporter",
+                    profileImage: transporter.profileImage?.url
                 }
             });
 
@@ -138,9 +136,6 @@ export const loginTransportProvider = async (req, res) => {
         });
     }
 };
-
-
-
 
 export const logoutTransporter = async (req, res) => {
     try {
@@ -160,13 +155,10 @@ export const logoutTransporter = async (req, res) => {
     }
 }
 
-
-
-
 export const getTransporterProfile = async (req, res) => {
 
     try {
-        const transporterId = req.user.id; // from JWT middleware
+        const transporterId = req.user.transporterId; // from JWT middleware
         const transporter = await TransportProvider.findById(transporterId).select("-password");
 
         if (!transporter) {
@@ -192,12 +184,9 @@ export const getTransporterProfile = async (req, res) => {
 
 }
 
-
-
-
 export const changeTransporterPassword = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const { oldPassword, newPassword } = req.body;
 
         if (!oldPassword || !newPassword) {
@@ -250,15 +239,11 @@ export const changeTransporterPassword = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 
-}
-
-
-
-
+}     
 
 export const submitTransporterKyc = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
 
         const { citizenshipCard, drivingLicense, vehicleRegistration } = req.files || {};
         let { vehicleType, numberPlate, capacityKg, serviceAreas, pricePerKm } = req.body;
@@ -328,107 +313,99 @@ export const submitTransporterKyc = async (req, res) => {
             message: "Internal Server Error"
         });
     }
-};
-
-
-
-
+};      
 
 export const updateTransportProviderProfile = async (req, res) => {
-  try {
-    const transporterId = req.user.id;
+    try {
+        const transporterId = req.user.transporterId;
 
-    const { name, email, phone, pricePerKm } = req.body;
-    let { serviceAreas, isAvailable } = req.body;
+        const { name, email, phone, pricePerKm } = req.body;
+        let { serviceAreas, isAvailable } = req.body;
 
-    const transporter = await TransportProvider.findById(transporterId);
+        const transporter = await TransportProvider.findById(transporterId);
 
-    if (!transporter) {
-      return res.status(404).json({
-        success: false,
-        message: "Transport provider not found"
-      });
-    }
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transport provider not found"
+            });
+        }
 
-    // Email uniqueness
-    if (email && email !== transporter.email) {
-      const emailExists = await TransportProvider.findOne({ email });
-      if (emailExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Email already in use"
+        // Email uniqueness
+        if (email && email !== transporter.email) {
+            const emailExists = await TransportProvider.findOne({ email });
+            if (emailExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email already in use"
+                });
+            }
+            transporter.email = email;
+        }
+
+        if (name) transporter.name = name;
+        if (phone) transporter.phone = phone;
+
+        // Service Areas
+        if (typeof serviceAreas === "string") {
+            transporter.serviceAreas = serviceAreas
+                .split(",")
+                .map(area => area.trim())
+                .filter(Boolean);
+        }
+
+        // Price
+        if (pricePerKm !== undefined) {
+            transporter.pricePerKm = Number(pricePerKm);
+        }
+
+        // Availability (string → boolean)
+        if (isAvailable !== undefined) {
+            transporter.isAvailable = isAvailable === "true";
+        }
+
+        // Profile Image
+        if (req.file) {
+            if (transporter.profileImage?.public_id) {
+                await cloudinary.v2.uploader.destroy(
+                    transporter.profileImage.public_id
+                );
+            }
+
+            transporter.profileImage = {
+                url: req.file.path,
+                public_id: req.file.filename
+            };
+        }
+
+        await transporter.save();
+
+        await Notification.create({
+            user: transporterId,
+            role: "transporter",
+            type: "profile_update",
+            title: "Profile Updated",
+            message: "Your profile has been updated successfully."
         });
-      }
-      transporter.email = email;
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            transporter
+        });
+
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
     }
-
-    if (name) transporter.name = name;
-    if (phone) transporter.phone = phone;
-
-    // Service Areas
-    if (typeof serviceAreas === "string") {
-      transporter.serviceAreas = serviceAreas
-        .split(",")
-        .map(area => area.trim())
-        .filter(Boolean);
-    }
-
-    // Price
-    if (pricePerKm !== undefined) {
-      transporter.pricePerKm = Number(pricePerKm);
-    }
-
-    // Availability (string → boolean)
-    if (isAvailable !== undefined) {
-      transporter.isAvailable = isAvailable === "true";
-    }
-
-    // Profile Image
-    if (req.file) {
-      if (transporter.profileImage?.public_id) {
-        await cloudinary.v2.uploader.destroy(
-          transporter.profileImage.public_id
-        );
-      }
-
-      transporter.profileImage = {
-        url: req.file.path,
-        public_id: req.file.filename
-      };
-    }
-
-    await transporter.save();
-
-    await Notification.create({
-      user: transporterId,
-      role: "transporter",
-      type: "profile_update",
-      title: "Profile Updated",
-      message: "Your profile has been updated successfully."
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      transporter
-    });
-
-  } catch (error) {
-    console.error("Update Profile Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error"
-    });
-  }
-};
-
-
-
-
+};    
 
 export const updateAvailabilityStatus = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const { isAvailable } = req.body;
         const transporter = await TransportProvider.findById(transporterId);
         if (!transporter) {
@@ -455,12 +432,9 @@ export const updateAvailabilityStatus = async (req, res) => {
     }
 }
 
-
-
-
 export const getTransporterDashboard = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const transporter = await TransportProvider.findById(transporterId);
 
         if (!transporter) {
@@ -509,14 +483,9 @@ export const getTransporterDashboard = async (req, res) => {
     }
 };
 
-
-
-
-
-
 export const deleteTransporterAccount = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const transporter = await TransportProvider.findById(transporterId);
 
         if (!transporter) {
@@ -552,13 +521,53 @@ export const deleteTransporterAccount = async (req, res) => {
     }
 };
 
+export const setLocation = async (req, res) => {
+    try {
+        const transporterId = req.user.transporterId;
 
+        const { location } = req.body;
 
+        if (!location || !location.coordinates) {
+            return res.status(400).json({
+                message: "Location data required",
+                success: false
+            });
+        }
 
+        const transporter = await TransportProvider.findById(transporterId);
+
+        if (!transporter) {
+            return res.status(404).json({
+                message: "Transport provider not found",
+                success: false
+            });
+        }
+
+        transporter.location = {
+            type: "Point",
+            coordinates: location.coordinates,
+            address: location.address
+        };
+
+        await transporter.save();
+
+        return res.status(200).json({
+            message: "Location set successfully",
+            success: true
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false
+        });
+    }
+};
 
 export const getAssignedOrders = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const transporter = await TransportProvider.findById(transporterId);
 
         if (!transporter || transporter.isActive === false) {
@@ -597,14 +606,180 @@ export const getAssignedOrders = async (req, res) => {
     }
 }
 
+export const getTransportRequests = async (req, res) => {
+    try {
+        const transporterId = req.user.transporterId;
+
+        const transporterData = await TransportProvider.findById(transporterId);
+        if (!transporterData) {
+            return res.status(404).json({
+                message: "Transporter not found in database",
+                success: false
+            });
+        }
+        const transportRequests = await TransportRequestInfo
+            .find({ transporter: transporterId })
+            .populate("customer", "name email phone")
+            .sort({ createdAt: -1 });
+
+        console.log(transportRequests);
+        return res.status(200).json({
+            message: "Transport requests fetched successfully",
+            success: true,
+            totalRequests: transportRequests.length,
+            requests: transportRequests
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+export const getTransportRequest = async (req, res) => {
+    try {
+        const transporterId = req.user.transporterId;
+        const requestId = req.params.id;
 
 
+        const transporterData = await TransportProvider.findById(transporterId);
+        if (!transporterData) {
+            return res.status(404).json({
+                message: "Transporter not found in database",
+                success: false
+            });
+        }
+
+        const transportRequest = await TransportRequestInfo
+            .findOne({
+                _id: requestId,
+                transporter: transporterId
+            })
+            .populate("customer", "name email phone").populate("transporter");
+
+        if (!transportRequest) {
+            return res.status(404).json({
+                message: "Transport request not found or unauthorized access",
+                success: false
+            });
+        }
+
+        return res.status(200).json({
+            message: "Transport request fetched successfully",
+            success: true,
+            request: transportRequest
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+export const getAllTransportationRequests = async (req, res) => {
+    try {
+        const transporterId = req.user.transporterId;
+        const allrequest = await TransportRequestInfo.find({ transporter: transporterId }).populate("customer")
+        if (!allrequest || allrequest.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No requests found",
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            allrequest
+        })
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+}
+
+export const updateRequestStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; 
+    const transporterId = req.user.transporterId;
+
+    const transportRequest = await TransportRequestInfo.findById(id);
+
+    if (!transportRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Transport request not found.",
+      });
+    }
+ 
+    if (transportRequest.transporter.toString() !== transporterId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to modify this request.",
+      });
+    }
+    
+    const validActions = {
+      accept: "accepted",
+      reject: "rejected",
+      start: "in_transit",
+      deliver: "delivered",
+      cancel: "cancelled",
+    };
+
+    if (!validActions[action]) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action provided.",
+      });
+    }
+
+
+    const blockedStatuses = ["cancelled", "delivered"];
+    if (blockedStatuses.includes(transportRequest.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot modify a request that is already ${transportRequest.status}.`,
+      });
+    }
+
+
+    transportRequest.status = validActions[action];
+
+    if (action === "deliver") {
+      transportRequest.isCompleted = true;
+    }
+
+    await transportRequest.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Request ${validActions[action]} successfully.`,
+      transportRequest,
+    });
+
+  } catch (error) {
+    console.error("UpdateRequestStatus Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 
 export const acceptOrder = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const orderId = req.params.id;
 
+        // 1️⃣ Check transporter
         const transporter = await TransportProvider.findById(transporterId);
         if (!transporter || transporter.isBlocked || !transporter.isActive) {
             return res.status(403).json({
@@ -613,10 +788,8 @@ export const acceptOrder = async (req, res) => {
             });
         }
 
+        // 2️⃣ Find order
         const order = await Order.findById(orderId);
-
-
-
         if (!order) {
             return res.status(404).json({
                 message: "Order not found",
@@ -624,13 +797,15 @@ export const acceptOrder = async (req, res) => {
             });
         }
 
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
+        // 3️⃣ Ensure transporter is assigned
+        if (order.transporter.toString() !== transporterId) {
+            return res.status(403).json({
+                message: "You are not assigned to this order",
                 success: false
             });
         }
 
+        // 4️⃣ Check status
         if (order.status !== "pending") {
             return res.status(400).json({
                 message: `Order already ${order.status}`,
@@ -641,10 +816,12 @@ export const acceptOrder = async (req, res) => {
         const buyerId = order.buyer;
         const sellerId = order.seller;
 
+        // 5️⃣ Update order
         order.status = "accepted";
         await order.save();
 
-        const notifications = [
+        // 6️⃣ Create notifications
+        const createdNotifications = await Notification.insertMany([
             {
                 user: buyerId,
                 role: "buyer",
@@ -668,26 +845,28 @@ export const acceptOrder = async (req, res) => {
                 title: "Order Accepted",
                 message: "You have accepted this order for delivery.",
                 relatedId: order._id,
-            },
-            {
-                user: null, // adminId if you have a specific admin
-                role: "admin",
-                type: "system",
-                title: "Order Accepted",
-                message: `Order #${order._id} has been accepted by the transporter.`,
-                relatedId: order._id,
-            },
-        ];
+            }
+        ]);
 
+        // 7️⃣ Push notification IDs into respective accounts (parallel execution)
 
-        await Notification.insertMany(notifications);
+        await Promise.all([
+            Buyer.findByIdAndUpdate(buyerId, {
+                $push: { notifications: createdNotifications[0]._id }
+            }),
+            Seller.findByIdAndUpdate(sellerId, {
+                $push: { notifications: createdNotifications[1]._id }
+            }),
+            TransportProvider.findByIdAndUpdate(transporterId, {
+                $push: { notifications: createdNotifications[2]._id }
+            })
+        ]);
 
         return res.status(200).json({
             message: "Order accepted successfully",
             success: true,
             order
         });
-
 
     } catch (error) {
         console.error(error);
@@ -696,17 +875,13 @@ export const acceptOrder = async (req, res) => {
             success: false
         });
     }
-}
-
-
-
+};
 
 export const rejectOrder = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const orderId = req.params.id;
 
-        // Check transporter
         const transporter = await TransportProvider.findById(transporterId);
         if (!transporter || transporter.isBlocked || !transporter.isActive) {
             return res.status(403).json({
@@ -715,7 +890,7 @@ export const rejectOrder = async (req, res) => {
             });
         }
 
-        // Find order
+
         const order = await Order.findById(orderId);
         if (!order) {
             return res.status(404).json({
@@ -773,17 +948,22 @@ export const rejectOrder = async (req, res) => {
                 message: "You have rejected this order for delivery.",
                 relatedId: order._id,
             },
-            {
-                user: null, // adminId or all admins
-                role: "admin",
-                type: "system",
-                title: "Order Rejected",
-                message: `Order #${order._id} has been rejected by the transporter.`,
-                relatedId: order._id,
-            },
         ];
 
         await Notification.insertMany(notifications);
+
+        await Buyer.findByIdAndUpdate(buyerId, {
+            $push: { notifications: createdNotifications[0]._id }
+        });
+
+        await Seller.findByIdAndUpdate(sellerId, {
+            $push: { notifications: createdNotifications[1]._id }
+        });
+
+        await TransportProvider.findByIdAndUpdate(transporterId, {
+            $push: { notifications: createdNotifications[2]._id }
+        });
+
 
         return res.status(200).json({
             message: "Order rejected successfully",
@@ -799,12 +979,9 @@ export const rejectOrder = async (req, res) => {
     }
 };
 
-
-
-
 export const updateOrderStatus = async (req, res) => {
     try {
-        const transporterId = req.user.id;
+        const transporterId = req.user.transporterId;
         const orderId = req.params.id;
         const { status } = req.body;
 
@@ -926,38 +1103,35 @@ export const updateOrderStatus = async (req, res) => {
     }
 };
 
-
-
 export const getTransporterNotifications = async (req, res) => {
-  try {
-    const transporterId = req.user.transporterId;
+    try {
+        const transporterId = req.user.transporterId;
+        const transporter = await TransportProvider.findById(transporterId).populate({
+                path: "notifications",
+                model: "Notification",
+                options: { sort: { createdAt: -1 } }
+            });
 
-    const transporter = await TransportProvider.findById(transporterId)
-      .populate({
-        path: "notifications",
-        options: { sort: { createdAt: -1 } } 
-      });
+        if (!transporter) {
+            return res.status(404).json({
+                message: "Transporter not found",
+                success: false,
+            });
+        }
 
-    if (!transporter) {
-      return res.status(404).json({
-        message: "Transporter not found",
-        success: false,
-      });
+        return res.status(200).json({
+            message: "Notifications fetched successfully",
+            success: true,
+            notifications: transporter.notifications || [],
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
     }
-
-    return res.status(200).json({
-      message: "Notifications fetched successfully",
-      success: true,
-      notifications: transporter.notifications || [],
-    });
-
-  } catch (error) {
-    console.error("GetTransporterNotifications Error:", error);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      success: false,
-    });
-  }
 };
 
 

@@ -4,7 +4,6 @@ function arrayLimit(val) {
     return val.length > 0;
 }
 
-
 const productSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -16,7 +15,7 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true,
         minlength: [3, "Product name must be at least 3 characters long"],
-        maxlength: [150, "description length must be less than 150"]
+        maxlength: [1750, "description length must be less than 750"]
     },
     price: {
         type: Number,
@@ -31,10 +30,10 @@ const productSchema = new mongoose.Schema({
             "Fruits",
             "Grains",
             "Dairy",
-            "Electronics",
-            "Clothing",
             "Food",
+            "Clothing",
             "Furniture",
+            "Electronics",
             "Other"
         ]
 
@@ -52,6 +51,11 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    unit:{
+        type: String,
+        required: true,
+        enum: ["Kg", "Litre", "Piece", "Pack" ,"Gram", "Dozen", "Furniture", "Other"]
+    },
     stock: {
         type: Number,
         required: true,
@@ -64,6 +68,9 @@ const productSchema = new mongoose.Schema({
     verifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin'
+    },
+    verifiedAt: {
+        type: Date
     },
     images: [{
         url: String,

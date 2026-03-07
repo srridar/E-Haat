@@ -2,18 +2,44 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { SELLER_API_END_POINT } from "@/utils/constants";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const AllMyProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
+
+
   const fetchMyProducts = async () => {
+    setLoading(true);
     try {
-      const res = await axios.get(`${SELLER_API_END_POINT}/products`, { withCredentials: true });
-      console.log(res.data);
+      const res = await axios.get(
+        `${SELLER_API_END_POINT}/products`,
+        { withCredentials: true }
+      );
+
       if (res.data.success) {
         setProducts(res.data.sellerProducts);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const fetchVerifiedProducts = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(
+        `${SELLER_API_END_POINT}/verified-products`,
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        setProducts(res.data.sellerVerifiedProducts);
       }
     } catch (error) {
       console.error(error);
@@ -27,27 +53,14 @@ const AllMyProducts = () => {
   }, []);
 
 
-  const fetchVerifiedProducts = async () => {
-
-    setLoading(true);
-    try {
-      const res = await axios.get(`${SELLER_API_END_POINT}/verified-products`, { withCredentials: true });
-      if (res.data.success) {
-        setProducts(res.data.sellerVerifiedProducts);
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-
-  }
-
-  const handleEdit = (id) => {
+  const handleEdit = (e, id) => {
+    e.stopPropagation(); 
     navigate(`/seller/products/update/${id}`);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
@@ -64,6 +77,7 @@ const AllMyProducts = () => {
     }
   };
 
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-lg font-semibold text-[var(--text-gray)]">
@@ -73,8 +87,15 @@ const AllMyProducts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background-light)] px-6 py-10">
-      {/* Header */}
+    <div className="relative min-h-screen bg-[var(--background-light)] px-6 py-10">
+
+
+      <div className="absolute top-3 left-4 bg-green-200 p-1 rounded hover:bg-green-300">
+        <button onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </button>
+      </div>
+
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[var(--primary-green)]">
@@ -88,19 +109,18 @@ const AllMyProducts = () => {
         <div className="flex justify-center gap-4 mb-6">
           <button
             onClick={fetchMyProducts}
-            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 hover:-translate-y-1 transform transition-all duration-300"
+            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition"
           >
             All Products
           </button>
 
           <button
             onClick={fetchVerifiedProducts}
-            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 hover:-translate-y-1 transform transition-all duration-300"
+            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition"
           >
             Verified Products
           </button>
         </div>
-
 
         <button
           onClick={() => navigate("/product/create")}
@@ -110,7 +130,7 @@ const AllMyProducts = () => {
         </button>
       </div>
 
-      {/* Empty State */}
+
       {products.length === 0 ? (
         <div className="text-center text-[var(--text-gray)] mt-20">
           <p className="text-lg font-medium">No products found</p>
@@ -123,9 +143,10 @@ const AllMyProducts = () => {
           {products.map((product) => (
             <div
               key={product._id}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition overflow-hidden"
+              onClick={() => navigate(`/product/${product._id}`)}
+              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition cursor-pointer overflow-hidden"
             >
-              {/* Image */}
+
               <div className="h-48 bg-gray-100 overflow-hidden">
                 <img
                   src={product.images?.[0]?.url || "/placeholder.png"}
@@ -134,7 +155,7 @@ const AllMyProducts = () => {
                 />
               </div>
 
-              {/* Content */}
+
               <div className="p-4 space-y-2">
                 <h3 className="font-semibold text-lg text-gray-800">
                   {product.name}
@@ -158,16 +179,17 @@ const AllMyProducts = () => {
                 </span>
               </div>
 
-              {/* Actions */}
+              {/* ACTIONS */}
               <div className="flex border-t">
                 <button
-                  onClick={() => handleEdit(product._id)}
+                  onClick={(e) => handleEdit(e, product._id)}
                   className="w-1/2 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
                 >
                   Edit
                 </button>
+
                 <button
-                  onClick={() => handleDelete(product._id)}
+                  onClick={(e) => handleDelete(e, product._id)}
                   className="w-1/2 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition"
                 >
                   Delete

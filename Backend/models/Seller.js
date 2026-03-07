@@ -4,11 +4,15 @@ import validator from "validator";
 const sellerSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        minlength: [3, " seller name must consist at least 3 characters in his name"],
+        trim: true
     },
     email: {
         type: String,
         required: true,
+        lowercase: true,
+        trim: true,
         unique: true,
         validate: {
             validator: validator.isEmail,
@@ -17,15 +21,27 @@ const sellerSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        required: [true, "Password is required"],
+        select: false,
+        minlength: [8, "Password must be at least 8 characters"],
     },
     phone: {
         type: String,
-        required: true,
+        required: [true, "Phone number is required"],
         match: [
-            /^(98|97)\d{8}$/,
-            "Please enter a valid Nepali mobile number"
-        ]
+            /^(?:\+977|977)?(98|97)\d{8}$/,
+            "Please enter a valid Nepali mobile number",
+        ],
+    },
+    profileImage: {
+        url: {
+            type: String,
+            default: "",
+        },
+        public_id: {
+            type: String,
+            default: "",
+        },
     },
     productsOwned: {
         type: [mongoose.Schema.Types.ObjectId],    // Array of product IDs
@@ -39,10 +55,6 @@ const sellerSchema = new mongoose.Schema({
     totalRatings: {
         type: Number,
         default: 0
-    },
-    profileImage: {
-        url: String,
-        public_id: String,
     },
     isBlocked: {
         type: Boolean,
@@ -65,7 +77,7 @@ const sellerSchema = new mongoose.Schema({
             required: true
         },
         coordinates: {
-            type: [Number], // [longitude, latitude]
+            type: [Number], 
             required: true
         },
         city: {

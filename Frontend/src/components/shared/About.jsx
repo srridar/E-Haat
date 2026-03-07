@@ -1,22 +1,32 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const About = () => {
+  const navigate = useNavigate();
   return (
     <div className="bg-background-light text-text-dark">
-      {/* ================= HERO SECTION ================= */}
+
+      
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-2 left-6 z-20 flex items-center gap-2 text-black hover:text-emerald-700 transition-colors font-bold"
+      >
+        <ArrowLeft size={24} className="text-gray-300" /> 
+      </button>
+
       <section className="bg-gradient-to-r from-orange-600 to-orange-500 text-white py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             About E-Haat
           </h1>
-          <p className="text-lg md:text-xl max-w-3xl mx-auto opacity-90">
+          <p className="text-lg md:text-xl max-w-3xl mx-auto opacity-90"> 
             Empowering local sellers, connecting communities, and creating
             a trusted digital marketplace for everyone.
           </p>
         </div>
       </section>
 
-      {/* ================= WHO WE ARE ================= */}
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -59,7 +69,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* ================= MISSION & VISION ================= */}
+
       <section className="bg-gray-50 py-16">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-10">
           <div className="bg-white p-8 rounded-2xl shadow">
@@ -85,7 +95,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* ================= WHY CHOOSE US ================= */}
+
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-semibold text-center mb-12">
@@ -129,7 +139,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* ================= CTA ================= */}
+
       <section className="bg-green-700 text-white py-14">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-semibold mb-4">

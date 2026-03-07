@@ -1,33 +1,36 @@
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { useEffect, useState } from "react";
 import "../leafletIcon";
 
-const LocationPicker = ({ onSelect }) => {
-  const [position, setPosition] = useState([27.7172, 85.3240]); // default Kathmandu
+const ChangeView = ({ center }) => {
+  const map = useMap();
 
-  // auto detect user location
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const loc = [pos.coords.latitude, pos.coords.longitude];
-        setPosition(loc);
-        onSelect(loc);
-      },
-      () => {
-        console.log("User denied location access");
-      }
-    );
-  }, []);
+    map.setView(center);
+  }, [center, map]);
 
-  // click to change location
+  return null;
+};
+
+const LocationPicker = ({ onSelect, currentCoords, isEditable }) => {
+  const [position, setPosition] = useState(currentCoords);
+
+  // sync when parent coords change
+  useEffect(() => {
+    setPosition(currentCoords);
+  }, [currentCoords]);
+
   const LocationMarker = () => {
     useMapEvents({
       click(e) {
+        if (!isEditable) return;
+
         const loc = [e.latlng.lat, e.latlng.lng];
         setPosition(loc);
         onSelect(loc);
       },
     });
+
     return <Marker position={position} />;
   };
 
@@ -35,11 +38,10 @@ const LocationPicker = ({ onSelect }) => {
     <MapContainer
       center={position}
       zoom={13}
-      style={{ height: "400px", width: "100%" }}
+      style={{ height: "100%", width: "100%" }}
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <ChangeView center={position} />
       <LocationMarker />
     </MapContainer>
   );

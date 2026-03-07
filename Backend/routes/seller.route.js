@@ -11,15 +11,11 @@ import {
     changeSellerPassword,
     getSellerProducts,
     deleteSellerAccount,
-    getAllVerifiedSellerProfiles,
-    getVerifiedSellerProfile,
     getSellerVerifiedProducts,
     getSellerNotifications
-    // verifySeller 
 } from "../controllers/seller.controller.js";
 
 const router = express.Router();
-
 
 router.post("/register", registerSeller);
 router.post("/login", loginSeller);
@@ -30,9 +26,7 @@ router.post("/change-password", isAuthenticated, changeSellerPassword);
 router.delete("/delete", isAuthenticated, isSeller, deleteSellerAccount);
 router.get("/products", isAuthenticated, isSeller, getSellerProducts);
 router.get("/verified-products", isAuthenticated, isSeller, getSellerVerifiedProducts);
-router.get("/all", getAllVerifiedSellerProfiles);
-router.get("/:id", getVerifiedSellerProfile);
-router.get("/notifications",isAuthenticated,getSellerNotifications)
+router.get("/notifications", isAuthenticated, getSellerNotifications)
 
 
 export default router;
