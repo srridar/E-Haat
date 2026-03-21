@@ -7,10 +7,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line
 } from 'recharts';
-import { TrendingUp, FileBarChart, Calendar } from 'lucide-react';
+import { TrendingUp, Calendar } from 'lucide-react';
 
 
 const data = [

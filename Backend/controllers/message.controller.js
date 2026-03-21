@@ -1,10 +1,7 @@
 import { Message } from '../models/Chat.js';
 import mongoose from 'mongoose';
 import { io, getReceiverSocketId } from '../index.js';
-import {Admin} from '../models/Admin.js';
-import {Seller} from '../models/Seller.js';
-import {Buyer} from '../models/Buyer.js';
-import {TransportProvider} from '../models/TransportProvider.js';
+
 
 const getSenderModel = (role) => {
   if (role === "admin" || role === "superadmin") return "Admin";
@@ -23,33 +20,25 @@ const getUserId = (user) => {
 export const sendMessage = async (req, res) => {
   try {
     const { receiver, receiverModel, text } = req.body;
-
-    console.log(req.body);
-    console.log(req.user);
-
+ 
     if (!text || !receiver || !receiverModel) {
       return res.status(400).json({
         success: false,
         message: "All fields are required"
       });
     }
- 
-    
+
     let senderModell = "";
 
     if (req.user.role === "admin" || req.user.role === "superadmin") {
       senderModell = "Admin";
-    }
-    else if (req.user.role === "seller") {
+    } else if (req.user.role === "seller") {
       senderModell = "Seller";
-    }
-    else if (req.user.role === "buyer") {
+    } else if (req.user.role === "buyer") {
       senderModell = "Buyer";
+    } else if (req.user.role === "transporter") {
+      senderModell = "TransportProvider";
     }
-    else if (req.user.role === "transporter") {
-      senderModell = "TransportProvider"
-    }
-
 
     const newMessage = await Message.create({
       sender: req.user.adminId || req.user.sellerId || req.user.transporterId || req.user.buyerId,
@@ -59,19 +48,29 @@ export const sendMessage = async (req, res) => {
       text,
     });
 
-    const receiverSocketId = getReceiverSocketId(receiver);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+
+    if (receiverModel === "Admin") {
+      adminSockets.forEach((socketId) => {
+        io.to(socketId).emit("newMessage", newMessage);
+      });
+    } else {
+      const receiverSocketId = getReceiverSocketId(receiver);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newMessage", newMessage);
+      }
     }
 
     res.status(201).json({
       success: true,
       message: newMessage,
     });
+
   } catch (error) {
+    console.log(error.message);
     res.status(500).json({
-       message: "error occur !",
-       success: false });
+      message: "error occur !",
+      success: false
+    });
   }
 };
 
@@ -79,7 +78,6 @@ export const sendMessage = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const { id, Model } = req.params;
-
     let currentUserModel = "";
     if (req.user.role === "admin" || req.user.role === "superadmin") {
       currentUserModel = "Admin";
@@ -91,37 +89,53 @@ export const getMessages = async (req, res) => {
       currentUserModel = "TransportProvider";
     }
 
-    const currentUserId = req.user.adminId || req.user.sellerId || req.user.transporterId || req.user.buyerId;
-    const messages = await Message.find({
-      $or: [
-        {
-          sender: currentUserId,
-          senderModel: currentUserModel,
-          receiver: id,
-          receiverModel: Model,
-        },
-        {
-          sender: id,
-          senderModel: Model,
-          receiver: currentUserId,
-          receiverModel: currentUserModel,
-        },
-      ],
-    }).sort({ createdAt: 1 });
+    const currentUserId =
+      req.user.adminId ||
+      req.user.sellerId ||
+      req.user.transporterId ||
+      req.user.buyerId;
 
+    let query = {};
 
-    console.log(messages);
+    // ✅ ADMIN LOGIC (IMPORTANT)
+    if (req.user.role === "admin" || req.user.role === "superadmin") {
+      query = {
+        $or: [
+          { sender: id, senderModel: Model },
+          { receiver: id, receiverModel: Model },
+        ],
+      };
+    } else {
+      // ✅ NORMAL USER LOGIC
+      query = {
+        $or: [
+          {
+            sender: currentUserId,
+            senderModel: currentUserModel,
+            receiver: id,
+            receiverModel: Model,
+          },
+          {
+            sender: id,
+            senderModel: Model,
+            receiver: currentUserId,
+            receiverModel: currentUserModel,
+          },
+        ],
+      };
+    }
+
+    const messages = await Message.find(query).sort({ createdAt: 1 });
+
     res.status(200).json({
       success: true,
-      messages
+      messages,
     });
-
   } catch (error) {
     console.error("Get Messages Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-
 
 
 export const editMessage = async (req, res) => {
@@ -156,7 +170,6 @@ export const editMessage = async (req, res) => {
 };
 
 
-
 export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -183,7 +196,6 @@ export const deleteMessage = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
-
 
 
 export const markAsSeen = async (req, res) => {
@@ -220,13 +232,11 @@ export const markAsSeen = async (req, res) => {
 };
 
 
-
 export const getChatContacts = async (req, res) => {
   try {
 
-   
+
     const myId = req.user.adminId || req.user.sellerId || req.user.buyerId || req.user.transporterId;
-    console.log(req.user);
 
     const messages = await Message.find({
       $or: [{ sender: myId }, { receiver: myId }]

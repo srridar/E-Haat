@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { 
-  UserIcon, 
-  Cog6ToothIcon, 
-  BellIcon, 
-  CubeIcon, 
-  ArrowRightOnRectangleIcon,
-  XMarkIcon, 
+import { motion } from "framer-motion";
+import {
+  UserIcon,
+  Cog6ToothIcon,
+  BellIcon,
+  CubeIcon,
+  XMarkIcon,
   ChevronDownIcon,
   MapPinIcon,
   PhoneIcon,
   EnvelopeIcon,
   PencilSquareIcon
 } from '@heroicons/react/24/outline';
+import { MapPin, ArrowRight, MessagesSquare, Leaf } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
 import useLogOut from '@/hooks/sharedHooks/useLogOut.js'
 import useGetProfile from '@/hooks/sharedHooks/useGetProfile'
@@ -20,7 +21,7 @@ const BuyerProfile = () => {
   const [buyer, setBuyer] = useState(null);
   const [setting, setSetting] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   const navigate = useNavigate();
   const logout = useLogOut("buyer");
   const getProfile = useGetProfile("buyer");
@@ -40,25 +41,69 @@ const BuyerProfile = () => {
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600"></div>
+  <div className="fixed inset-0 z-[100] flex flex-col justify-center items-center bg-white/80 backdrop-blur-md">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-emerald-100 rounded-full blur-[100px] opacity-50" />
+      <div className="relative flex flex-col items-center">
+  
+        <motion.div
+          animate={{ 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0] 
+          }}
+          transition={{ 
+            duration: 2, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+          className="relative mb-6"
+        >
+          <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+          <div className="relative h-16 w-16 bg-white rounded-2xl shadow-xl border border-emerald-100 flex items-center justify-center text-emerald-600">
+            <Leaf size={32} strokeWidth={2.5} />
+          </div>
+        </motion.div>
+
+        <div className="text-center space-y-2">
+          <motion.h3 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-lg font-bold text-slate-800 tracking-tight"
+          >
+            Fetching your Profile...
+          </motion.h3>
+          
+          <div className="flex items-center justify-center gap-1">
+             {[0, 1, 2].map((dot) => (
+               <motion.div
+                 key={dot}
+                 animate={{ opacity: [0.3, 1, 0.3] }}
+                 transition={{ duration: 1, repeat: Infinity, delay: dot * 0.2 }}
+                 className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+               />
+             ))}
+          </div>
+        </div>
+        <p className="mt-12 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 opacity-50">
+          E-HAAT DIGITAL MARKETPLACE
+        </p>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row gap-8 p-4 md:p-8 lg:p-12">
-      
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row gap-8 p-4 md:p-8">
+
       {/* Sidebar Navigation */}
       <aside className="w-full lg:w-72 shrink-0 space-y-4">
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden sticky top-8">
           {/* Sidebar Mini Profile */}
-          <div className="bg-emerald-600 p-6 text-white text-center">
+          <div className="bg-orange-500 p-6 text-white text-center">
             <img
               src={buyer?.profileImage?.url || `https://ui-avatars.com/api/?name=${buyer?.name || 'User'}&background=10b981&color=fff`}
               alt="Profile"
               className="w-20 h-20 rounded-2xl mx-auto border-4 border-white/20 object-cover mb-3"
             />
-            <h3 className="font-bold truncate">{buyer?.name}</h3>
+            <h3 className="font-bold text-xl truncate">{buyer?.name}</h3>
             <p className="text-emerald-100 text-xs truncate opacity-80">{buyer?.email}</p>
           </div>
 
@@ -68,48 +113,48 @@ const BuyerProfile = () => {
               <UserIcon className="h-5 w-5" />
               <span className="text-sm">My Profile</span>
             </button>
-            <button 
+            <button
               onClick={() => navigate("/buyer/all-orders")}
               className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
             >
               <CubeIcon className="h-5 w-5" />
               <span className="text-sm">My Orders</span>
             </button>
-              <button 
+            <button
               onClick={() => navigate("/buyer/all-request")}
               className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
             >
               <CubeIcon className="h-5 w-5" />
               <span className="text-sm">My Requests</span>
             </button>
-            <button 
+            <button
               onClick={() => navigate("/buyer/notifications")}
               className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
             >
               <BellIcon className="h-5 w-5" />
               <span className="text-sm">Notifications</span>
             </button>
-            <button 
+            <button
               onClick={() => navigate("/message/chat")}
               className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
             >
-              <BellIcon className="h-5 w-5" />
+              <MessagesSquare className="h-5 w-5" />
               <span className="text-sm">Messages</span>
             </button>
-            <button 
+            <button
               onClick={() => setSetting(true)}
               className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
             >
               <Cog6ToothIcon className="h-5 w-5" />
               <span className="text-sm">Settings</span>
             </button>
-            
+
             <div className="pt-4 mt-4 border-t border-slate-100">
               <button
                 onClick={logout}
                 className="flex items-center gap-3 w-full p-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-all"
               >
-                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5" />
                 <span className="text-sm">Log out</span>
               </button>
             </div>
@@ -117,13 +162,10 @@ const BuyerProfile = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 space-y-6">
-        
-        {/* Profile Banner Card */}
+
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-0 opacity-50" />
-          
           <img
             src={buyer?.profileImage?.url || `https://ui-avatars.com/api/?name=${buyer?.name || 'User'}&background=10b981&color=fff`}
             alt="Profile Avatar"
@@ -135,14 +177,15 @@ const BuyerProfile = () => {
             <h2 className="text-3xl font-black text-slate-900 mt-2">{buyer?.name}</h2>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-3 text-slate-500 text-sm font-medium">
               <span className="flex items-center gap-1.5"><EnvelopeIcon className="h-4 w-4" /> {buyer?.email}</span>
-              <span className="flex items-center gap-1.5"><MapPinIcon className="h-4 w-4" /> {buyer?.location?.city || "City not set"}</span>
+              <span className="flex items-center gap-1.5 text-indigo-600 font-semibold"><MapPinIcon className="h-4 w-4" /> {buyer?.location?.city || "City not set"}</span>
             </div>
           </div>
+          <button onClick={() => navigate("/buyer/location-selection")} className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl transition-all shadow-xl shadow-slate-200 font-bold z-10">
+            <MapPin className="h-5 w-5" />
+            Edit Location
+          </button>
 
-          <button 
-            onClick={() => navigate("/buyer/profile/update")}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl transition-all shadow-xl shadow-slate-200 font-bold z-10"
-          >
+          <button onClick={() => navigate("/buyer/profile/update")} className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl transition-all shadow-xl shadow-slate-200 font-bold z-10">
             <PencilSquareIcon className="h-5 w-5" />
             Edit Profile
           </button>
@@ -150,8 +193,7 @@ const BuyerProfile = () => {
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Contact Details Card */}
+
           <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
             <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
               <PhoneIcon className="h-5 w-5 text-emerald-600" />
@@ -169,7 +211,6 @@ const BuyerProfile = () => {
             </div>
           </div>
 
-          {/* Location Card */}
           <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
             <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
               <MapPinIcon className="h-5 w-5 text-emerald-600" />
@@ -185,9 +226,8 @@ const BuyerProfile = () => {
           </div>
         </div>
 
-        {/* Danger Zone / Secondary Actions */}
         <div className="flex flex-col sm:flex-row gap-4 pt-4">
-          <button 
+          <button
             onClick={() => navigate("/buyer/change-password")}
             className="flex-1 px-6 py-4 border-2 border-emerald-100 text-emerald-700 rounded-2xl font-bold hover:bg-emerald-50 transition-all text-sm"
           >
@@ -199,7 +239,6 @@ const BuyerProfile = () => {
         </div>
       </main>
 
-      {/* Settings Modal */}
       {setting && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in-95 duration-200">
@@ -228,7 +267,7 @@ const BuyerProfile = () => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setSetting(false)}
               className="w-full mt-8 py-4 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 transition-transform active:scale-95"
             >
@@ -238,7 +277,7 @@ const BuyerProfile = () => {
         </div>
       )}
 
-      
+
     </div>
   );
 };

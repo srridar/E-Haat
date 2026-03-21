@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from 'react-redux';
 import axios from "axios";
-import { 
-  FileText, Truck, MapPin, Upload, X, CheckCircle2, 
-  ChevronLeft, Loader2, CreditCard, Info 
+import {
+  FileText, Truck, MapPin, Upload, X, CheckCircle2,
+  ChevronLeft, Loader2, CreditCard, Info
 } from "lucide-react";
 import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
 
@@ -12,6 +13,7 @@ const TransporterKycForm = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const { user } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     citizenshipCard: null,
     drivingLicense: null,
@@ -31,7 +33,7 @@ const TransporterKycForm = () => {
     vehiclePhoto: null
   });
 
-  // Memory Management: Revoke object URLs when component unmounts or previews change
+
   useEffect(() => {
     return () => {
       Object.values(previews).forEach(url => {
@@ -106,7 +108,7 @@ const TransporterKycForm = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Validate Text Fields
     Object.keys(formData).forEach(key => {
       if (typeof formData[key] === "string" || formData[key] === "") {
@@ -129,7 +131,7 @@ const TransporterKycForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       const firstError = document.querySelector('.text-red-500');
       if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -164,10 +166,10 @@ const TransporterKycForm = () => {
       <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
         {label} {formData[name] && <CheckCircle2 size={14} className="text-green-500" />}
       </label>
-      
+
       <div className={`relative group border-2 border-dashed rounded-2xl transition-all duration-200 h-44 flex flex-col items-center justify-center overflow-hidden
         ${errors[name] ? 'border-red-300 bg-red-50' : previews[name] ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-orange-400 hover:bg-slate-50'}`}>
-        
+
         {previews[name] ? (
           <>
             {previews[name] === "pdf-placeholder" ? (
@@ -178,7 +180,7 @@ const TransporterKycForm = () => {
             ) : (
               <img src={previews[name]} alt="preview" className="w-full h-full object-cover" />
             )}
-            <button 
+            <button
               type="button"
               onClick={() => removeFile(name)}
               className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
@@ -193,11 +195,11 @@ const TransporterKycForm = () => {
             </div>
             <span className="text-xs font-medium text-slate-500 mt-2">Click to upload {label}</span>
             <span className="text-[10px] text-slate-400 mt-1">PNG, JPG, PDF up to 3MB</span>
-            <input 
-              type="file" 
-              className="hidden" 
-              accept="image/*,.pdf" 
-              onChange={(e) => changeFileHandler(e, name)} 
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*,.pdf"
+              onChange={(e) => changeFileHandler(e, name)}
             />
           </label>
         )}
@@ -209,9 +211,9 @@ const TransporterKycForm = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] py-6 px-4 sm:px-5">
       <div className="max-w-4xl mx-auto">
-        
+
         <div className="flex items-center justify-between mb-4">
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-slate-500 hover:text-orange-600 transition-colors font-medium"
           >
@@ -231,7 +233,7 @@ const TransporterKycForm = () => {
               {errors.server}
             </div>
           )}
-          
+
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-8 pb-4 border-b border-slate-50">
               <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
@@ -239,7 +241,7 @@ const TransporterKycForm = () => {
               </div>
               <h2 className="text-xl font-bold text-slate-800">Identity & Legal Documents</h2>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <FileUploadField label="Citizenship Card" name="citizenshipCard" />
               <FileUploadField label="Driving License" name="drivingLicense" />
@@ -255,7 +257,7 @@ const TransporterKycForm = () => {
               </div>
               <h2 className="text-xl font-bold text-slate-800">Vehicle Details</h2>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Vehicle Type</label>
@@ -307,7 +309,7 @@ const TransporterKycForm = () => {
               </div>
               <h2 className="text-xl font-bold text-slate-800">Service Coverage</h2>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Service Areas</label>
@@ -346,7 +348,7 @@ const TransporterKycForm = () => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading ||(user?.isVerified && user?.verificationStatus === "approved" ) }
               className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-12 py-3.5 rounded-2xl shadow-lg shadow-orange-200 transition-all active:scale-95 disabled:opacity-70 disabled:pointer-events-none flex items-center gap-2"
             >
               {loading ? (
@@ -354,6 +356,12 @@ const TransporterKycForm = () => {
                   <Loader2 className="animate-spin" size={20} />
                   Processing...
                 </>
+              ) : user?.isVerified && user?.verificationStatus === "approved" ? (
+                "Already Verified"
+              ) : user?.verificationStatus === "pending" ? (
+                "KYC is Pending"
+              ) : user?.verificationStatus === "rejected" ? (
+                "Reapply"
               ) : (
                 "Submit Application"
               )}

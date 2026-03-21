@@ -137,7 +137,7 @@ const GetAllContactForm = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2">
                           <button
-                            onClick={() => navigate(`/admin/contact/${contact._id}`)}
+                            onClick={() => navigate(`/admin/single-contact/${contact._id}`)}
                             className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
                             title="View Message"
                           >

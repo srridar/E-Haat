@@ -1,59 +1,67 @@
 import React, { useState, useEffect } from "react";
+import { MessagesSquare, ChevronRight, MapPin , LogOut} from "lucide-react";
 import {
-  UserIcon, Cog6ToothIcon, BellIcon, CubeIcon,
-  ArrowRightOnRectangleIcon, MapPinIcon,
+  UserIcon, Cog6ToothIcon, BellIcon, CubeIcon,MapPinIcon,
   PhoneIcon, CalendarIcon, CheckBadgeIcon,
-  XMarkIcon, ChevronDownIcon
+  XMarkIcon, ChevronDownIcon ,
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import useLogOut from '@/hooks/sharedHooks/useLogOut.js';
 import useGetProfile from '@/hooks/sharedHooks/useGetProfile';
-import LocationPicker from '@/components/LocationPicker';
+import LocationPicker2 from '@/components/LocationPicker2';
 
 const SellerProfile = () => {
-  const [seller, setSeller] = useState({});
+  const [sss, setSeller] = useState({});
   const [setting, setSetting] = useState(false);
   const navigate = useNavigate();
   const logout = useLogOut("seller");
   const getProfile = useGetProfile("seller");
 
+  const role ="superadmin";
+  const id="69814a039ab20f77e7b72fc3";
+
   useEffect(() => {
     const fetchprofile = async () => {
       const profile = await getProfile();
-      if (profile) setSeller(profile);
+      console.log("PROFILE:", profile);
+      if (profile) {
+        setSeller(profile);
+      };
     };
     fetchprofile();
   }, []);
 
-  const latitude = seller?.location?.coordinates?.[1];
-  const longitude = seller?.location?.coordinates?.[0];
+
+  const latitude = sss?.location?.coordinates?.[1] ?? null;
+  const longitude = sss?.location?.coordinates?.[0] ?? null;
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row gap-6 p-4 md:p-8">
 
       <aside className="w-full md:w-64 flex flex-col gap-2">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 text-center bg-gradient-to-br from-green-600 to-green-700">
+          <div className="p-6 text-center bg-gradient-to-br from-indigo-500 to-indigo-800">
             <img
-              src={seller?.profileImage?.url || `https://ui-avatars.com/api/?name=${seller?.name || 'User'}&background=10b981&color=fff`}
+              src={sss?.profileImage?.url || `https://ui-avatars.com/api/?name=${sss?.name || 'User'}&background=3af5131&color=fff`}
               alt="profileimage"
               className="w-20 h-20 rounded-full border-4 border-white/30 mx-auto mb-3 object-cover"
             />
-            <h2 className="text-white font-bold truncate">{seller?.name}</h2>
-            <p className="text-green-100 text-xs truncate">{seller?.email}</p>
+            <h2 className="text-orange-400 text-2xl font-bold truncate">{sss?.name}</h2>
+            <p className="text-white  truncate">{sss?.email}</p>
           </div>
 
           <nav className="p-2 space-y-1">
-            <NavItem icon={<UserIcon className="w-5 h-5" />} label="Profile" active />
-            <NavItem icon={<CubeIcon className="w-5 h-5" />} label="My Products" onClick={() => navigate("/seller/my-products")} />
-            <NavItem icon={<BellIcon className="w-5 h-5" />} label="Notifications" onClick={() => navigate("/seller/notifications")} />
-            <NavItem icon={<Cog6ToothIcon className="w-5 h-5" />} label="Settings" onClick={() => setSetting(true)} />
+            <NavButton icon={<UserIcon className="w-5 h-5" />} label="Profile" active />
+            <NavButton icon={<CubeIcon className="w-5 h-5" />} label="My Products" onClick={() => navigate("/seller/my-products")} />
+            <NavButton icon={<BellIcon className="w-5 h-5" />} label="Notifications" onClick={() => navigate("/seller/notifications")} />
+            <NavButton onClick={() => navigate("/message/chat")} icon={<MessagesSquare size={19} />} label="Messages" active />
+            <NavButton onClick={() => navigate(`/message/send/${role}/${id}`)} icon={<MessagesSquare size={19} />} label="Message Admin" />
+            <NavButton onClick={() => navigate("/seller/location-selection")} icon={<MapPin size={18} />} label="Base Location" />
+            <NavButton icon={<Cog6ToothIcon className="w-5 h-5" />} label="Settings" onClick={() => setSetting(true)} />
             <hr className="my-2 border-gray-100" />
-            <button
-              onClick={logout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm"
-            >
-              <ArrowRightOnRectangleIcon className="w-5 h-5" />
+            <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm" >
+              <LogOut className="w-5 h-5" />
               Logout
             </button>
           </nav>
@@ -63,46 +71,44 @@ const SellerProfile = () => {
       {/* --- Main Content Area --- */}
       <main className="flex-1 space-y-6">
 
-        {/* Header Stats Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-wrap gap-4">
             <div className="text-center md:text-left">
-              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Account Status</span>
+              <span className="text-xs text-gray-800 uppercase tracking-wider font-semibold">Account Status</span>
               <div className="flex items-center gap-2 mt-1">
-                <CheckBadgeIcon className="w-5 h-5 text-green-500" />
-                <span className="font-bold text-gray-800 text-lg">{seller?.isVerified} </span>
+                <CheckBadgeIcon className="w-5 h-5 text-green-600" />
+                <span className="font-bold text-gray-800 text-lg">{sss?.isVerified} </span>
               </div>
             </div>
             <div className="w-[1px] bg-gray-100 hidden md:block"></div>
             <div className="text-center md:text-left">
-              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Average Rating</span>
+              <span className="text-xs text-gray-800 uppercase tracking-wider font-semibold">Average Rating</span>
               <div className="mt-1">
-                <span className="font-bold text-gray-800 text-lg">⭐ {seller?.totalRatings}</span>
+                <span className="font-bold text-gray-800 text-lg">⭐ {sss?.totalRatings}</span>
               </div>
             </div>
           </div>
           <button
             onClick={() => navigate("/seller/profile/update")}
-            className="w-full md:w-auto px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all shadow-md shadow-green-200"
+            className="w-full md:w-auto px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition-all shadow-md shadow-green-200"
           >
             Edit Profile Details
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Info Column */}
+
           <div className="lg:col-span-1 space-y-6">
-            {/* Contact Card */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-gray-900 font-bold mb-4 flex items-center gap-2">
                 Contact Details
               </h3>
               <div className="space-y-4">
-                <InfoItem icon={<PhoneIcon />} label="Phone" value={seller?.phone || 'Not provided'} />
-                <InfoItem icon={<MapPinIcon />} label="City" value={seller?.location?.city || 'Not set'} />
+                <InfoItem icon={<PhoneIcon />} label="Phone" value={sss?.phone || 'Not provided'} />
+                <InfoItem icon={<MapPinIcon />} label="City" value={sss?.location?.city || 'Not set'} />
                 <InfoItem icon={<CalendarIcon />} label="Joined" value={
-                  seller?.createdAt
-                    ? new Date(seller.createdAt).toLocaleDateString("en-GB", {
+                  sss?.createdAt
+                    ? new Date(sss.createdAt).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
@@ -112,7 +118,6 @@ const SellerProfile = () => {
               </div>
             </section>
 
-            {/* Quick Actions */}
             <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
               <button onClick={() => navigate("/seller/change-password")} className="w-full py-2 text-sm font-medium text-green-600 border border-green-100 rounded-lg hover:bg-green-50 transition">
                 Change Password
@@ -133,8 +138,8 @@ const SellerProfile = () => {
                 </span>
               </div>
               <div className="flex-1 relative bg-gray-50">
-                {latitude && longitude ? (
-                  <LocationPicker lat={latitude} lng={longitude} className="w-full h-full" />
+                {latitude !== undefined && longitude !== undefined ? (
+                  <LocationPicker2 key={`${latitude}-${longitude}`} lat={latitude} lng={longitude} className="w-full h-full" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                     Location data unavailable
@@ -180,19 +185,6 @@ const SellerProfile = () => {
 
 
 
-const NavItem = ({ icon, label, onClick, active = false }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${active
-        ? "bg-green-50 text-green-700 shadow-sm"
-        : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-      }`}
-  >
-    {icon}
-    {label}
-  </button>
-);
-
 const InfoItem = ({ icon, label, value }) => (
   <div className="flex gap-4 items-start">
     <div className="mt-1 text-green-600 w-5 h-5">{icon}</div>
@@ -204,3 +196,21 @@ const InfoItem = ({ icon, label, value }) => (
 );
 
 export default SellerProfile;
+
+const NavButton = ({ icon, label, onClick, active = false, badge = null }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all group ${active ? 'bg-orange-50 text-orange-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+      }`}
+  >
+    <div className="flex items-center gap-3">
+      <span className={`${active ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600'}`}>{icon}</span>
+      <span className="text-sm font-bold">{label}</span>
+    </div>
+    {badge ? (
+      <span className="bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md">{badge}</span>
+    ) : (
+      <ChevronRight size={14} className={`opacity-0 group-hover:opacity-100 transition-opacity ${active ? 'opacity-100' : ''}`} />
+    )}
+  </button>
+);

@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {toast} from 'react-toastify';
-import {
-    MapPin,
-    Package,
-    Calendar,
-    ArrowRight,
-    ArrowLeft,
-    X,
-    Truck,
-    Ban
-} from "lucide-react";
+import { MapPin,  Package,  Calendar,  ArrowRight,  ArrowLeft,  X,  Truck,  Ban} from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
@@ -17,7 +8,6 @@ import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
 const HireTransporter = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-
     const [loading, setLoading] = useState(true);
     const [request, setRequest] = useState([]);
 
@@ -50,7 +40,6 @@ const HireTransporter = () => {
                 setLoading(false);
             }
         };
-
         getAllTransRequests();
     }, []);
 
@@ -203,7 +192,7 @@ const HireTransporter = () => {
                                     type="number"
                                     name="offeredPrice"
                                     value={request?.offeredPrice}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm border-blue-100 font-bold text-blue-700"
+                                    className="w-full px-4 py-3 bg-white border  rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm border-blue-100 font-bold text-blue-700"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -213,7 +202,7 @@ const HireTransporter = () => {
                                     type="number"
                                     name="estimatedDistanceKm"
                                     value={request?.estimatedDistanceKm}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm border-blue-100 font-bold text-blue-700"
+                                    className="w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm border-blue-100 font-bold text-blue-700"
                                     placeholder="0.00"
 
                                 />
@@ -243,7 +232,6 @@ const HireTransporter = () => {
                             </>
                         )}
 
-
                         {request.status === "accepted" && (
                             <>
                                 <button
@@ -264,7 +252,6 @@ const HireTransporter = () => {
                             </>
                         )}
 
-
                         {request.status === "in_transit" && (
                             <button
                                 onClick={() => handleStatusChange("deliver")}
@@ -274,7 +261,6 @@ const HireTransporter = () => {
                                 <CheckCircle size={18} />
                             </button>
                         )}
-
                     </div>
 
                 </div>

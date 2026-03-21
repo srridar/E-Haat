@@ -3,25 +3,20 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { ADMIN_API_END_POINT } from "@/utils/constants";
 import {
-  ArrowLeft,
-  Package, Tag, XCircle,
+  ArrowLeft, Tag, XCircle,
   CheckCircle2, AlertCircle, User,
   Eye, Archive, ShieldCheck, Trash2
 } from 'lucide-react';
 
 const ViewProductCompletly = () => {
   const { id } = useParams();
-  const productId = useParams().id;
-  console.log("Received product ID:", productId);
-
   const navigate = useNavigate();
-
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState('');
 
 
-   const fetchProductDetails = async () => {
+  const fetchProductDetails = async () => {
     try {
       const res = await axios.get(`${ADMIN_API_END_POINT}/product-approval/${id}`, { withCredentials: true });
       console.log("control is here", res.data);
@@ -36,12 +31,11 @@ const ViewProductCompletly = () => {
     }
   };
 
-
   const verifyProduct = async (productId, action) => {
     try {
       console.log("this is hit")
       const res = await axios.post(`${ADMIN_API_END_POINT}/verify-product`, { productId, action }, { withCredentials: true });
-       console.log("this is hit1")
+      console.log("this is hit1")
       if (res.data.success) {
         console.log("Product verified successfully");
         fetchProductDetails();
@@ -52,12 +46,34 @@ const ViewProductCompletly = () => {
     }
   };
 
+
+  const blockAndUnblockProduct = async (productId, action) => {
+    try {
+      const res = await axios.put(
+        `${ADMIN_API_END_POINT}/block-unblock-product`,
+        { id: productId, action },
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        return { success: true, message: res.data.message };
+      }
+
+      return { success: false, message: res.data.message };
+
+    } catch (error) {
+      console.log(error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Something went wrong",
+      };
+    }
+  };
+
   useEffect(() => {
     fetchProductDetails();
-  }, [verifyProduct]);
-
-
-
+  }, [id]);
 
   useEffect(() => {
     if (product?.images?.length > 0) {
@@ -74,19 +90,18 @@ const ViewProductCompletly = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 bg-gray-50 min-h-screen">
-      <div className="mb-6">
+    <div className="relative max-w-7xl mx-auto p-4 md:p-8 min-h-screen">
+      <div className="mb-6 absolute  top-4 left-1">
         <button
           onClick={() => navigate(-1)}
           className="group flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors font-medium"
         >
-          <div className="p-2 rounded-lg group-hover:bg-indigo-50 transition-colors">
+          <div className="p-1 rounded-lg bg-orange-300 group-hover:bg-orange-200 transition-colors">
             <ArrowLeft size={20} />
           </div>
-          Back to Dashboard
         </button>
       </div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 p-3 gap-4">
         <div>
           <div className="flex items-center gap-2 text-indigo-600 font-semibold text-sm uppercase tracking-wider">
             <Tag size={16} /> {product.category}
@@ -95,7 +110,9 @@ const ViewProductCompletly = () => {
           <p className="text-gray-500">ID: {product._id.substring(0, 5)}</p>
         </div>
 
-        <div className={`flex gap-3 ${product.isVerified ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className="flex gap-4">
+
+          {/* Delete */}
           <button
             className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
             title="Delete Product"
@@ -103,29 +120,52 @@ const ViewProductCompletly = () => {
             <Trash2 size={24} />
           </button>
 
+          <button
+            onClick={async () => {
+              const action = product.isBlocked ? "unblock" : "block";
+              const res = await blockAndUnblockProduct(product._id, action);
+
+              if (res.success) {
+                setProduct((prev) => ({
+                  ...prev,
+                  isBlocked: !prev.isBlocked,
+                }));
+              } else {
+                alert(res.message);
+              }
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold shadow-lg transition
+               ${product.isBlocked
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200"
+                : "bg-red-600 hover:bg-red-700 text-white shadow-red-200"
+              }`}
+          >
+            {product.isBlocked ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+            {product.isBlocked ? "Unblock Product" : "Block Product"}
+          </button>
+
           {!product.isVerified && (
-            <div className='flex gap-5'>
-            <button
-              onClick={() => verifyProduct(product._id, 'approved')}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-green-200 transition"
-            >
-              <ShieldCheck size={20} /> Verify Product
-            </button>
+            <div className="flex gap-5">
+              <button
+                onClick={() => verifyProduct(product._id, 'approved')}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-green-200 transition"
+              >
+                <ShieldCheck size={20} /> Verify Product
+              </button>
 
               <button
-              onClick={() => verifyProduct(product._id, 'rejected')}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-red-200 transition"
-            >
-              <XCircle size={20} /> Reject Product
-            </button>
+                onClick={() => verifyProduct(product._id, 'rejected')}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-red-200 transition"
+              >
+                <XCircle size={20} /> Reject Product
+              </button>
             </div>
           )}
         </div>
+
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-
-        {/* Left: Image Gallery */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 ">
         <div className="space-y-4">
           <div className="bg-white p-2 rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             <img
@@ -157,10 +197,11 @@ const ViewProductCompletly = () => {
         <div className="space-y-6">
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-gray-100">
+            <div className="bg-white p-3 rounded-2xl border border-gray-100">
               <span className="text-gray-400 text-xs uppercase font-bold">Price</span>
               <div className="text-2xl font-black text-gray-800">
-                Rs. {product.price}
+                Rs. {product.price} 
+                <span className='text-sm text-gray-600'> per {product.unit} </span>
               </div>
             </div>
 
@@ -229,10 +270,13 @@ const ViewProductCompletly = () => {
 
               <div className="flex justify-between pt-2">
                 <span className="text-indigo-600 text-sm">Status</span>
-                <span className={`flex items-center gap-1 font-bold ${product.isVerified ? 'text-green-600' : 'text-amber-600'
-                  }`}>
+                <span className={`flex items-center gap-1 font-bold ${product.isBlocked? "text-red-600": product.isVerified ? "text-green-600": "text-amber-600"}`}>
                   {product.isVerified ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                  {product.isVerified ? 'Verified' : 'Pending Verification'}
+                  {product.isBlocked
+                    ? "Blocked"
+                    : product.isVerified
+                    ? "Verified"
+                    : "Pending Verification"}
                 </span>
               </div>
             </div>
@@ -246,7 +290,6 @@ const ViewProductCompletly = () => {
                 Visibility: {product.isActive ? 'Public' : 'Hidden'}
               </span>
             </div>
-
             <button className="text-indigo-600 text-sm font-bold hover:underline">
               Toggle Visibility
             </button>

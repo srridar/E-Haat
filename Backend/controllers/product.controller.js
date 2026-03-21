@@ -101,7 +101,6 @@ export const GetAllProduct = async (req, res) => {
 }
 
 
-
 export const GetProductById = async (req, res) => {
     try {
 
@@ -113,7 +112,7 @@ export const GetProductById = async (req, res) => {
                 success: false
             });
         }
-        const product = await Product.findById(productId).populate('seller', 'name email phone address');
+        const product = await Product.findById(productId).populate('seller', 'name email phone location');
         if (!product) {
             return res.status(404).json({
                 message: "No Product found with given id",
@@ -536,18 +535,12 @@ export const getAllProductsSorted = async (req, res) => {
       categories = ""
     } = req.query;
 
-    console.log("dld")
-
     const selectedCategories = categories ? categories.split(",") : [];
-
     const user = req.user;
 
     const hasSearch = search.trim() !== "";
     const hasCategory = selectedCategories.length > 0;
 
-    // ------------------------------------------------
-    // CASE 1 : USER NOT LOGGED IN
-    // ------------------------------------------------
 
     if (!user) {
 
@@ -564,9 +557,7 @@ export const getAllProductsSorted = async (req, res) => {
       });
     }
 
-    // ------------------------------------------------
-    // CASE 2 : USER LOGGED IN BUT NO LOCATION
-    // ------------------------------------------------
+
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -583,19 +574,14 @@ export const getAllProductsSorted = async (req, res) => {
       isVerified: true
     }).populate("seller");
 
-    // ------------------------------------------------
-    // CASE 3 : USER PROVIDED SEARCH OR CATEGORY
-    // ------------------------------------------------
+
 
     if (hasSearch || hasCategory) {
 
       const processedProducts = products
         .filter(product => {
-
           if (!hasCategory) return true;
-
-          return selectedCategories.includes(product.category);
-
+            return selectedCategories.includes(product.category);
         })
         .map(product => {
 
@@ -659,13 +645,10 @@ export const getAllProductsSorted = async (req, res) => {
         sellerLon
       );
 
-      // behavior score example
-      const popularityScore =
-        (product.rating * product.totalRatings) / 100;
+   
+      const popularityScore = (product.rating * product.totalRatings) / 100;
 
-      const finalScore =
-        (0.6 * (1 / (distance + 1))) +
-        (0.4 * popularityScore);
+      const finalScore = (0.6 * (1 / (distance + 1))) + (0.4 * popularityScore);
 
       return {
         ...product._doc,
@@ -676,8 +659,6 @@ export const getAllProductsSorted = async (req, res) => {
     });
 
     processedProducts.sort((a, b) => b.score - a.score);
-
-    console.log(processedProducts);
 
     return res.status(200).json({
       success: true,

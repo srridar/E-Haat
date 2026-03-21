@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
+import { SELLER_API_END_POINT } from "@/utils/constants";
 import LocationPicker from "@/components/LocationPicker";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Loader2,
-  Navigation,
   CheckCircle2,
-  MapPin,
   Edit3,
   XCircle,
   Save,
@@ -17,7 +15,7 @@ import {
 } from "lucide-react";
 
 
-const TransporterLocationSelection = () => {
+const SellerLocationUpdation = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
@@ -34,13 +32,14 @@ const TransporterLocationSelection = () => {
     const fetchExistingLocation = async () => {
       try {
         setAddressLoading(true);
-        const res = await axios.get(`${TRANSPORTER_API_END_POINT}/profile`, { withCredentials: true });
-        if (res.data.success && res.data.transporter?.location) {
-          const loc = res.data.transporter.location;
+        const res = await axios.get(`${SELLER_API_END_POINT}/profile`, { withCredentials: true });
+        if (res.data.success && res.data.data?.location) {
+          const loc = res.data?.data?.location;
+          console.log("this is seller data" + loc);
           const initialData = {
-            latitude: loc.coordinates?.[1] ?? 27.7172,
-            longitude: loc.coordinates?.[0] ?? 85.3240,
-            address: loc.city || "Saved Location",
+            latitude: loc?.coordinates?.[1] ?? 27.7172,
+            longitude: loc?.coordinates?.[0] ?? 85.3240,
+            address: loc?.city || "Saved Location",
           };
 
           setLocation(initialData);
@@ -97,11 +96,11 @@ const TransporterLocationSelection = () => {
         location: {
           type: "Point",
           coordinates: [location.longitude, location.latitude],
-          address: location.address
+          city: location.address
         }
       };
 
-      const res = await axios.put(`${TRANSPORTER_API_END_POINT}/setlocation`, payload, { withCredentials: true });
+      const res = await axios.put(`${SELLER_API_END_POINT}/setlocation`, payload, { withCredentials: true });
       if (res.data.success) {
         toast.success("Location updated successfully!");
         setSavedLocation(location);
@@ -145,7 +144,6 @@ const TransporterLocationSelection = () => {
 
       <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-        {/* Control Sidebar */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
             <div className="flex items-center gap-4 mb-6">
@@ -197,7 +195,7 @@ const TransporterLocationSelection = () => {
             <div className="bg-green-50 p-6 rounded-[1.5rem] border border-green-100 flex gap-4">
               <CheckCircle2 className="text-green-500 shrink-0" size={20} />
               <p className="text-xs text-green-800 font-bold leading-relaxed">
-                This is your verified service location. Customers can see you within a 50km radius of this point.
+                This is your verified service location. Transporter can serve you within this area
               </p>
             </div>
           )}
@@ -219,9 +217,10 @@ const TransporterLocationSelection = () => {
             </div>
           </div>
         </div>
+
       </main>
     </div>
   );
 };
 
-export default TransporterLocationSelection;
+export default SellerLocationUpdation;

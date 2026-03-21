@@ -38,9 +38,53 @@ const GetAllOrder = () => {
   };
 
   if (loading) return (
-    <div className="flex flex-col justify-center items-center h-screen text-slate-600">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-900 mb-4"></div>
-      <p className="font-medium">Loading orders...</p>
+    <div className="fixed inset-0 z-[100] flex flex-col justify-center items-center bg-white/80 backdrop-blur-md">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-emerald-100 rounded-full blur-[100px] opacity-50" />
+      <div className="relative flex flex-col items-center">
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="relative mb-6"
+        >
+          <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+
+          <div className="relative h-16 w-16 bg-white rounded-2xl shadow-xl border border-emerald-100 flex items-center justify-center text-emerald-600">
+            <Leaf size={32} strokeWidth={2.5} />
+          </div>
+        </motion.div>
+
+        <div className="text-center space-y-2">
+          <motion.h3
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-lg font-bold text-slate-800 tracking-tight"
+          >
+            Fetching your Harvest...
+          </motion.h3>
+
+          <div className="flex items-center justify-center gap-1">
+            {[0, 1, 2].map((dot) => (
+              <motion.div
+                key={dot}
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1, repeat: Infinity, delay: dot * 0.2 }}
+                className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+              />
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-12 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 opacity-50">
+          E-HAAT DIGITAL MARKETPLACE
+        </p>
+      </div>
     </div>
   );
 
@@ -93,7 +137,7 @@ const GetAllOrder = () => {
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-slate-900">Rs. {order.totalCost.toLocaleString()}</td>
                     <td className="px-6 py-4 text-right">
-                      <button 
+                      <button
                         onClick={() => navigate(`/admin/order/${order._id}`)}
                         className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-bold text-xs bg-indigo-50 px-3 py-1.5 rounded-lg transition"
                       >

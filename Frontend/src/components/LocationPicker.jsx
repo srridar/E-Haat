@@ -14,8 +14,7 @@ const ChangeView = ({ center }) => {
 
 const LocationPicker = ({ onSelect, currentCoords, isEditable }) => {
   const [position, setPosition] = useState(currentCoords);
-
-  // sync when parent coords change
+  
   useEffect(() => {
     setPosition(currentCoords);
   }, [currentCoords]);

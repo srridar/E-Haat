@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import Navbar from '@/components/shared/Navbar'
 import { useNavigate } from "react-router-dom";
+import { motion } from 'framer-motion';
+import { ArrowRight, ShoppingCart, Leaf } from 'lucide-react';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -62,30 +64,114 @@ const Home = () => {
     <div className="font-sans">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="bg-[var(--background-light)]">
-        <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-dark)] leading-tight">
-              Connecting <span className="text-[var(--primary-green)]">Farmers</span>
-              <br /> Directly with <span className="text-[var(--secondary-orange)]">Businesses</span>
+      <section className="relative overflow-hidden bg-[#fafaf9] py-20 lg:py-32">
+        <div className="absolute top-0 left-1/4 w-64 h-64 bg-teal-200 rounded-full blur-[100px] opacity-60" />
+        <div className="absolute top-0 left-2/4 w-64 h-64 bg-emerald-200 rounded-full blur-[100px] opacity-60" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-200 rounded-full blur-[120px] opacity-50" />
+        <div className="absolute w-full top-4 flex flex-col justify-center items-center gap-2 ">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: "4rem" }}
+            transition={{ duration: 0.8 }}
+            className="h-1 bg-orange-500 rounded-full "
+          />
+
+          <h2 className="text-2xl md:text-2xl lg:text-2xl font-black tracking-tight leading-tight">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500">
+              उक्साऊँ
+            </span>{" "}
+            <span className="text-slate-900">
+              स्थानीय उत्पादनलाई
+            </span>
+          </h2>
+
+          {/* Sub-tag in English or Nepali for context */}
+          <p className="text-emerald-600 font-bold tracking-[0.2em] text-xs uppercase mt-2">
+            Empowering Local Growth
+          </p>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+
+
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-6">
+              <Leaf size={14} />
+              <span>Direct-to-Business Marketplace</span>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
+              Connecting <span className="text-emerald-600">Farmers</span>
+              <br />
+              Directly with <span className="text-orange-500">Businesses</span>
             </h1>
-            <p className="mt-6 text-lg text-[var(--text-gray)]">
-              E-Haat is a digital marketplace dedicated to providing remote village farmers access to wider markets, ensuring fair prices by removing unnecessary middlemen.
+
+            <p className="mt-8 text-lg md:text-xl text-slate-600 leading-relaxed max-w-xl">
+              Empowering remote village farmers with digital tools to access wider markets.
+              We ensure <span className="font-semibold text-slate-900">fair pricing</span> by eliminating unnecessary middlemen.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <button onClick={() => navigate("/product/all")} className="bg-[var(--primary-green)] text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition">
+
+            <div className="mt-10 flex flex-wrap gap-5">
+              <button
+                onClick={() => navigate("/product/all")}
+                className="group flex items-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1 transition-all duration-300"
+              >
+                <ShoppingCart size={18} />
                 Explore Products
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
-              <button onClick={() => navigate("/seller/sign-in")} className="border-2 border-[var(--secondary-orange)] text-[var(--secondary-orange)] px-8 py-3 rounded-lg font-semibold hover:bg-[var(--secondary-orange)] hover:text-white transition">
+
+              <button
+                onClick={() => navigate("/seller/sign-in")}
+                className="px-8 py-4 rounded-2xl font-bold border-2 border-slate-200 text-slate-700 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50 transition-all duration-300"
+              >
                 Join as Farmer
               </button>
             </div>
-          </div>
-          <div className="flex justify-center relative">
-            <div className="absolute -top-4 -left-4 w-24 h-24 bg-orange-100 rounded-full blur-3xl opacity-50"></div>
-            <img src="hero.png" alt="Agriculture" className="w-full max-w-md rounded-2xl shadow-2xl relative z-10" />
-          </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="relative flex justify-center lg:justify-end"
+          >
+            <motion.div
+              animate={{ y: [0, -20, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="relative z-20"
+            >
+              <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-400 to-orange-400 rounded-[32px] blur-2xl opacity-30 -z-10" />
+              <img
+                src="hero_section.png"
+                alt="Agriculture"
+                className="w-full max-w-[550px] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-8 border-white object-cover aspect-[4/5] lg:aspect-auto"
+              />
+
+
+              <motion.div
+                animate={{ x: [0, 10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -bottom-6 -left-10 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 hidden md:block"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
+                    <Leaf size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium">Verified Quality</p>
+                    <p className="text-sm font-bold text-slate-900">Organic Standard</p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full border border-emerald-500/20 animate-pulse" />
+          </motion.div>
         </div>
       </section>
 
@@ -143,7 +229,6 @@ const Home = () => {
         </div>
       </section>
       <section className="relative py-24 overflow-hidden bg-[var(--primary-green)]">
-        {/* Background Image with better overlay handling */}
         <div className="absolute inset-0 z-0">
           <img
             className="w-full h-full object-cover opacity-40"
@@ -156,8 +241,8 @@ const Home = () => {
         <div className="relative z-10 max-w-6xl mx-auto px-6">
           {/* Optional Header for context */}
           <div className="text-center mb-16">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-green-300 mb-3">Our Global Reach</h2>
-            <p className="text-4xl font-bold text-white">Numbers that speak for themselves</p>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-green-300 mb-2">Our Global Reach</h2>
+            <p className="text-3xl font-bold text-slate-300">Numbers that speak for themselves</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center">
@@ -177,7 +262,12 @@ const Home = () => {
       </section>
 
 
-      <section className="py-20 bg-gray-50">
+      <section className="relative py-20 bg-gray-50">
+        <div className="absolute top-0 left-1/4 w-64 h-64 bg-teal-200 rounded-full blur-[120px] opacity-60" />
+        <div className="absolute top-0 left-2/4 w-64 h-64 bg-emerald-200 rounded-full blur-[120px] opacity-60" />
+        <div className="absolute bottom-12 right-3/4 w-96 h-96 bg-orange-100 rounded-full blur-[150px] opacity-50" />
+        <div className="absolute bottom-12 left-3/4 w-96 h-96 bg-orange-100 rounded-full blur-[150px] opacity-50" />
+
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose E-Haat?</h2>
           <p className="text-gray-600 mb-12 max-w-2xl mx-auto">We bridge the gap between rural production and urban demand through technology.</p>
@@ -196,11 +286,21 @@ const Home = () => {
       {/* How It Works Section */}
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-16">Simple 3-Step Process</h2>
+          <div className="relative mb-20 flex flex-col items-center">
+           
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-100/50 rounded-full blur-3xl -z-10" />
+            <span className="px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-[0.2em] mb-4 shadow-sm">
+              How it works
+            </span>
+            <h2 className="relative text-3xl md:text-4xl font-black text-slate-900 tracking-tight text-center">
+              Simple <span className="text-emerald-600">3-Step</span> Process
+              <span className="block h-1.5 w-46 bg-orange-400 rounded-full mx-auto mt-4" />
+            </h2>
+          </div>
           <div className="grid md:grid-cols-3 gap-12 relative">
             {steps.map((step, i) => (
               <div key={i} className="text-center relative z-10">
-                <div className="w-20 h-20 bg-orange-50 text-[var(--secondary-orange)] rounded-full flex items-center justify-center text-3xl mx-auto mb-6 border-2 border-orange-100">
+                <div className="w-20 h-20 bg-orange-50 text-[var(--secondary-orange)] rounded-full flex items-center justify-center text-3xl mx-auto mb-4 border-2 border-orange-100">
                   {step.icon}
                 </div>
                 <h3 className="text-xl font-bold mb-3">{step.title}</h3>

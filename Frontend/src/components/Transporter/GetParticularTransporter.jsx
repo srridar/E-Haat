@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  User, Mail, Phone, MapPin, Truck, CheckCircle, 
-  XCircle, Star, Package, ArrowLeft, Loader2 
-} from 'lucide-react';
+import {  Mail, Phone, MapPin, Truck, CheckCircle,  XCircle, Star, Package, ArrowLeft, Loader2 } from 'lucide-react';
 import {ADMIN_API_END_POINT} from '@/utils/constants'
 
 const GetParticularTransporter = () => {

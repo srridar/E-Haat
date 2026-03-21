@@ -63,12 +63,6 @@ const transportProviderSchema = new mongoose.Schema(
       }
     },
 
-
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-
     notifications: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -76,13 +70,17 @@ const transportProviderSchema = new mongoose.Schema(
       },
     ],
 
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
 
     isKycCompleted: {
       type: Boolean,
       default: false,
     },
 
-
+  
     verificationStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -102,16 +100,16 @@ const transportProviderSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ["Bike", "Pickup", "Truck", "Mini Truck"],
-        required: false, 
+        required: false,
       },
-      
-      vehiclePhoto:{
-          type: String,
+
+      vehiclePhoto: {
+        type: String,
       },
 
       numberPlate: {
         type: String,
-        required: false, 
+        required: false,
       },
       capacityKg: {
         type: Number,
@@ -129,7 +127,7 @@ const transportProviderSchema = new mongoose.Schema(
 
     pricePerKm: {
       type: Number,
-      required: false, 
+      required: false,
     },
 
 

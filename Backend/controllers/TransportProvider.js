@@ -124,7 +124,10 @@ export const loginTransportProvider = async (req, res) => {
                     email: transporter.email,
                     phone: transporter.phone,
                     role: "transporter",
-                    profileImage: transporter.profileImage?.url
+                    profileImage: transporter?.profileImage?.url,
+                    isVerified: transporter?.isVerified,
+                    isKycCompleted: transporter?.isKycCompleted,
+                    verificationStatus: transporter?.verificationStatus
                 }
             });
 

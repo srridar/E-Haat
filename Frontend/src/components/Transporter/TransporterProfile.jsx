@@ -2,34 +2,12 @@ import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
-  User,
-  IdCard,
-  MapPin,
-  Star,
-  Settings,
-  Lock,
-  Trash2,
-  Bell,
-  Mail,
-  LayoutDashboard,
-  Phone,
-  ArrowLeft,
-  Truck,
-  LogOut,
-  ShieldCheck,
-  CheckCircle2,
-  ChevronRight
-} from "lucide-react";
-import { MessageSquare, MessageCircle, MessageCircleMore, MessagesSquare } from 'lucide-react';
+  User, MapPin, Star,Settings,Lock,Bell,Mail,LayoutDashboard,Phone,
+  ArrowLeft,Truck,LogOut,ShieldCheck, CheckCircle2,ChevronRight, MessagesSquare} from "lucide-react";
 
 import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
 import useLogOut from '@/hooks/sharedHooks/useLogOut.js';
 
-const menuItemClass = ({ isActive }) =>
-  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-    ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-    : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
-  }`;
 
 const TransporterProfile = () => {
   const [user, setUser] = useState(null);
@@ -91,10 +69,7 @@ const TransporterProfile = () => {
         </div>
 
         <div className="pt-6 border-t border-slate-100">
-          <button
-            onClick={() => logout()}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm"
-          >
+          <button onClick={() => logout()}  className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm">
             <div className="flex items-center gap-3"><LogOut size={18} /> Logout</div>
           </button>
         </div>
@@ -117,7 +92,7 @@ const TransporterProfile = () => {
           <section className=" rounded-[2.5rem] p-2 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-8">
             <div className="relative group">
               <div className="h-28 w-28 rounded-[2rem] overflow-hidden bg-slate-100 border-4 border-white shadow-xl">
-                {user?.profileImage?.url ? (
+                {user?.profileImage?.url? (
                   <img src={user?.profileImage?.url || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=10b981&color=fff`} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-slate-300"><User size={40} /></div>

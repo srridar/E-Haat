@@ -24,7 +24,6 @@ import AdminRegister from "@/components/Admin/AdminRegister";
 import AdminLogin from "@/components/Admin/AdminLogin";
 import AdminPasswordChange from "@/components/Admin/AdminPasswordChange";
 import AdminProfile from "@/components/Admin/AdminProfile";
-import ViewContact from '@/components/Admin/ViewContact';
 import ProductApprovalRequest from '@/components/Admin/ApprovalProductRequest';
 import SellerApprovalRequest from '@/components/Admin/ApprovalSellerRequest';
 import TransporterApprovalRequest from '@/components/Admin/ApprovalTransporterRequest';
@@ -42,6 +41,7 @@ import BuyerLogin from "@/components/Buyer/BuyerLogin";
 import BuyerProfile from "@/components/Buyer/BuyerProfile";
 import BuyerProfileUpdate from "@/components/Buyer/BuyerProfileUpdate";
 import BuyerPasswordChange from "@/components/Buyer/BuyerPasswordChange";
+import BuyerLocationUpdation from '@/components/Buyer/BuyerLocationUpdation';
 import CreateOrderByBuyer from "@/components/Buyer/CreateOrderByBuyer";
 import GetAllOrders from "@/components/Buyer/GetAllOrders";
 import MyRequests from '@/components/Buyer/MyRequests';
@@ -55,6 +55,7 @@ import SellerProfileUpdate from "@/components/Seller/SellerProfileUpdate";
 import SellerPasswordChange from '@/components/Seller/SellerPasswordChange';
 import AllMyProducts from '@/components/Seller/AllMyProducts'
 import GetAllVerifiedSellerProfile from '@/components/Seller/GetAllVerifiedSellerProfile';
+import SellerLocationUpdation from '@/components/Seller/SellerLocationUpdation';
 
 import CreateProduct from "@/components/Product/CreateProduct";
 import GetAllProductsPage from "@/components/Product/GetAllProducts";
@@ -121,10 +122,9 @@ const appRouter = createBrowserRouter([
       { path: "order/:id", element: <Order/>},
       { path: "report", element: <ReportAdmin/>},
       { path: "apassword-change", element: <AdminPasswordChange/>},
-      { path: "single-contact-data", element: <ViewSingleContact/>},
+      { path: "single-contact/:id", element: <ViewSingleContact/>},
       { path: "all-contact-data", element: <GetAllContactForm/>},
       { path: "notifications", element: <Notification /> },
-      { path: "get-all-contact", element: <ViewContact/>},
       { path: "product-approval-request", element: <ProductApprovalRequest/>},
       { path: "seller-approval-request", element: <SellerApprovalRequest/>},
       { path: "transporter-approval-request", element: <TransporterApprovalRequest/> },
@@ -145,7 +145,8 @@ const appRouter = createBrowserRouter([
       { path: "change-password", element: <SellerPasswordChange /> },
       { path: "my-products", element :<AllMyProducts/>},
       { path: "get-all-seller", element: <GetAllVerifiedSellerProfile /> },
-      { path: "notifications", element: <Notification/> }
+      { path: "notifications", element: <Notification/> },
+      { path: "location-selection", element: <SellerLocationUpdation /> },
     ],
   },
   {
@@ -161,7 +162,8 @@ const appRouter = createBrowserRouter([
       { path: "notifications", element: <Notification/> },
       { path: "transporter-details/:id", element: <GetParticularTransporter/>},
       { path: "all-request", element: <MyRequests/>},
-      { path: "order-tracking/:id", element: <OrderSuccessTracking/>}
+      { path: "order-tracking/:id", element: <OrderSuccessTracking/>},
+      { path: "location-selection", element: <BuyerLocationUpdation /> },
     ],
   },
   {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SELLER_API_END_POINT } from '@/utils/constants'
-import LocationPicker from '@/components/LocationPicker'
+import LocationPicker2 from '@/components/LocationPicker2'
 import axios from 'axios'
 import { Label } from '@/components/ui/label'
 import { toast } from "react-toastify"; 
@@ -226,7 +226,7 @@ const SellerRegister = () => {
               </div>
 
               <div className={`rounded-[2rem] overflow-hidden border-4 shadow-inner relative ${errors.location ? 'border-red-200' : 'border-slate-50'}`}>
-                <LocationPicker onSelect={handleLocationSelect} />
+                <LocationPicker2 onSelect={handleLocationSelect} />
               </div>
 
               {errors.location && (

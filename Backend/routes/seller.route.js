@@ -12,7 +12,8 @@ import {
     getSellerProducts,
     deleteSellerAccount,
     getSellerVerifiedProducts,
-    getSellerNotifications
+    getSellerNotifications,
+    setLocation
 } from "../controllers/seller.controller.js";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.post("/register", registerSeller);
 router.post("/login", loginSeller);
 router.post("/logout", isAuthenticated, logoutSeller);
 router.get("/profile", isAuthenticated, getSellerProfile);
+router.route("/setlocation").put(isAuthenticated, setLocation);
 router.put("/update-profile", isAuthenticated, isSeller, upload.single("profileImage"), updateSellerProfile);
 router.post("/change-password", isAuthenticated, changeSellerPassword);
 router.delete("/delete", isAuthenticated, isSeller, deleteSellerAccount);

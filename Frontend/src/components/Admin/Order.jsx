@@ -62,9 +62,9 @@ const OrderDetail = () => {
   if (!order) return <div className="p-20 text-center font-bold text-gray-500">Order Not Found</div>;
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] pb-12">
+    <div className="min-h-screen bg-[#f7f6f4] pb-12">
       {/* Header Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 shadow-sm">
+      <div className="bg-[#fafafa] border-b border-gray-200 sticky top-0 z-10 px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-black">

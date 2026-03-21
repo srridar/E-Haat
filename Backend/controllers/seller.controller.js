@@ -462,6 +462,50 @@ export const getSellerNotifications = async (req, res) => {
 };
 
 
+export const setLocation = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
+        const { location } = req.body;
+
+        if (!location || !location.coordinates) {
+            return res.status(400).json({
+                message: "Location data required",
+                success: false
+            });
+        }
+
+        const seller = await Seller.findById(sellerId);
+
+        if (!seller) {
+            return res.status(404).json({
+                message: "Seller not found",
+                success: false
+            });
+        }
+
+        seller.location = {
+            type: "Point",
+            coordinates: location.coordinates,
+            city: location.city
+        };
+
+        await seller.save();
+
+        return res.status(200).json({
+            message: "Location set successfully",
+            success: true
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false
+        });
+    }
+};
+
+
 
 
 

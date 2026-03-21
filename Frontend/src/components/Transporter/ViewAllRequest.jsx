@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { 
-  ArrowLeft, Filter, MapPin, Package, 
-  IndianRupee, Calendar, ChevronRight, Search,
-  ArrowRight
-} from "lucide-react";
+import {  ArrowLeft, Package, Calendar, ChevronRight, Search, ArrowRight} from "lucide-react";
 import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
 
 const ViewAllRequest = () => {
@@ -22,7 +18,6 @@ const ViewAllRequest = () => {
         });
         if (res.data.success) {
           setRequests(res.data.allrequest || []);
-          
         }
       } catch (err) {
         console.error("Error fetching requests:", err);
@@ -103,7 +98,6 @@ const ViewAllRequest = () => {
                 </div>
 
                 <div className="flex flex-col h-full">
-                  {/* Item Info */}
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-slate-50 rounded-2xl text-slate-600 group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors">
                       <Package size={24} />

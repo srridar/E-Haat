@@ -8,7 +8,7 @@ import { ArrowLeft, User, Mail, Lock, Phone, Truck, Loader2, AlertCircle } from 
 
 const TransporterRegister = () => {
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({}); // State for validation errors
+  const [errors, setErrors] = useState({}); 
   const [input, setInput] = useState({
     name: "",
     email: "",
@@ -18,7 +18,6 @@ const TransporterRegister = () => {
 
   const navigate = useNavigate()
 
-  // --- VALIDATION LOGIC ---
   const validateForm = () => {
     let newErrors = {};
     const emailReg = /^[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/;

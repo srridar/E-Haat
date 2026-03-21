@@ -12,10 +12,35 @@ const GetUser = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+
+    const blockAndUnblock = async ({ id, role, action }) => {
+        try {
+            const res = await axios.put(`${ADMIN_API_END_POINT}/block-unblock`, { id, role, action }, { withCredentials: true });
+            if (res.data.success) {
+                return {
+                    success: true,
+                    message: res.data.message,
+                };
+            }
+            return {
+                success: false,
+                message: res.data.message || "Something went wrong",
+            };
+
+        } catch (error) {
+            console.log(error);
+            return {
+                success: false,
+                message:
+                    error.response?.data?.message || "Server error. Try again later.",
+            };
+        }
+    };
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const res = await axios.post(`${ADMIN_API_END_POINT}/get-user-profile`,{ id, role },
+                const res = await axios.post(`${ADMIN_API_END_POINT}/get-user-profile`, { id, role },
                     { withCredentials: true }
                 );
                 if (res.data.success) {
@@ -65,8 +90,14 @@ const GetUser = () => {
                         <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider">{role}</p>
 
                         <div className="flex gap-2 mt-4">
-                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
-                                {user.isActive ? "ACTIVE" : "INACTIVE"}
+                            <span
+                                className={`px-3 py-1 rounded-full text-xs font-bold border
+                                        ${user.isBlocked
+                                        ? "bg-red-50 text-red-600 border-red-100"
+                                        : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                    }`}
+                            >
+                                {user.isBlocked ? "BLOCKED" : "ACTIVE"}
                             </span>
                         </div>
 
@@ -77,11 +108,34 @@ const GetUser = () => {
                                 </button> : ""
                             }
 
-                            <button onClick={()=>navigate(`/message/send/${role}/${id}`)} className="w-full py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-all">
+                            <button onClick={() => navigate(`/message/send/${role}/${id}`)} className="w-full py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-all">
                                 Send Message
                             </button>
-                            <button className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition-all">
-                                Block Access
+
+                            <button
+                                onClick={async () => {
+                                    const action = user.isBlocked ? "unblock" : "block";
+
+                                    const res = await blockAndUnblock({
+                                        id: user._id,
+                                        role: role, // ✅ use URL role, not user.role
+                                        action,
+                                    });
+
+                                    if (res.success) {
+
+                                        setUser((prev) => ({ ...prev, isBlocked: !prev.isBlocked }));
+                                    } else {
+                                        alert(res.message);
+                                    }
+                                }}
+                                className={`w-full py-2.5 rounded-xl font-semibold transition-all
+                                        ${user.isBlocked
+                                        ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                                        : "bg-red-50 text-red-500 hover:bg-red-100"
+                                    }`}
+                            >
+                                {user.isBlocked ? "Unblock User" : "Block User"}
                             </button>
                         </div>
                     </div>
@@ -98,7 +152,7 @@ const GetUser = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <DetailItem icon={<Mail />} label="Email Address" value={user?.email} />
                             <DetailItem icon={<Phone />} label="Phone Number" value={user?.phone || "N/A"} />
-                            <DetailItem icon={<MapPin />} label="Location" value={`${user.location.city}`} />
+                            <DetailItem icon={<MapPin />} label="Location" value={`${user?.location?.city || user?.location?.address}`} />
                             <DetailItem icon={<Calendar />} label="Member Since" value={new Date(user.createdAt).toLocaleDateString()} />
                             <DetailItem icon={<Shield />} label="Account ID" value={`#${user._id.slice(-6).toUpperCase()}`} />
                             <DetailItem icon={<UserCheck />} label="Verification" value={user.isVerified ? "Verified" : "Pending"} />
@@ -116,8 +170,9 @@ const GetUser = () => {
                                         key={`${user.location.coordinates[0]}-${user.location.coordinates[1]}`}
                                         currentCoords={[
                                             user.location.coordinates[1],
-                                            user.location.coordinates[0], 
+                                            user.location.coordinates[0],
                                         ]}
+                                        isEditable={false} // ✅ IMPORTANT
                                     />
                                 )}
 

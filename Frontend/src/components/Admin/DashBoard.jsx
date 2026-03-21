@@ -55,10 +55,9 @@ const DashBoard = () => {
           <NavLink to="/admin/get-all-products" className={menuItemClass}><ShoppingBag size={19} /> Products</NavLink>
           <NavLink to="/admin/allorders" className={menuItemClass}><ClipboardList size={19} /> Orders</NavLink>
           <NavLink to="/admin/notifications" className={menuItemClass}><Bell size={19} /> Notifications</NavLink>
+          <NavLink to="/message/chat" className={menuItemClass}><Bell size={19} /> Message</NavLink>
           
-          
-
-
+        
           <div className="my-6 border-t border-gray-100 pt-4">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2">System</p>
             <NavLink to="/admin/sadmin-register" className={menuItemClass}><UserPlus size={19} /> Add Admin</NavLink>

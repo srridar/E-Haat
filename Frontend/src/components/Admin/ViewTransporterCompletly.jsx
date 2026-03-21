@@ -100,7 +100,6 @@ const ViewTransporterCompletly = () => {
           </div>
         </div>
 
-        {/* ADMIN ACTIONS */}
         {transporter.verificationStatus === "pending" && (
           <div className="flex flex-col gap-2">
             <button
@@ -119,13 +118,8 @@ const ViewTransporterCompletly = () => {
           </div>
         )}
       </div>
-      {/* ================= END HEADER ================= */}
 
-
-      {/* ================= BODY SECTION ================= */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        {/* LEFT COLUMN */}
         <div className="md:col-span-1 space-y-6">
 
           <div className="bg-white p-6 rounded-xl shadow-sm">
@@ -169,10 +163,9 @@ const ViewTransporterCompletly = () => {
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* RIGHT COLUMN */}
+
         <div className="md:col-span-2">
           <div className="bg-white p-6 rounded-xl shadow-sm h-full">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 border-b pb-2">
@@ -218,10 +211,7 @@ const ViewTransporterCompletly = () => {
             </div>
           </div>
         </div>
-
       </div>
-      {/* ================= END BODY ================= */}
-
     </div>
   );
 };

@@ -37,7 +37,6 @@ const TransporterLogin = () => {
 
   const changeEventHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
-    // Clear errors when user types
     if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: "" });
     if (apiError) setApiError("");
   }
@@ -61,7 +60,7 @@ const TransporterLogin = () => {
       });
        
       if (res.data.success) {
-        dispatch(loginSuccess({ user: res.data.transporter }));
+        dispatch(loginSuccess({ user: res.data.transporter}));
         toast.success("Login successful 🎉");
         navigate("/transporter/profile");
       }
@@ -77,23 +76,20 @@ const TransporterLogin = () => {
   return (
     <div className=" flex items-center justify-center bg-slate-50 relative  px-4">
       
-
       <div className="absolute top-0 left-0 w-full h-32 bg-emerald-600 -skew-y-3 origin-top-left shadow-lg" />
       
-      {/* Back Button */}
       <button onClick={() => navigate("/")} className="absolute top-4 left-6 z-20 flex items-center gap-2 text-white hover:text-emerald-100 transition-colors font-medium">
         <ArrowLeft size={20} /> <span className="hidden sm:inline">Back</span>
       </button>
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 bg-white rounded-[2rem] shadow-2xl overflow-hidden  z-10 border border-gray-100">
 
-       
         <div className="hidden lg:flex flex-col items-center justify-center bg-emerald-200 relative p-4">
           <div className="absolute top-10 left-10 text-emerald-600 opacity-20">
              <Truck size={120} />
           </div>
           <img
-            src="/truck.png" // Ensure this path is correct in your public folder
+            src="/truck.png" 
             alt="Transporter Logistics"
             className="w-full max-w-sm object-contain drop-shadow-2xl z-10 animate-pulse-slow"
           />

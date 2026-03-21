@@ -194,8 +194,6 @@ const TransporterPasswordChange = () => {
             >
               {loading ? "Updating..." : "Update Password"}
             </button>
-
-
           </div>
         </form>
       </div>

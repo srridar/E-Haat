@@ -282,7 +282,12 @@ const GetAllProducts = () => {
                       />
                       <div className="absolute top-4 left-4  backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/50 shadow-sm flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase text-indigo-700">{product?.seller?.location?.city || "Nepal"}</span>
+                        <span className="text-[10px] font-black uppercase text-indigo-700">
+                          {product?.seller?.location?.city
+                            ?.split(",")
+                            .slice(3, 6)
+                            .join(", ") || "Nepal"}
+                        </span>
                       </div>
                       <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-lg text-[9px] font-bold text-white uppercase tracking-tighter">
                         {product.category}
@@ -315,8 +320,8 @@ const GetAllProducts = () => {
             )}
           </main>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

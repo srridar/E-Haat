@@ -19,7 +19,6 @@ const TransporterApprovalRequest = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-5 pb-10">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-2">
         <div>
           <button
@@ -38,7 +37,6 @@ const TransporterApprovalRequest = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mb-4"></div>
@@ -104,7 +102,6 @@ const TransporterApprovalRequest = () => {
                   </div>
                 </div>
 
-                {/* Right: Actions */}
                 <div className="flex items-center lg:flex-col lg:justify-center gap-3">
                   <button 
                     onClick={() => navigate(`/admin/view-transporter-details/${transporter._id}`)}

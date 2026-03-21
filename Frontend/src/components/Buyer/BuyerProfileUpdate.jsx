@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import LocationPicker from "@/components/LocationPicker";
 import { BUYER_API_END_POINT } from "@/utils/constants";
 import { Label } from "@/components/ui/label";
 import validator from "validator";
@@ -19,14 +18,10 @@ import {
 
 const BuyerProfileUpdate = () => {
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    city: "",
-    latitude: null,
-    longitude: null,
     file: null,
   });
 
@@ -36,24 +31,17 @@ const BuyerProfileUpdate = () => {
   const [preview, setPreview] = useState("");
   const [originalImage, setOriginalImage] = useState("");
 
-  // ================= FETCH PROFILE =================
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${BUYER_API_END_POINT}/profile`, {
-          withCredentials: true,
-        });
+        const res = await axios.get(`${BUYER_API_END_POINT}/profile`, { withCredentials: true });
 
         if (res.data.success) {
           const b = res.data.data;
-
           const mappedData = {
             name: b.name || "",
             email: b.email || "",
             phone: b.phone || "",
-            city: b.location?.city || "",
-            latitude: b.location?.coordinates?.[1] || null,
-            longitude: b.location?.coordinates?.[0] || null,
             file: null,
           };
 
@@ -70,37 +58,24 @@ const BuyerProfileUpdate = () => {
     fetchProfile();
   }, []);
 
-  // ================= INPUT HANDLER =================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // ================= FILE HANDLER =================
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const objectUrl = URL.createObjectURL(file);
-
       setFormData((prev) => ({ ...prev, file }));
       setPreview(objectUrl);
-
-      // Cleanup memory
       return () => URL.revokeObjectURL(objectUrl);
     }
   };
 
-  // ================= LOCATION =================
-  const handleLocationSelect = ([lat, lng]) => {
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-    }));
-  };
 
-  // ================= VALIDATION =================
   const validateInput = () => {
     const errors = {};
     const phoneReg = /^(?:\+977|977)?(98|97)\d{8}$/;
@@ -108,41 +83,25 @@ const BuyerProfileUpdate = () => {
     if (!formData.name || formData.name.length < 3) {
       errors.name = "Name must be at least 3 characters";
     }
-
     if (!formData.email || !validator.isEmail(formData.email)) {
       errors.email = "Invalid email format";
     }
-
     if (!formData.phone || !phoneReg.test(formData.phone)) {
       errors.phone = "Invalid Nepali mobile number";
     }
-
-    if (!formData.city.trim()) {
-      errors.city = "City is required";
-    }
-
-    if (!formData.latitude || !formData.longitude) {
-      errors.location = "Location is required";
-    }
-
     return errors;
   };
 
-  // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const validationErrors = validateInput();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
     setLoading(true);
-
     try {
       const data = new FormData();
-
       Object.keys(formData).forEach((key) => {
         if (key === "file" && formData.file) {
           data.append("profileImage", formData.file);
@@ -151,12 +110,7 @@ const BuyerProfileUpdate = () => {
         }
       });
 
-      const res = await axios.put(
-        `${BUYER_API_END_POINT}/update-profile`,
-        data,
-        { withCredentials: true }
-      );
-
+      const res = await axios.put(`${BUYER_API_END_POINT}/update-profile`, data, { withCredentials: true });
       if (res.data.success) {
         navigate("/buyer/profile");
       }
@@ -167,7 +121,6 @@ const BuyerProfileUpdate = () => {
     }
   };
 
-  // ================= DISCARD =================
   const handleDiscard = () => {
     setFormData(initialData);
     setPreview(originalImage);
@@ -186,17 +139,11 @@ const BuyerProfileUpdate = () => {
       </button>
 
       <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-12 border border-slate-100">
-        
-        {/* LEFT SECTION */}
+
         <div className="lg:col-span-4 bg-emerald-50/50 p-10 flex flex-col items-center border-r border-slate-100">
           <div className="relative group">
             <div className="w-40 h-40 rounded-[3rem] overflow-hidden border-4 border-white shadow-xl bg-white">
-              <img
-                src={
-                  preview
-                    ? preview
-                    : `https://ui-avatars.com/api/?name=${formData.name}&background=10b981&color=fff`
-                }
+              <img src={preview ? preview : `https://ui-avatars.com/api/?name=${formData.name}&background=10b981&color=fff`}
                 className="w-full h-full object-cover"
                 alt="Profile"
               />
@@ -228,7 +175,6 @@ const BuyerProfileUpdate = () => {
           </div>
         </div>
 
-        {/* RIGHT SECTION */}
         <div className="lg:col-span-8 p-8 md:p-14">
           <div className="mb-10">
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -242,10 +188,9 @@ const BuyerProfileUpdate = () => {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { label: "Full Name", name: "name", icon: <User size={16}/> },
-                { label: "Email Address", name: "email", icon: <Mail size={16}/> },
-                { label: "Phone Number", name: "phone", icon: <Phone size={16}/> },
-                { label: "Primary City", name: "city", icon: <MapPin size={16}/> },
+                { label: "Full Name", name: "name", icon: <User size={16} /> },
+                { label: "Email Address", name: "email", icon: <Mail size={16} /> },
+                { label: "Phone Number", name: "phone", icon: <Phone size={16} /> },
               ].map((field) => (
                 <div key={field.name} className="space-y-1.5">
                   <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -278,28 +223,6 @@ const BuyerProfileUpdate = () => {
               ))}
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-emerald-600">
-                <MapPin size={18} />
-                <h3 className="font-bold text-sm uppercase tracking-wider">
-                  Update Home Location
-                </h3>
-              </div>
-
-              <div className="rounded-[2.5rem] overflow-hidden border-4 border-slate-50 shadow-inner">
-                <LocationPicker onSelect={handleLocationSelect} />
-              </div>
-
-              {formData.latitude && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl w-fit border border-emerald-100">
-                  <CheckCircle2 size={14} className="text-emerald-500" />
-                  <p className="text-[11px] font-bold text-emerald-700">
-                    GPS COORDINATES UPDATED
-                  </p>
-                </div>
-              )}
-            </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -310,15 +233,11 @@ const BuyerProfileUpdate = () => {
                   <Loader2 className="animate-spin" size={20} />
                   Syncing Data...
                 </>
-              ) : (
-                "Save Profile Changes"
-              )}
+              ) : ("Save Profile Changes")}
             </button>
 
             {errors.location && (
-              <p className="text-red-500 text-xs font-bold text-center">
-                {errors.location}
-              </p>
+              <p className="text-red-500 text-xs font-bold text-center"> {errors.location} </p>
             )}
           </form>
         </div>

@@ -8,9 +8,33 @@ const GetAllUser = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("All"); // "All" | "Seller" | "Transporter"
+  const [activeTab, setActiveTab] = useState("All"); 
 
   const navigate = useNavigate();
+
+  const blockAndUnblock = async ({ id, role, action }) => {
+    try {
+      const res = await axios.put(`${ADMIN_API_END_POINT}/block-unblock`, { id, role, action }, { withCredentials: true });
+      if (res.data.success) {
+        return {
+          success: true,
+          message: res.data.message,
+        };
+      }
+      return {
+        success: false,
+        message: res.data.message || "Something went wrong",
+      };
+
+    } catch (error) {
+      console.log(error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Server error. Try again later.",
+      };
+    }
+  };
 
   const getAllUsers = async () => {
     try {
@@ -35,14 +59,18 @@ const GetAllUser = () => {
     getAllUsers();
   }, []);
 
-  // Filter Logic
+  
   useEffect(() => {
-    if (activeTab === "All") {
-      setFilteredUsers(allUsers);
-    } else {
-      setFilteredUsers(allUsers.filter(user => user.role === activeTab));
-    }
-  }, [activeTab, allUsers]);
+  if (activeTab === "All") {
+    setFilteredUsers(allUsers);
+  } else {
+    setFilteredUsers(
+      allUsers.filter(
+        (user) => user.role.toLowerCase() === activeTab.toLowerCase()
+      )
+    );
+  }
+}, [activeTab, allUsers]);
 
   const TabButton = ({ label }) => (
     <button
@@ -112,7 +140,7 @@ const GetAllUser = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold overflow-hidden">
                           {user?.profileImage ? (
-                            <img src={user?.profileImage?.url || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=10b981&color=fff` } alt="" className="w-full h-full object-cover" />
+                            <img src={user?.profileImage?.url || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=10b981&color=fff`} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <UserCircle size={24} />
                           )}
@@ -145,8 +173,32 @@ const GetAllUser = () => {
                         >
                           View
                         </button>
-                        <button className="px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                          Block
+                        <button
+                          onClick={async () => {
+                            const action = user.isBlocked ? "unblock" : "block";
+
+                            const res = await blockAndUnblock({
+                              id: user._id,
+                              role: user.role,
+                              action,
+                            });
+
+                            if (res.success) {
+                              setAllUsers((prev) =>
+                                prev.map((u) =>
+                                  u._id === user._id ? { ...u, isBlocked: !u.isBlocked } : u
+                                )
+                              );
+                            } else {
+                              alert(res.message);
+                            }
+                          }}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors  ${user.isBlocked
+                              ? "text-emerald-600 hover:bg-emerald-50"
+                              : "text-red-500 hover:bg-red-50"
+                            }`}
+                        >
+                          {user.isBlocked ? "Unblock" : "Block"}
                         </button>
                       </div>
                     </td>

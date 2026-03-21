@@ -10,7 +10,6 @@ const AllMyProducts = () => {
 
   const navigate = useNavigate();
 
-
   const fetchMyProducts = async () => {
     setLoading(true);
     try {
@@ -88,7 +87,6 @@ const AllMyProducts = () => {
 
   return (
     <div className="relative min-h-screen bg-[var(--background-light)] px-6 py-10">
-
 
       <div className="absolute top-3 left-4 bg-green-200 p-1 rounded hover:bg-green-300">
         <button onClick={() => navigate(-1)}>

@@ -58,11 +58,11 @@ const AdminPasswordChange = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className=" min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-orange-100 rounded-full blur-3xl opacity-50" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-green-100 rounded-full blur-3xl opacity-50" />
 
-      <div className="w-full max-w-4xl mb-3">
+      <div className="absolute top-4 left-5 w-full max-w-4xl mb-3">
         <button
           onClick={() => navigate(-1)}
           className="group flex items-center gap-2 text-slate-500 hover:text-orange-600 transition-all font-medium"

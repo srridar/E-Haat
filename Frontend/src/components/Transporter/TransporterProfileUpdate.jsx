@@ -81,7 +81,6 @@ const TransporterProfileUpdate = () => {
     if (formData.pricePerKm && !/^\d+(\.\d{1,2})?$/.test(formData.pricePerKm)) {
       errors.pricePerKm = "Price per KM must be a valid number with up to 2 decimal places";
     }
-
     return errors;
   };
 
@@ -310,7 +309,6 @@ const TransporterProfileUpdate = () => {
                 </div>
               </div>
             </div>
-
 
             <div className="flex items-center justify-end gap-4 pt-4">
               <button type="button" className="px-6 py-2.5 rounded-xl font-semibold text-red-400 hover:bg-slate-100 transition-all outline-2-red-500 border border-red-300" onClick={() => setFormData(initialData)}>

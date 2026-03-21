@@ -72,6 +72,10 @@ const productSchema = new mongoose.Schema({
     verifiedAt: {
         type: Date
     },
+    isBlocked: {
+        type: Boolean,
+        default: false
+    },
     images: [{
         url: String,
         public_id: String

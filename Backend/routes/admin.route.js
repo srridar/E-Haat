@@ -10,7 +10,6 @@ import {
   getAllProducts,
   getAllUsers,
   removeProduct,
-  blockOrUnblockSeller,
   getAdminProfile,
   getAdminNotifications,
   markAsRead,
@@ -21,6 +20,7 @@ import {
   getAllUnVerifiedSellers,
   getAllUnVerifiedProducts,
   getAllVerifiedTransporters,
+  blockOrUnblockProduct,
   getProductById,
   getSellerById,
   getTransporterById,
@@ -29,6 +29,7 @@ import {
   changeAdminPassword,
   getAllOrders,
   updateOrderStatusByAdmin,
+  blockOrUnblockUser,
   getOrderById 
 } from "../controllers/admin.controller.js";
 import  upload  from "../middlewares/multer.js";
@@ -46,7 +47,6 @@ router.post("/verify-user", isAuthenticated, verifyUser);
 router.get("/products", isAuthenticated, getAllProducts);
 router.get("/all-users", isAuthenticated, getAllUsers);
 router.delete("/product/:id", isAuthenticated, removeProduct);
-router.route("/block-unblock/:id").post(isAuthenticated, blockOrUnblockSeller);
 router.get("/admin-notification", isAuthenticated, getAdminNotifications);
 router.get("/get-all-contact-request", isAuthenticated, getAllContactRequest);
 router.get("/products-approval-req", isAuthenticated, getAllUnVerifiedProducts);
@@ -57,16 +57,14 @@ router.get("/product-approval/:id", isAuthenticated, getProductById);
 router.get("/seller-approval/:id", isAuthenticated, getSellerById);
 router.get("/transporter-approval/:id", isAuthenticated, getTransporterById);
 router.get("/gettransporter/:id", getTransporterById);
+router.put("/block-unblock",isAuthenticated, blockOrUnblockUser);
+router.put("/block-unblock-product",isAuthenticated,blockOrUnblockProduct);
 
 router.get("/get-all-orders",isAuthenticated,getAllOrders);
 router.get("/order/:id", isAuthenticated, getOrderById);
-router.put(
-  "/update-order-status/:id",
-  isAuthenticated,
-  updateOrderStatusByAdmin
-);
+router.put("/update-order-status/:id", isAuthenticated, updateOrderStatusByAdmin);
 
-router.get("/contact-request-by/:id", isAuthenticated, getContactById);
+router.get("/contact/:id", isAuthenticated, getContactById);
 router.delete("/delete-request/:id", isAuthenticated, deleteContact);
 router.patch("/contact/read/:id", isAuthenticated, markAsRead);
 router.post("/get-user-profile", isAuthenticated, getUserById);

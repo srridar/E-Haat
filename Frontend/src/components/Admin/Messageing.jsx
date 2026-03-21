@@ -11,6 +11,17 @@ const Messaging = () => {
   const { id, role } = useParams();
   const { user } = useSelector((state) => state.auth);
   const [inputValue, setInputValue] = useState('');
+
+  const [messageId, setMessageId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+
+  const handleEditClick = (msg) => {
+    setInputValue(msg.text); // put message text in input
+    setMessageId(msg._id); // store message id
+    setOpenMenuId(null); // close menu
+  };
+
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
@@ -43,31 +54,87 @@ const Messaging = () => {
 
   useEffect(() => {
     fetchMessages();
-  }, [id, receiverModel]);
+  }, [id,receiverModel]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+
+
+  const handleDeleteClick = async (messageId) => {
+    try {
+      const res = await axios.delete(
+        `${CHAT_API_END_POINT}/delete/${messageId}`,
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+
+        setMessages((prev) =>
+          prev.filter((msg) => msg._id !== messageId)
+        );
+        setOpenMenuId(null);
+      }
+
+    } catch (err) {
+      console.log(err);
+      toast.error("Delete failed");
+    }
+  };
+
+
   const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     try {
-      const res = await axios.post(`${CHAT_API_END_POINT}/send`, {
-        receiver: id,
-        receiverModel: receiverModel,
-        text: inputValue
-      }, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true
-      });
 
-      if (res.data.success) {
-        setMessages((prev) => [...prev, res.data.message]);
-        setInputValue('');
+      // EDIT MESSAGE
+      if (messageId) {
+
+        const res = await axios.put(
+          `${CHAT_API_END_POINT}/edit/${messageId}`,
+          { text: inputValue },
+          { withCredentials: true }
+        );
+
+        if (res.data.success) {
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === messageId
+                ? res.data.message
+                : msg
+            )
+          );
+
+          setMessageId(null);
+          setInputValue("");
+        }
+
+      } else {
+
+        const res = await axios.post(
+          `${CHAT_API_END_POINT}/send`,
+          {
+            receiver: id,
+            receiverModel: receiverModel,
+            text: inputValue
+          },
+          {
+            headers: { "Content-Type": "application/json" },
+            withCredentials: true
+          }
+        );
+
+        if (res.data.success) {
+          setMessages((prev) => [...prev, res.data.message]);
+          setInputValue("");
+        }
       }
+
     } catch (error) {
-      toast.error("Message failed to send");
+      toast.error("Operation failed");
     }
   };
 
@@ -105,8 +172,25 @@ const Messaging = () => {
               messages.map((msg) => {
                 const isMe = String(msg.sender) === String(myCurrentId);
                 return (
-                  <div key={msg._id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg._id} className={`flex items-center w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div className="relative inline-block">
+                      <button onClick={() => setOpenMenuId(msg._id)}>
+                        <MoreVertical size={20} />
+                      </button>
+
+                      {openMenuId && (
+                        <div className="absolute right-0 mt-2 w-32 bg-white shadow-md rounded-md">
+                          <button onClick={() => handleEditClick(msg)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">
+                            Edit
+                          </button>
+                          <button onClick={() => handleDeleteClick(msg._id)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <div className={`max-w-[75%] px-4 py-2 rounded-2xl shadow-sm relative ${isMe ? 'bg-indigo-600 text-white rounded-br-none ml-12' : 'bg-white text-gray-800 rounded-bl-none mr-12 border border-gray-100'}`}>
+
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                       <div className={`flex items-center gap-1 mt-1 opacity-70 ${isMe ? 'justify-end' : 'justify-start'}`}>
                         <span className="text-[9px]">

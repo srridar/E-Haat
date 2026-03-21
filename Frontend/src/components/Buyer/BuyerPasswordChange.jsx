@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -23,13 +24,11 @@ const BuyerPasswordChange = () => {
 
   const validateInput = ({ oldPassword, newPassword, confirmPassword }) => {
     const errors = {};
-    const strongPassRegex =
-      /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+    const strongPassRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 
     if (!oldPassword.trim()) {
       errors.oldPassword = "Current password is required";
     }
-
     if (!newPassword.trim()) {
       errors.newPassword = "New password is required";
     } else if (oldPassword === newPassword) {
@@ -65,10 +64,7 @@ const BuyerPasswordChange = () => {
 
     setLoading(true);
     try {
-      await changePassword(
-        passwords.oldPassword,
-        passwords.newPassword
-      );
+      await changePassword(passwords.oldPassword, passwords.newPassword);
     } catch (err) {
       console.error(err);
     } finally {
@@ -76,13 +72,21 @@ const BuyerPasswordChange = () => {
     }
   };
 
-  /* ===================== UI ===================== */
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="relative min-h-screen flex flex-col gap-12 md:gap-40 p-12 md:flex-row lg:flex-row items-center justify-center bg-gray-100 px-4">
+      <div className="absolute top-3 left-4 bg-orange-200 p-1 rounded hover:bg-orange-300">
+        <button onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </button>
+      </div>
+      <div className="border-2 rounded-full border-orange-500 p-8 md:p-12  bg-white shadow-xl">
+        <img src="/padlock.png" alt="crop" className="w-14 md:w-28 lg:w-40 object-contain" />
+      </div>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <LockClosedIcon className="h-7 w-7 text-green-600" />
+          <LockClosedIcon className="h-7 w-7 text-orange-600" />
           <h2 className="text-2xl font-bold text-gray-800">
             Change Password
           </h2>
@@ -144,7 +148,7 @@ const BuyerPasswordChange = () => {
             )}
           </div>
 
-          {/* Confirm Password */}
+
           <div>
             <label className="text-sm font-medium text-gray-700">
               Confirm New Password
@@ -175,13 +179,6 @@ const BuyerPasswordChange = () => {
 
           {/* Buttons */}
           <div className="flex gap-4 pt-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl font-semibold"
-            >
-              {loading ? "Updating..." : "Update Password"}
-            </button>
 
             <button
               type="button"
@@ -190,9 +187,22 @@ const BuyerPasswordChange = () => {
             >
               Cancel
             </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-orange-400 hover:bg-orange-500 text-white py-2 rounded-xl font-semibold"
+            >
+              {loading ? "Updating..." : "Update Password"}
+            </button>
+
+
           </div>
         </form>
       </div>
+      <div className="border-2 rounded-full border-orange-500 p-8 md:p-12   bg-white shadow-xl hidden md:block lg:block">
+        <img src="/password.png" alt="crop" className="w-14 md:w-28 lg:w-40 object-contain" />
+      </div>
+
     </div>
   );
 };

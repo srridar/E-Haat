@@ -721,10 +721,10 @@ export const verifyProduct = async (req, res) => {
     }
 }
 
-export const blockOrUnblockSeller = async (req, res) => {
+export const blockOrUnblockUser = async (req, res) => {
     try {
-        const sellerId = req.params.sellerId;
-        const { action } = req.body; // "block" | "unblock"
+        let Model;
+        const { id, role, action } = req.body;
 
         if (!["block", "unblock"].includes(action)) {
             return res.status(400).json({
@@ -733,48 +733,151 @@ export const blockOrUnblockSeller = async (req, res) => {
             });
         }
 
-        const seller = await Seller.findById(sellerId);
-        if (!seller) {
+        // ✅ assign correct model
+        if (role === "seller") Model = Seller;
+        else if (role === "buyer") Model = Buyer;
+        else if (role === "transporter") Model = TransportProvider;
+
+        // ✅ check role
+        if (!Model) {
+            return res.status(400).json({
+                message: "Invalid role",
+                success: false,
+            });
+        }
+
+        const user = await Model.findById(id);
+
+        if (!user) {
             return res.status(404).json({
-                message: "Seller not found",
+                message: "User not found",
                 success: false,
             });
         }
 
         let notificationMessage = "";
+
         if (action === "block") {
-            if (seller.isBlocked) {
+            if (user.isBlocked) {
                 return res.status(400).json({
-                    message: "Seller is already blocked",
+                    message: "User is already blocked",
                     success: false,
                 });
             }
-            seller.isBlocked = true;
+            user.isBlocked = true;
             notificationMessage = "Your account has been blocked by the admin.";
         }
 
         if (action === "unblock") {
-            if (!seller.isBlocked) {
+            if (!user.isBlocked) {
                 return res.status(400).json({
-                    message: "Seller is already unblocked",
+                    message: "User is already unblocked",
                     success: false,
                 });
             }
-            seller.isBlocked = false;
+            user.isBlocked = false;
             notificationMessage = "Your account has been unblocked by the admin.";
         }
 
-        await seller.save();
+        // ✅ save user
+        await user.save();
+
+        // ✅ create notification
         const notification = new Notification({
-            user: seller._id,
-            role: "seller",
-            type: "system", // could also be "verification" or "account" type
+            user: user._id,
+            role: role,
+            type: "system",
             title: `Account ${action}ed`,
             message: notificationMessage,
-            relatedId: seller._id, // optional, can reference sellerId
+            relatedId: user._id,
         });
 
         await notification.save();
+
+        // ✅ push notification to user
+        if (!user.notifications) {
+            user.notifications = [];
+        }
+
+        user.notifications.push(notification._id);
+        await user.save();
+
+        return res.status(200).json({
+            message: `${role} ${action}ed successfully`,
+            success: true,
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+export const blockOrUnblockProduct = async (req, res) => {
+    try {
+        const { id, action } = req.body;
+
+        if (!["block", "unblock"].includes(action)) {
+            return res.status(400).json({
+                message: "Invalid action",
+                success: false,
+            });
+        }
+        const product = await Product.findById(id).populate("seller");
+
+        if (!product) {
+            return res.status(404).json({
+                message: "Product not found",
+                success: false,
+            });
+        }
+
+        const seller = product.seller;
+
+        let notificationMessage = "";
+
+        if (action === "block") {
+            if (product.isBlocked) {
+                return res.status(400).json({
+                    message: "Product is already blocked",
+                    success: false,
+                });
+            }
+
+            product.isBlocked = true;
+            notificationMessage = `Your product "${product.name}" has been blocked by admin.`;
+        }
+
+        if (action === "unblock") {
+            if (!product.isBlocked) {
+                return res.status(400).json({
+                    message: "Product is already unblocked",
+                    success: false,
+                });
+            }
+
+            product.isBlocked = false;
+            notificationMessage = `Your product "${product.name}" has been unblocked by admin.`;
+        }
+
+
+        await product.save();
+
+        // ✅ create notification for seller
+        const notification = new Notification({
+            user: seller._id,
+            role: "seller",
+            type: "product",
+            title: `Product ${action}ed`,
+            message: notificationMessage,
+            relatedId: product._id,
+        });
+
+        await notification.save();
+
 
         if (!seller.notifications) {
             seller.notifications = [];
@@ -783,9 +886,10 @@ export const blockOrUnblockSeller = async (req, res) => {
         await seller.save();
 
         return res.status(200).json({
-            message: `Seller ${action}ed successfully`,
+            message: `Product ${action}ed successfully`,
             success: true,
         });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -849,7 +953,6 @@ export const getAllContactRequest = async (req, res) => {
 export const getContactById = async (req, res) => {
     try {
         const contact = await ContactData.findById(req.params.id);
-
         if (!contact) {
             return res.status(404).json({
                 message: "Contact not found",
@@ -858,7 +961,7 @@ export const getContactById = async (req, res) => {
         }
         return res.status(200).json({
             success: true,
-            data: contact,
+            contact,
         });
 
     } catch (err) {
@@ -1053,7 +1156,7 @@ export const updateOrderStatusByAdmin = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        console.log('----------------');
+
         const admin = await Admin.findById(adminId);
         if (!admin) {
             return res.status(404).json({
@@ -1104,3 +1207,6 @@ export const updateOrderStatusByAdmin = async (req, res) => {
         });
     }
 };
+
+
+
