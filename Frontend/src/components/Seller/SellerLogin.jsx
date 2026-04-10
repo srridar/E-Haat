@@ -13,6 +13,7 @@ const SellerLogin = () => {
   const [errors, setErrors] = useState({});
   const [input, setInput] = useState({ email: "", password: "" });
 
+  const role = "seller";
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -80,7 +81,7 @@ const SellerLogin = () => {
         navigate("/seller/profile");
       }
     } catch (error) {
-     
+
       setApiError(error.response?.data?.message || "Invalid email or password");
       dispatch(loginFailure(error.response?.data?.message || "Login failed"));
       toast.error(error.response?.data?.message || "Invalid email or password");
@@ -164,9 +165,15 @@ const SellerLogin = () => {
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                Security Key
-              </label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Security Key</label>
+                <p
+                  onClick={() => navigate(`/forgot-password/${role}`)}
+                  className="text-sm text-emerald-600 cursor-pointer mt-2"
+                >
+                  Forgot Password?
+                </p>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                 <input

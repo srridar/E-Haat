@@ -80,7 +80,10 @@ const transportProviderSchema = new mongoose.Schema(
       default: false,
     },
 
-  
+    isKycDataSubmitted: {
+      type: Boolean,
+      default: false,
+    },
     verificationStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -102,11 +105,9 @@ const transportProviderSchema = new mongoose.Schema(
         enum: ["Bike", "Pickup", "Truck", "Mini Truck"],
         required: false,
       },
-
       vehiclePhoto: {
         type: String,
       },
-
       numberPlate: {
         type: String,
         required: false,
@@ -149,8 +150,12 @@ const transportProviderSchema = new mongoose.Schema(
     totalDeliveries: {
       type: Number,
       default: 0,
+    }, resetOtp: {
+      type: String
     },
-
+    otpExpire: {
+      type: Date
+    },
     isActive: {
       type: Boolean,
       default: true,

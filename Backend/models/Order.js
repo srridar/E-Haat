@@ -78,6 +78,10 @@ const orderSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
     },
+    isPaymentCompleted: {
+      type: Boolean,
+      default: false
+    },
     deliveryCost: {
       type: Number,
     },

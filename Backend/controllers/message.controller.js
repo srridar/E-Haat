@@ -198,40 +198,6 @@ export const deleteMessage = async (req, res) => {
 };
 
 
-export const markAsSeen = async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const message = await Message.findById(messageId);
-
-    if (!message) {
-      return res.status(404).json({ success: false, message: "Message not found" });
-    }
-
-    const currentUserId = getUserId(req.user);
-    const currentUserModel = getSenderModel(req.user.role);
-
-    if (message.receiver.toString() !== currentUserId.toString() || message.receiverModel !== currentUserModel) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not allowed to mark this message",
-      });
-    }
-
-    if (message.seen) {
-      return res.status(200).json({ success: true, message: "Already marked as seen" });
-    }
-
-    message.seen = true;
-    await message.save();
-
-    res.status(200).json({ success: true, message });
-  } catch (error) {
-    console.error("Mark Seen Error:", error);
-    res.status(500).json({ success: false });
-  }
-};
-
-
 export const getChatContacts = async (req, res) => {
   try {
 

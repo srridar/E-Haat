@@ -280,9 +280,9 @@ const GetAllProducts = () => {
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
-                      <div className="absolute top-4 left-4  backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/50 shadow-sm flex items-center gap-2">
+                      <div className="absolute top-4 left-4  backdrop-blur-2xl px-3 py-1.5 rounded-xl border border-orange-100 shadow-sm flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase text-indigo-700">
+                        <span className="text-[10px] font-black uppercase text-black">
                           {product?.seller?.location?.city
                             ?.split(",")
                             .slice(3, 6)

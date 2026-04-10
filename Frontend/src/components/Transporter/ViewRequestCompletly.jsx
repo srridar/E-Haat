@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {toast} from 'react-toastify';
-import { MapPin,  Package,  Calendar,  ArrowRight,  ArrowLeft,  X,  Truck,  Ban} from "lucide-react";
+import { toast } from 'react-toastify';
+import { MapPin, Package, Calendar, CheckCircle, ArrowRight, ArrowLeft, X, Truck, Ban } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
@@ -13,14 +13,27 @@ const HireTransporter = () => {
 
     const handleStatusChange = async (action) => {
         try {
-            const res = await axios.put(`${TRANSPORTER_API_END_POINT}/request/${id}/status`,{ action },{ withCredentials: true });
+
+            const res = await axios.put(`${TRANSPORTER_API_END_POINT}/request/${id}/status`, { action }, { withCredentials: true });
             if (res.data.success) {
                 toast.success(res.data.message);
+                setRequest((prev) => ({
+                    ...prev,
+                    status:
+                        action === "accept" ? "accepted" :
+                            action === "reject" ? "rejected" :
+                                action === "start" ? "in_transit" :
+                                    action === "deliver" ? "delivered" :
+                                        action === "cancel" ? "cancelled" :
+                                            prev.status
+                }));
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
         }
     };
+
+
 
     useEffect(() => {
         const getAllTransRequests = async () => {
@@ -210,58 +223,18 @@ const HireTransporter = () => {
                         </div>
                     </div>
 
-                    <div className="pt-4 flex flex-wrap gap-4">
-
-                        {(request.status === "pending" || request.status === "countered") && (
-                            <>
-                                <button
-                                    onClick={() => handleStatusChange("accept")}
-                                    className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                                >
-                                    Accept
-                                    <ArrowRight size={18} />
-                                </button>
-
-                                <button
-                                    onClick={() => handleStatusChange("reject")}
-                                    className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition flex items-center justify-center gap-2"
-                                >
-                                    Reject
-                                    <X size={18} />
-                                </button>
-                            </>
-                        )}
-
-                        {request.status === "accepted" && (
-                            <>
-                                <button
-                                    onClick={() => handleStatusChange("start")}
-                                    className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition flex items-center justify-center gap-2"
-                                >
-                                    Start Delivery
-                                    <Truck size={18} />
-                                </button>
-
-                                <button
-                                    onClick={() => handleStatusChange("cancel")}
-                                    className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2"
-                                >
-                                    Cancel
-                                    <Ban size={18} />
-                                </button>
-                            </>
-                        )}
-
-                        {request.status === "in_transit" && (
-                            <button
-                                onClick={() => handleStatusChange("deliver")}
-                                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition flex items-center justify-center gap-2"
-                            >
-                                Mark as Delivered
-                                <CheckCircle size={18} />
-                            </button>
-                        )}
-                    </div>
+                    <button
+                        onClick={() => handleStatusChange("accept")}
+                        disabled={request.status !== "accepted" ? false : true}
+                        className={`flex-1 py-3 px-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition
+                             ${request.status === "accepted"
+                                ? "bg-green-500 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700 text-white"}
+    `}
+                    >
+                        {request.status === "accepted" ? "Accepted" : "Accept"}
+                        <ArrowRight size={18} />
+                    </button>
 
                 </div>
             </div>

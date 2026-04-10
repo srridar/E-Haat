@@ -14,6 +14,7 @@ const TransporterKycForm = () => {
   const [errors, setErrors] = useState({});
 
   const { user } = useSelector((state) => state.auth);
+  console.log(user);
   const [formData, setFormData] = useState({
     citizenshipCard: null,
     drivingLicense: null,
@@ -78,7 +79,7 @@ const TransporterKycForm = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Real-world validation: Type and Size
+   
     const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
     if (!allowedTypes.includes(file.type)) {
       setErrors((prev) => ({ ...prev, [fieldName]: "Only JPG, PNG or PDF allowed" }));
@@ -91,7 +92,6 @@ const TransporterKycForm = () => {
     }
 
     setFormData((prev) => ({ ...prev, [fieldName]: file }));
-    // Only create preview for images
     if (file.type.startsWith("image/")) {
       setPreviews((prev) => ({ ...prev, [fieldName]: URL.createObjectURL(file) }));
     } else {
@@ -348,7 +348,7 @@ const TransporterKycForm = () => {
 
             <button
               type="submit"
-              disabled={loading ||(user?.isVerified && user?.verificationStatus === "approved" ) }
+              disabled={loading || (user?.isVerified && user?.verificationStatus === "approved")}
               className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-12 py-3.5 rounded-2xl shadow-lg shadow-orange-200 transition-all active:scale-95 disabled:opacity-70 disabled:pointer-events-none flex items-center gap-2"
             >
               {loading ? (
@@ -358,8 +358,10 @@ const TransporterKycForm = () => {
                 </>
               ) : user?.isVerified && user?.verificationStatus === "approved" ? (
                 "Already Verified"
-              ) : user?.verificationStatus === "pending" ? (
+              ) : user?.isKycDataSubmitted && user?.verificationStatus === "pending" ? (
                 "KYC is Pending"
+              ) : !user?.isKycDataSubmitted && user?.verificationStatus === "pending" ? (
+                "KYC not Submitted"
               ) : user?.verificationStatus === "rejected" ? (
                 "Reapply"
               ) : (
@@ -374,3 +376,20 @@ const TransporterKycForm = () => {
 };
 
 export default TransporterKycForm;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

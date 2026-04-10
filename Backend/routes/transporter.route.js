@@ -43,6 +43,7 @@ router.post("/submitkyc",
       { name: "citizenshipCard", maxCount: 1 },
       { name: "drivingLicense", maxCount: 1 },
       { name: "vehicleRegistration", maxCount: 1 },
+      { name: "vehiclePhoto", maxCount: 1 },
     ])(req, res, (err) => {
       if (err) {
         console.error("MULTER ERROR FIELD:", err.field);

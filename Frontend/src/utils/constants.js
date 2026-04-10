@@ -5,3 +5,4 @@ export const TRANSPORTER_API_END_POINT="http://localhost:8000/api/v4/transporter
 export const PRODUCT_API_END_POINT="http://localhost:8000/api/v4/product";
 export const CONTACT_API_END_POINT="http://localhost:8000/api/v4/contact";
 export const CHAT_API_END_POINT="http://localhost:8000/api/v4/chat";
+export const PAYMENT_API_END_POINT="http://localhost:8000/api/v4/khalti";

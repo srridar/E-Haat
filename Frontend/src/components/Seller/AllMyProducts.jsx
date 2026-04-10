@@ -52,29 +52,8 @@ const AllMyProducts = () => {
   }, []);
 
 
-  const handleEdit = (e, id) => {
-    e.stopPropagation(); 
-    navigate(`/seller/products/update/${id}`);
-  };
+  
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation();
-
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-
-    try {
-      const res = await axios.delete(
-        `${SELLER_API_END_POINT}/delete-product/${id}`,
-        { withCredentials: true }
-      );
-
-      if (res.data.success) {
-        setProducts((prev) => prev.filter(p => p._id !== id));
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
 
   if (loading) {
@@ -141,7 +120,6 @@ const AllMyProducts = () => {
           {products.map((product) => (
             <div
               key={product._id}
-              onClick={() => navigate(`/product/${product._id}`)}
               className="bg-white rounded-2xl shadow-md hover:shadow-lg transition cursor-pointer overflow-hidden"
             >
 
@@ -180,14 +158,18 @@ const AllMyProducts = () => {
               {/* ACTIONS */}
               <div className="flex border-t">
                 <button
-                  onClick={(e) => handleEdit(e, product._id)}
+                  onClick={() => navigate(`/product/${product._id}`)}
+                  className="w-1/2 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => navigate(`/product/edit/${product._id}`)}
                   className="w-1/2 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
                 >
                   Edit
                 </button>
-
                 <button
-                  onClick={(e) => handleDelete(e, product._id)}
                   className="w-1/2 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition"
                 >
                   Delete

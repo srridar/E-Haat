@@ -15,6 +15,7 @@ const TransporterLogin = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const role = "transporter";
 
   const validateInput = ({ email, password }) => {
     const errors = {};
@@ -140,7 +141,12 @@ const TransporterLogin = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Password</label>
-                <button type="button" className="text-xs font-bold text-emerald-600 hover:text-emerald-700">Forgot?</button>
+                 <p
+                  onClick={() => navigate(`/forgot-password/${role}`)}
+                  className="text-sm text-emerald-600 cursor-pointer mt-2"
+                >
+                  Forgot Password?
+                </p>
               </div>
               <div className="relative">
                 <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors.password ? 'text-red-400' : 'text-gray-400'}`} size={18} />

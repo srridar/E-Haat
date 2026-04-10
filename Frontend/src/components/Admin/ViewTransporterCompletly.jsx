@@ -83,10 +83,10 @@ const ViewTransporterCompletly = () => {
           <div className="mt-4 flex gap-2 justify-center md:justify-start">
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium ${transporter.verificationStatus === "approved"
-                  ? "bg-green-100 text-green-700"
-                  : transporter.verificationStatus === "rejected"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-yellow-100 text-yellow-700"
+                ? "bg-green-100 text-green-700"
+                : transporter.verificationStatus === "rejected"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-yellow-100 text-yellow-700"
                 }`}
             >
               {transporter.verificationStatus?.toUpperCase() || "PENDING"}
@@ -165,15 +165,47 @@ const ViewTransporterCompletly = () => {
           </div>
         </div>
 
-
         <div className="md:col-span-2">
           <div className="bg-white p-6 rounded-xl shadow-sm h-full">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 border-b pb-2">
               <FileText size={20} className="text-indigo-600" /> Verification Documents
             </h3>
 
+            {/* 🚗 Vehicle Photo */}
+            <div className="mb-6 border rounded-lg p-4 bg-gray-50 hover:bg-white transition">
+              <p className="text-sm font-medium text-gray-500 mb-2">
+                Vehicle Photo
+              </p>
+
+              {transporter?.vehicle?.vehiclePhoto ? (
+                <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center relative group">
+                  <img
+                    src={transporter.vehicle.vehiclePhoto}
+                    alt="Vehicle"
+                    className="w-full h-full object-cover"
+                  />
+
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                    <a
+                      href={transporter.vehicle.vehiclePhoto}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-white text-xs underline"
+                    >
+                      View Full Image
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-32 bg-gray-100 rounded flex items-center justify-center text-gray-400 italic">
+                  No vehicle photo uploaded
+                </div>
+              )}
+            </div>
+
+            {/* 📄 Documents */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(transporter.documents || {}).map(([key, value]) => (
+              {Object.entries(transporter?.documents || {}).map(([key, value]) => (
                 <div
                   key={key}
                   className="border rounded-lg p-4 bg-gray-50 hover:bg-white transition"
@@ -211,6 +243,8 @@ const ViewTransporterCompletly = () => {
             </div>
           </div>
         </div>
+
+
       </div>
     </div>
   );

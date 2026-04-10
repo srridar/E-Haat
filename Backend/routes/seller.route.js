@@ -13,7 +13,8 @@ import {
     deleteSellerAccount,
     getSellerVerifiedProducts,
     getSellerNotifications,
-    setLocation
+    setLocation,
+    editProduct
 } from "../controllers/seller.controller.js";
 
 const router = express.Router();
@@ -29,6 +30,7 @@ router.delete("/delete", isAuthenticated, isSeller, deleteSellerAccount);
 router.get("/products", isAuthenticated, isSeller, getSellerProducts);
 router.get("/verified-products", isAuthenticated, isSeller, getSellerVerifiedProducts);
 router.get("/notifications", isAuthenticated, getSellerNotifications)
+router.put("/edit-product/:productId", isAuthenticated, upload.array("images", 5), editProduct);
 
 
 export default router;

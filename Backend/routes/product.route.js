@@ -8,6 +8,7 @@ import {CreateProduct,
     deleteProduct, 
     HireTransporter,
     SearchFilterProduct, 
+    GetAllProductOfSeller,
     getAllProductsSorted,
     RateAndReviewProduct} from "../controllers/product.controller.js"
 
@@ -22,6 +23,7 @@ router.route("/delete-product").post(isAuthenticated, deleteProduct);
 router.route("/searchfilterproduct").post(isAuthenticated,SearchFilterProduct);
 router.route("/rateandreviewproduct").post(isAuthenticated,RateAndReviewProduct);
 router.post("/hiretransporter", isAuthenticated, HireTransporter);
+router.get("/seller/:id/products", GetAllProductOfSeller);
 
 
 export default router;

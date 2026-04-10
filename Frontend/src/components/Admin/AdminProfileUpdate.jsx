@@ -94,7 +94,7 @@ const AdminProfileUpdate = () => {
 
             if (res.data.success) {
                 toast.success("Profile updated successfully!");
-                navigate("/admin/profile"); 
+                navigate("/admin/admin-profile"); 
             }
         } catch (error) {
             const errorMsg = error.response?.data?.message || "Update failed";

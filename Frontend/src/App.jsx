@@ -9,6 +9,10 @@ import RegisterAsk from '@/components/shared/RegisterAsk';
 import LoginAsk from '@/components/shared/LoginAsk';
 import Notification from '@/components/shared/Notification';
 import Farmers from '@/components/shared/Farmers';
+import ForgotPassword from '@/components/shared/ForgotPassword';
+import ResetPassword from '@/components/shared/ResetPassword';
+import VerifyOtp from '@/components/shared/VerifyOtp';
+import DeliveryLocationVisualization from '@/components/shared/DeliveryLocationVisualization';
 
 
 import DashBoard from '@/components/Admin/DashBoard'
@@ -45,7 +49,9 @@ import BuyerLocationUpdation from '@/components/Buyer/BuyerLocationUpdation';
 import CreateOrderByBuyer from "@/components/Buyer/CreateOrderByBuyer";
 import GetAllOrders from "@/components/Buyer/GetAllOrders";
 import MyRequests from '@/components/Buyer/MyRequests';
-import OrderSuccessTracking from '@/components/Buyer/GetOrder';
+import TrackMyOrderByBuyer from '@/components/Buyer/TrackMyOrderByBuyer';
+import RateOrderPage from '@/components/Buyer/RateOrderPage';
+
 
 
 import SellerRegister from "@/components/Seller/SellerRegister";
@@ -66,6 +72,8 @@ import CheckOut from "@/components/Product/CheckOut";
 import TransporterDiscoveryMap from "@/components/Product/TransporterDiscoveryMap";
 import HireTransporter from '@/components/Product/HireTransporter';
 import ViewRequestCompletly from '@/components/Transporter/ViewRequestCompletly';
+import GetSellerProducts from '@/components/Product/GetSellerProducts';
+import EditProduct from '@/components/Product/EditProduct';
 
 
 import TransporterRegistration from "@/components/Transporter/TransporterRegistration";
@@ -80,7 +88,8 @@ import GetParticularTransporter from '@/components/Transporter/GetParticularTran
 import ViewAllRequest from '@/components/Transporter/ViewAllRequest';
 import MessageToOther from '@/components/Transporter/MessageToOther';
 
-
+import PaymentComplete from '@/components/Payment/PaymentComplete';
+import InitiatePayment from  '@/components/Payment/InitiatePayment';
 
 const appRouter = createBrowserRouter([
   {
@@ -106,6 +115,23 @@ const appRouter = createBrowserRouter([
   {
     path: '/login-as',
     element: <LoginAsk />
+  },
+  {
+     path : '/forgot-password/:role',
+     element : <ForgotPassword />
+  },
+   {
+     path : '/reset-password/:role/:email',
+     element : <ResetPassword />
+  },
+  {
+     path : '/verify-otp/:role/:email',
+     element : <VerifyOtp />
+  },
+  {
+    path : '/order-tracking/:id',
+    element : <DeliveryLocationVisualization />
+
   },
 
   {
@@ -133,6 +159,7 @@ const appRouter = createBrowserRouter([
       { path: "view-product-details/:id", element: <ViewProductCompletly/>},
       { path: "admin-profile-update", element: <AdminProfileUpdate/>},
       { path: "password-change", element: <AdminPasswordChange/>},
+      
     ],
   },
   {
@@ -162,8 +189,9 @@ const appRouter = createBrowserRouter([
       { path: "notifications", element: <Notification/> },
       { path: "transporter-details/:id", element: <GetParticularTransporter/>},
       { path: "all-request", element: <MyRequests/>},
-      { path: "order-tracking/:id", element: <OrderSuccessTracking/>},
+      { path: "order-tracking/:orderId", element: <TrackMyOrderByBuyer/>},
       { path: "location-selection", element: <BuyerLocationUpdation /> },
+      { path: "rate-order/:orderId", element: <RateOrderPage /> }
     ],
   },
   {
@@ -177,7 +205,10 @@ const appRouter = createBrowserRouter([
       { path: "checkout", element: <CheckOut/>},
       { path: "get-transporter", element: <TransporterDiscoveryMap /> },
       { path: "hire-transporter/:id", element: <HireTransporter/>},
-      { path: "create-order/:id", element: <CreateOrderByBuyer/>}
+      { path: "create-order/:id", element: <CreateOrderByBuyer/>},
+      { path: "seller/:id/products", element: <GetSellerProducts/>},
+      { path: "edit/:productId", element: <EditProduct/> },
+
     ],
   },
   {
@@ -193,9 +224,7 @@ const appRouter = createBrowserRouter([
       { path: "notifications", element: <Notification /> },
       { path: "location-selection", element: <TransporterLocationSelection /> },
       { path: "view-request/:id", element: <ViewRequestCompletly/>},
-      {
-        path: "all-requests",element: <ViewAllRequest/>
-      }
+      { path: "all-requests",element: <ViewAllRequest/>},
     ],
   },
   {
@@ -215,6 +244,13 @@ const appRouter = createBrowserRouter([
       { path: "chat/:role/:id", element: <MessageToOther />} ,
       { path:"chat", element: <MessageToOther/> }
       
+     ]
+  },
+  {
+     path: "/payment",
+     children: [
+      { path: "initiate/:orderId", element: <InitiatePayment /> },
+      { path: "complete", element: <PaymentComplete /> }
      ]
   }
 ]);

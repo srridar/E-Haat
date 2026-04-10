@@ -91,9 +91,8 @@ const BuyerProfile = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row gap-8 p-4 md:p-8">
-
-      {/* Sidebar Navigation */}
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row gap-8 p-4 md:p-8 relative ">
+   
       <aside className="w-full lg:w-72 shrink-0 space-y-4">
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden sticky top-8">
           {/* Sidebar Mini Profile */}
@@ -111,42 +110,42 @@ const BuyerProfile = () => {
           <nav className="p-4 space-y-1">
             <button className="flex items-center gap-3 w-full p-3 text-emerald-600 bg-emerald-50 rounded-xl font-bold transition-all">
               <UserIcon className="h-5 w-5" />
-              <span className="text-sm">My Profile</span>
+              <span className="font-semibold">My Profile</span>
             </button>
             <button
               onClick={() => navigate("/buyer/all-orders")}
-              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
+              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-orange-100 rounded-xl font-medium transition-all"
             >
               <CubeIcon className="h-5 w-5" />
-              <span className="text-sm">My Orders</span>
+              <span className="font-semibold">My Orders</span>
             </button>
             <button
               onClick={() => navigate("/buyer/all-request")}
-              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
+              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-orange-100 rounded-xl font-medium transition-all"
             >
               <CubeIcon className="h-5 w-5" />
-              <span className="text-sm">My Requests</span>
+              <span className="font-semibold">My Requests</span>
             </button>
             <button
               onClick={() => navigate("/buyer/notifications")}
-              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
+              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-orange-100 rounded-xl font-medium transition-all"
             >
               <BellIcon className="h-5 w-5" />
-              <span className="text-sm">Notifications</span>
+              <span className="font-semibold">Notifications</span>
             </button>
             <button
               onClick={() => navigate("/message/chat")}
-              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
+              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-orange-100 rounded-xl font-medium transition-all"
             >
               <MessagesSquare className="h-5 w-5" />
-              <span className="text-sm">Messages</span>
+              <span className="font-semibold">Messages</span>
             </button>
             <button
               onClick={() => setSetting(true)}
-              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all"
+              className="flex items-center gap-3 w-full p-3 text-slate-600 hover:bg-orange-100 rounded-xl font-medium transition-all"
             >
               <Cog6ToothIcon className="h-5 w-5" />
-              <span className="text-sm">Settings</span>
+              <span className="font-semibold">Settings</span>
             </button>
 
             <div className="pt-4 mt-4 border-t border-slate-100">
@@ -155,7 +154,7 @@ const BuyerProfile = () => {
                 className="flex items-center gap-3 w-full p-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-all"
               >
                 <ArrowRight className="h-5 w-5" />
-                <span className="text-sm">Log out</span>
+                <span className="font-semibold">Log out</span>
               </button>
             </div>
           </nav>

@@ -15,7 +15,8 @@ const BuyerLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  
+  const role = "buyer";
+
   const validateInput = ({ email, password }) => {
     const errors = {};
     const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,9 +60,8 @@ const BuyerLogin = () => {
       });
 
       if (res.data.success) {
-        // Make sure you pick buyer object, not seller
         dispatch(loginSuccess({ user: res.data.buyer }));
-        navigate("/buyer/profile");
+        navigate("/product/all");
       }
     } catch (error) {
       setApiError(error.response?.data?.message || "Invalid email or password");
@@ -144,7 +144,12 @@ const BuyerLogin = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Security Key</label>
-                <button type="button" className="text-xs font-bold text-emerald-600 hover:text-emerald-700">Forgot Code?</button>
+                <p
+                  onClick={() => navigate(`/forgot-password/${role}`)}
+                  className="text-sm text-emerald-600 cursor-pointer mt-2"
+                >
+                  Forgot Password?
+                </p>
               </div>
               <div className="relative">
                 <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors.password ? 'text-red-400' : 'text-slate-300'}`} size={18} />
@@ -182,7 +187,7 @@ const BuyerLogin = () => {
           <p className="text-center text-sm text-slate-500 mt-10">
             First time here?{' '}
             <button
-              onClick={() => navigate('/buyer/register')}
+              onClick={() => navigate('/buyer/sign-in')}
               className="font-black text-emerald-600 hover:underline transition-all"
             >
               Join the Community
@@ -195,3 +200,7 @@ const BuyerLogin = () => {
 }
 
 export default BuyerLogin;
+
+
+
+

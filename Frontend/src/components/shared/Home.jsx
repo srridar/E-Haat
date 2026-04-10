@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Navbar from '@/components/shared/Navbar'
 import { useNavigate } from "react-router-dom";
 import { motion } from 'framer-motion';
+import { Quote } from "lucide-react";
 import { ArrowRight, ShoppingCart, Leaf } from 'lucide-react';
 
 const Home = () => {
@@ -61,10 +62,9 @@ const Home = () => {
   ];
 
   return (
-    <div className="font-sans">
+    <div className="font-sans overflow-hidden">
       <Navbar />
-
-      <section className="relative overflow-hidden bg-[#fafaf9] py-20 lg:py-32">
+      <section className="relative overflow-hidden bg-[#fafaf9] py-24 lg:py-32">
         <div className="absolute top-0 left-1/4 w-64 h-64 bg-teal-200 rounded-full blur-[100px] opacity-60" />
         <div className="absolute top-0 left-2/4 w-64 h-64 bg-emerald-200 rounded-full blur-[100px] opacity-60" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-200 rounded-full blur-[120px] opacity-50" />
@@ -175,8 +175,6 @@ const Home = () => {
         </div>
       </section>
 
-
-
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           {/* Section Header */}
@@ -228,6 +226,8 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+
       <section className="relative py-24 overflow-hidden bg-[var(--primary-green)]">
         <div className="absolute inset-0 z-0">
           <img
@@ -283,11 +283,11 @@ const Home = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
+  
       <section className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="relative mb-20 flex flex-col items-center">
-           
+
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-100/50 rounded-full blur-3xl -z-10" />
             <span className="px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-[0.2em] mb-4 shadow-sm">
               How it works
@@ -311,24 +311,81 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="bg-gray-50 py-20">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-12">What People Say</h2>
+      <section className="relative bg-slate-50 py-24 overflow-hidden">
+        {/* Decorative Background Element */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-green-100/40 blur-[120px] rounded-full -z-10" />
+
+        <div className="max-w-6xl mx-auto px-6 relative">
+          <div className="text-center mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl font-extrabold text-slate-800 mb-4"
+            >
+              What Our Community Says
+            </motion.h2>
+
+            {/* Animated Horizontal Strip */}
+            <div className="flex justify-center items-center gap-4">
+              <div className="relative w-48 h-2 bg-green-200 rounded-full overflow-hidden">
+
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "100%" }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 2,
+                    ease: "linear",
+                  }}
+                  className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-transparent via-teal-400 to-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-8 md:grid-cols-3">
             {testimonials.map((t, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition">
-                <div className="text-4xl mb-4">{t.avatar}</div>
-                <p className="text-gray-600 italic mb-6">"{t.message}"</p>
-                <h4 className="font-bold">{t.name}</h4>
-                <p className="text-sm text-[var(--primary-green)]">{t.role}</p>
-              </div>
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                whileHover={{ y: -10 }}
+                className="group relative bg-white border border-slate-100 p-8 rounded-3xl shadow-xl shadow-slate-200/50 transition-all duration-300"
+              >
+                {/* Decorative Quote Icon */}
+                <div className="absolute top-6 right-8 text-slate-100 group-hover:text-green-50 transition-colors">
+                  <Quote size={40} fill="currentColor" />
+                </div>
+
+                <div className="relative z-10">
+                  <div className="text-5xl mb-6 filter grayscale group-hover:grayscale-0 transition-all duration-300 scale-100 group-hover:scale-110 origin-left">
+                    {t.avatar}
+                  </div>
+
+                  <p className="text-slate-600 italic mb-8 leading-relaxed">
+                    "{t.message}"
+                  </p>
+
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-[3px] bg-green-500 rounded-full" />
+                    <div>
+                      <h4 className="font-bold text-slate-800 tracking-tight">{t.name}</h4>
+                      <p className="text-xs font-bold uppercase tracking-widest text-green-600">
+                        {t.role}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+   
       <section className="py-12 bg-[var(--secondary-orange)] text-white text-center">
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to empower local agriculture?</h2>
@@ -339,7 +396,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Footer */}
+
       <footer className="bg-green-950 text-white py-16">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-4 gap-12">
           <div>
@@ -378,6 +435,7 @@ const Home = () => {
           © {new Date().getFullYear()} E-Haat Marketplace. All rights reserved. Made for Nepal.
         </div>
       </footer>
+      
     </div>
   )
 }

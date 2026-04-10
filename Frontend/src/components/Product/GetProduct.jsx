@@ -20,11 +20,12 @@ const GetProduct = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated  } = useSelector((state) => state.auth);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+
 
   const handleQuery = () => {
     if (isAuthenticated) {
@@ -79,7 +80,6 @@ const GetProduct = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 font-sans selection:bg-green-100">
-      {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <button
@@ -89,7 +89,6 @@ const GetProduct = () => {
             <div className="p-2 rounded-full group-hover:bg-slate-100 transition-colors">
               <ArrowLeft size={18} />
             </div>
-            <span className="text-sm font-semibold tracking-wide uppercase">Back</span>
           </button>
         </div>
       </nav>
@@ -238,6 +237,13 @@ const GetProduct = () => {
 
             <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Sold by</h3>
+               <button
+                onClick={() => navigate(`/product/seller/${product?.seller?._id}/products`)}
+                className="w-full mt-6 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-2xl transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+        
+              Seller Products
+              </button>
 
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">

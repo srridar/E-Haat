@@ -127,7 +127,8 @@ export const loginTransportProvider = async (req, res) => {
                     profileImage: transporter?.profileImage?.url,
                     isVerified: transporter?.isVerified,
                     isKycCompleted: transporter?.isKycCompleted,
-                    verificationStatus: transporter?.verificationStatus
+                    verificationStatus: transporter?.verificationStatus,
+                    isKycDataSubmitted : transporter?.isKycDataSubmitted
                 }
             });
 
@@ -248,10 +249,10 @@ export const submitTransporterKyc = async (req, res) => {
     try {
         const transporterId = req.user.transporterId;
 
-        const { citizenshipCard, drivingLicense, vehicleRegistration } = req.files || {};
+        const { citizenshipCard, drivingLicense, vehicleRegistration, vehiclePhoto } = req.files || {};
         let { vehicleType, numberPlate, capacityKg, serviceAreas, pricePerKm } = req.body;
 
-        if (!citizenshipCard || !drivingLicense || !vehicleRegistration || !vehicleType || !numberPlate || !capacityKg || !pricePerKm) {
+        if (!citizenshipCard || !drivingLicense || !vehiclePhoto || !vehicleRegistration || !vehicleType || !numberPlate || !capacityKg || !pricePerKm) {
             return res.status(400).json({
                 success: false,
                 message: "All KYC, vehicle, and pricing fields are required"
@@ -290,7 +291,8 @@ export const submitTransporterKyc = async (req, res) => {
         transporter.vehicle = {
             type: vehicleType,
             numberPlate,
-            capacityKg
+            capacityKg,
+            vehiclePhoto: vehiclePhoto[0].path
         };
 
 
@@ -301,6 +303,7 @@ export const submitTransporterKyc = async (req, res) => {
         transporter.isKycCompleted = true;
         transporter.verificationStatus = "pending";
         transporter.isVerified = false;
+        transporter.isKycDataSubmitted=true;
 
         await transporter.save();
 
@@ -640,7 +643,7 @@ export const getTransportRequests = async (req, res) => {
             success: false,
         });
     }
-};
+};    // redundant xa hasto xaa
 
 export const getTransportRequest = async (req, res) => {
     try {
@@ -683,7 +686,7 @@ export const getTransportRequest = async (req, res) => {
             success: false,
         });
     }
-};
+};     // use hunxa
 
 export const getAllTransportationRequests = async (req, res) => {
     try {
@@ -705,7 +708,7 @@ export const getAllTransportationRequests = async (req, res) => {
             message: "Server error",
         });
     }
-}
+}        // use hunxa
 
 export const updateRequestStatus = async (req, res) => {
   try {
@@ -775,7 +778,7 @@ export const updateRequestStatus = async (req, res) => {
       message: "Internal Server Error",
     });
   }
-};
+};    // use hunxa
 
 export const acceptOrder = async (req, res) => {
     try {
@@ -878,7 +881,7 @@ export const acceptOrder = async (req, res) => {
             success: false
         });
     }
-};
+};  // use vaxa
 
 export const rejectOrder = async (req, res) => {
     try {
@@ -980,7 +983,7 @@ export const rejectOrder = async (req, res) => {
             success: false,
         });
     }
-};
+};   // use vaxa
 
 export const updateOrderStatus = async (req, res) => {
     try {
@@ -1104,7 +1107,7 @@ export const updateOrderStatus = async (req, res) => {
             success: false,
         });
     }
-};
+};  // use vaxa
 
 export const getTransporterNotifications = async (req, res) => {
     try {
@@ -1135,7 +1138,7 @@ export const getTransporterNotifications = async (req, res) => {
             success: false,
         });
     }
-};
+}; // use vaxa
 
 
 

@@ -135,7 +135,6 @@ export const GetProductById = async (req, res) => {
     }
 }
 
-
 export const UpdateProduct = async (req, res) => {
     try {
 
@@ -209,7 +208,6 @@ export const UpdateProduct = async (req, res) => {
         })
     }
 }
-
 
 export const deleteProduct = async (req, res) => {
     try {
@@ -405,13 +403,10 @@ export const HireTransporter = async (req, res) => {
         }
 
 
-        if (
-            !pickupLocation.province ||
-            !pickupLocation.district ||
-            !pickupLocation.municipality ||
-            !pickupLocation.ward ||
-            !pickupLocation.landmark
-        ) {
+        if (!pickupLocation.province || !pickupLocation.district || !pickupLocation.municipality ||
+            !pickupLocation.ward || !pickupLocation.landmark || pickupLocation.latitude === undefined || pickupLocation.longitude === undefined
+           ) 
+            {
             return res.status(400).json({
                 message: "All pickup location fields are required!",
                 success: false,
@@ -420,11 +415,9 @@ export const HireTransporter = async (req, res) => {
 
 
         if (
-            !destinationLocation.province ||
-            !destinationLocation.district ||
-            !destinationLocation.municipality ||
-            !destinationLocation.ward ||
-            !destinationLocation.landmark
+            !destinationLocation.province || !destinationLocation.district ||
+            !destinationLocation.municipality || !destinationLocation.ward || !destinationLocation.landmark ||
+            destinationLocation.latitude === undefined || destinationLocation.longitude === undefined
         ) {
             return res.status(400).json({
                 message: "All destination location fields are required!",
@@ -482,6 +475,8 @@ export const HireTransporter = async (req, res) => {
 
 
 
+
+
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
     const toRad = (value) => (value * Math.PI) / 180;
     const R = 6371;
@@ -499,8 +494,6 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
 
     return R * c;
 };
-
-
 
 const cosineSimilarity = (text1, text2) => {
 
@@ -524,156 +517,212 @@ const cosineSimilarity = (text1, text2) => {
     return dotProduct / (magnitude1 * magnitude2);
 };
 
+export const GetAllProductOfSeller = async (req, res) => {
+    try {
+        const { search = "", categories = "" } = req.query;
+        const { id } = req.params;
+
+        const selectedCategories = categories ? categories.split(",") : [];
+        const hasSearch = search.trim() !== "";
+        const hasCategory = selectedCategories.length > 0;
+
+        const seller = await Seller.findById(id).select("name email phone city isVerified");
+
+        if (!seller) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller not found"
+            });
+        }
+
+        if (!seller.isVerified) {
+            return res.status(403).json({
+                success: false,
+                message: "Seller is not verified"
+            });
+        }
+
+        let query = { seller: id };
+
+        if (hasSearch) {
+            query.name = { $regex: search, $options: "i" };
+        }
+
+        if (hasCategory) {
+            query.category = { $in: selectedCategories };
+        }
+
+        const products = await Product.find(query).populate({
+            path: "seller",
+            select: "name email phone city"
+        });
+
+        if (products.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No products found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count: products.length,
+            products
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
 
 export const getAllProductsSorted = async (req, res) => {
-  try {
+    try {
 
-    const {
-      latitude,
-      longitude,
-      search = "",
-      categories = ""
-    } = req.query;
+        const {latitude,longitude, search = "",categories = ""} = req.query;
 
-    const selectedCategories = categories ? categories.split(",") : [];
-    const user = req.user;
+        const selectedCategories = categories ? categories.split(",") : [];
+        const user = req.user;
 
-    const hasSearch = search.trim() !== "";
-    const hasCategory = selectedCategories.length > 0;
+        const hasSearch = search.trim() !== "";
+        const hasCategory = selectedCategories.length > 0;
 
 
-    if (!user) {
+        if (!user) {
 
-      const products = await Product.find({
-        isActive: true,
-        isVerified: true
-      }).populate("seller");
+            const products = await Product.find({
+                isActive: true,
+                isVerified: true
+            }).populate("seller");
 
-      return res.status(200).json({
-        success: true,
-        type: "public_products",
-        total: products.length,
-        products
-      });
-    }
+            return res.status(200).json({
+                success: true,
+                type: "public_products",
+                total: products.length,
+                products
+            });
+        }
 
 
 
-    if (!latitude || !longitude) {
-      return res.status(400).json({
-        success: false,
-        message: "Buyer location required"
-      });
-    }
+        if (!latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: "Buyer location required"
+            });
+        }
 
-    const buyerLat = parseFloat(latitude);
-    const buyerLon = parseFloat(longitude);
+        const buyerLat = parseFloat(latitude);
+        const buyerLon = parseFloat(longitude);
 
-    const products = await Product.find({
-      isActive: true,
-      isVerified: true
-    }).populate("seller");
+        const products = await Product.find({
+            isActive: true,
+            isVerified: true
+        }).populate("seller");
 
 
 
-    if (hasSearch || hasCategory) {
+        if (hasSearch || hasCategory) {
 
-      const processedProducts = products
-        .filter(product => {
-          if (!hasCategory) return true;
-            return selectedCategories.includes(product.category);
-        })
-        .map(product => {
+            const processedProducts = products
+                .filter(product => {
+                    if (!hasCategory) return true;
+                    return selectedCategories.includes(product.category);
+                })
+                .map(product => {
 
-          const sellerLon = product.seller.location.coordinates[0];
-          const sellerLat = product.seller.location.coordinates[1];
+                    const sellerLon = product.seller.location.coordinates[0];
+                    const sellerLat = product.seller.location.coordinates[1];
 
-          const distance = haversineDistance(
-            buyerLat,
-            buyerLon,
-            sellerLat,
-            sellerLon
-          );
+                    const distance = haversineDistance(
+                        buyerLat,
+                        buyerLon,
+                        sellerLat,
+                        sellerLon
+                    );
 
-          const similarity = hasSearch
-            ? cosineSimilarity(
-                search,
-                `${product.name} ${product.category} ${product.description}`
-              )
-            : 0;
+                    const similarity = hasSearch
+                        ? cosineSimilarity(
+                            search,
+                            `${product.name} ${product.category} ${product.description}`
+                        )
+                        : 0;
 
-          return {
-            ...product._doc,
-            distance,
-            similarity
-          };
+                    return {
+                        ...product._doc,
+                        distance,
+                        similarity
+                    };
+
+                });
+
+            processedProducts.sort((a, b) => {
+
+                if (b.similarity !== a.similarity) {
+                    return b.similarity - a.similarity;
+                }
+
+                return a.distance - b.distance;
+
+            });
+
+            return res.status(200).json({
+                success: true,
+                type: "search_products",
+                total: processedProducts.length,
+                products: processedProducts
+            });
+        }
+
+        // ------------------------------------------------
+        // CASE 4 : LOGGED IN BUT NO INPUT
+        // LOCATION + BEHAVIOR BASED
+        // ------------------------------------------------
+
+        const processedProducts = products.map(product => {
+
+            const sellerLon = product.seller.location.coordinates[0];
+            const sellerLat = product.seller.location.coordinates[1];
+
+            const distance = haversineDistance(
+                buyerLat,
+                buyerLon,
+                sellerLat,
+                sellerLon
+            );
+
+
+            const popularityScore = (product.rating * product.totalRatings) / 100;
+
+            const finalScore = (0.6 * (1 / (distance + 1))) + (0.4 * popularityScore);
+
+            return {
+                ...product._doc,
+                distance,
+                score: finalScore
+            };
 
         });
 
-      processedProducts.sort((a, b) => {
+        processedProducts.sort((a, b) => b.score - a.score);
 
-        if (b.similarity !== a.similarity) {
-          return b.similarity - a.similarity;
-        }
+        return res.status(200).json({
+            success: true,
+            type: "recommended_products",
+            total: processedProducts.length,
+            products: processedProducts
+        });
 
-        return a.distance - b.distance;
+    } catch (error) {
 
-      });
+        console.error(error);
 
-      return res.status(200).json({
-        success: true,
-        type: "search_products",
-        total: processedProducts.length,
-        products: processedProducts
-      });
+        return res.status(500).json({
+            success: false,
+            message: "Server Error"
+        });
     }
-
-    // ------------------------------------------------
-    // CASE 4 : LOGGED IN BUT NO INPUT
-    // LOCATION + BEHAVIOR BASED
-    // ------------------------------------------------
-
-    const processedProducts = products.map(product => {
-
-      const sellerLon = product.seller.location.coordinates[0];
-      const sellerLat = product.seller.location.coordinates[1];
-
-      const distance = haversineDistance(
-        buyerLat,
-        buyerLon,
-        sellerLat,
-        sellerLon
-      );
-
-   
-      const popularityScore = (product.rating * product.totalRatings) / 100;
-
-      const finalScore = (0.6 * (1 / (distance + 1))) + (0.4 * popularityScore);
-
-      return {
-        ...product._doc,
-        distance,
-        score: finalScore
-      };
-
-    });
-
-    processedProducts.sort((a, b) => b.score - a.score);
-
-    return res.status(200).json({
-      success: true,
-      type: "recommended_products",
-      total: processedProducts.length,
-      products: processedProducts
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server Error"
-    });
-  }
 };

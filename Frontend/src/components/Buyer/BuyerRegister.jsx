@@ -22,7 +22,7 @@ const BuyerRegister = () => {
 
   const navigate = useNavigate()
 
- 
+
   const validateForm = () => {
     let newErrors = {};
     const emailReg = /^[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/;
@@ -30,9 +30,9 @@ const BuyerRegister = () => {
     const phoneReg = /^(98|97)\d{8}$/;
 
     if (!input.name.trim()) newErrors.name = "Full name is required";
-    if(input.name.trim().length < 3) newErrors.name = "Name seems too short";
-    if(/[^a-zA-Z\s]/.test(input.name.trim())) newErrors.name = "Name cannot contain special characters or numbers";
-    
+    if (input.name.trim().length < 3) newErrors.name = "Name seems too short";
+    if (/[^a-zA-Z\s]/.test(input.name.trim())) newErrors.name = "Name cannot contain special characters or numbers";
+
     if (!input.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!emailReg.test(input.email)) {
@@ -46,8 +46,8 @@ const BuyerRegister = () => {
     }
 
     if (!input.city.trim()) newErrors.city = "City is required";
-    if(input.city.trim().length < 3) newErrors.city = "City name seems too short";
-    if(/[^a-zA-Z\s]/.test(input.city.trim())) newErrors.city = "City name cannot contain special characters or numbers";
+    if (input.city.trim().length < 3) newErrors.city = "City name seems too short";
+    if (/[^a-zA-Z\s]/.test(input.city.trim())) newErrors.city = "City name cannot contain special characters or numbers";
 
     if (!input.password) {
       newErrors.password = "Password is required";
@@ -67,7 +67,6 @@ const BuyerRegister = () => {
     const { name, value } = e.target;
     setInput({ ...input, [name]: value });
 
-    // Remove error message as user types
     if (errors[name]) {
       setErrors(prev => {
         const updated = { ...prev };
@@ -83,7 +82,7 @@ const BuyerRegister = () => {
       latitude: lat,
       longitude: lng
     }))
-    // Clear location error once pinned
+
     if (errors.location) {
       setErrors(prev => {
         const updated = { ...prev };
@@ -92,6 +91,7 @@ const BuyerRegister = () => {
       });
     }
   }
+
 
   const submitHandler = async (e) => {
     e.preventDefault()
@@ -125,12 +125,11 @@ const BuyerRegister = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0fdf4] p-2 lg:p-4 relative overflow-hidden">
-      
+
       <button onClick={() => navigate("/")} className="absolute top-6 left-6 z-20 flex items-center gap-2 text-slate-700 hover:text-emerald-600 transition-colors font-bold group">
         <div className="p-2 bg-white rounded-xl shadow-sm group-hover:shadow-md transition-all">
-          <ArrowLeft size={20} /> 
+          <ArrowLeft size={20} />
         </div>
-        <span>Back</span>
       </button>
 
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 border border-emerald-100">
@@ -211,8 +210,18 @@ const BuyerRegister = () => {
                 <h3 className="font-bold text-sm uppercase tracking-wider">Delivery Location</h3>
               </div>
 
-              <div className={`rounded-[2rem] overflow-hidden border-4 shadow-inner relative group ${errors.location ? 'border-red-200' : 'border-slate-50'}`}>
-                <LocationPicker onSelect={handleLocationSelect} />
+              <div className={`h-[400px] rounded-[2rem] overflow-hidden border-4 shadow-inner relative group ${errors.location ? "border-red-200" : "border-slate-50"
+                }`}>
+                <LocationPicker
+                  key={`${input.latitude || 0}-${input.longitude || 0}`}
+                  onSelect={handleLocationSelect}
+                  currentCoords={
+                    input.latitude && input.longitude
+                      ? [input.latitude, input.longitude]
+                      : [27.7172, 85.3240]
+                  }
+                  isEditable={true}
+                />
               </div>
 
               {errors.location && (
@@ -263,3 +272,8 @@ const BuyerRegister = () => {
 }
 
 export default BuyerRegister
+
+
+
+
+

@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SELLER_API_END_POINT } from '@/utils/constants'
-import LocationPicker2 from '@/components/LocationPicker2'
+import LocationPicker from '@/components/LocationPicker'
 import axios from 'axios'
 import { Label } from '@/components/ui/label'
-import { toast } from "react-toastify"; 
+import { toast } from "react-toastify";
 import {
   ArrowLeft,
   Store,
@@ -22,7 +22,7 @@ import {
 
 const SellerRegister = () => {
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({}); 
+  const [errors, setErrors] = useState({});
   const [input, setInput] = useState({
     name: "",
     email: "",
@@ -43,9 +43,9 @@ const SellerRegister = () => {
     const phoneReg = /^(98|97)\d{8}$/;
 
     if (!input.name.trim()) newErrors.name = "Business name is required";
-    if(input.name.trim().length < 3) newErrors.name = "Name seems too short";
-    if(/[^a-zA-Z\s]/.test(input.name.trim())) newErrors.name = "Name cannot contain special characters or numbers";
-    
+    if (input.name.trim().length < 3) newErrors.name = "Name seems too short";
+    if (/[^a-zA-Z\s]/.test(input.name.trim())) newErrors.name = "Name cannot contain special characters or numbers";
+
     if (!input.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!emailReg.test(input.email)) {
@@ -59,8 +59,8 @@ const SellerRegister = () => {
     }
 
     if (!input.city.trim()) newErrors.city = "City is required";
-    if(input.city.trim().length < 3) newErrors.city = "City name seems too short";
-    if(/[^a-zA-Z\s]/.test(input.city.trim())) newErrors.city = "City name cannot contain special characters or numbers";
+    if (input.city.trim().length < 3) newErrors.city = "City name seems too short";
+    if (/[^a-zA-Z\s]/.test(input.city.trim())) newErrors.city = "City name cannot contain special characters or numbers";
 
     if (!input.password) {
       newErrors.password = "Password is required";
@@ -79,8 +79,7 @@ const SellerRegister = () => {
   const changeEventHandler = (e) => {
     const { name, value } = e.target;
     setInput({ ...input, [name]: value });
-    
-   
+
     if (errors[name]) {
       setErrors(prev => {
         const updated = { ...prev };
@@ -107,7 +106,7 @@ const SellerRegister = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       toast.error("Please fix the errors in the form");
       return;
@@ -145,7 +144,7 @@ const SellerRegister = () => {
       </button>
 
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 bg-white rounded-[2rem] shadow-2xl shadow-orange-100/50 overflow-hidden relative z-10 border border-orange-50">
-        
+
         <div className="lg:col-span-4 bg-gradient-to-b from-orange-50 to-white p-6 hidden lg:flex flex-col justify-between border-r border-orange-50">
           <div>
             <div className="w-10 h-10 bg-orange-500 rounded-2xl flex items-center justify-center text-white mb-2 shadow-lg shadow-orange-200">
@@ -201,7 +200,7 @@ const SellerRegister = () => {
                     </div>
                     {errors[field.name] && (
                       <p className="text-red-500 text-[10px] font-bold ml-1 flex items-center gap-1">
-                         <AlertCircle size={10} /> {errors[field.name]}
+                        <AlertCircle size={10} /> {errors[field.name]}
                       </p>
                     )}
                   </div>
@@ -218,21 +217,30 @@ const SellerRegister = () => {
               </div>
             </div>
 
-            {/* Farm/Store Location Section */}
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 ">
               <div className="flex items-center gap-2 text-orange-600 border-b border-orange-50 pb-2">
                 <MapPin size={18} />
                 <h3 className="font-bold text-sm uppercase tracking-wider">Store Location</h3>
               </div>
 
-              <div className={`rounded-[2rem] overflow-hidden border-4 shadow-inner relative ${errors.location ? 'border-red-200' : 'border-slate-50'}`}>
-                <LocationPicker2 onSelect={handleLocationSelect} />
+              <div className={`h-[400px] rounded-[2rem] overflow-hidden border-4 shadow-inner relative group ${errors.location ? "border-red-200" : "border-slate-50"
+                }`}>
+                <LocationPicker
+                  key={`${input.latitude || 0}-${input.longitude || 0}`}
+                  onSelect={handleLocationSelect}
+                  currentCoords={
+                    input.latitude && input.longitude
+                      ? [input.latitude, input.longitude]
+                      : [27.7172, 85.3240]
+                  }
+                  isEditable={true}
+                />
               </div>
 
               {errors.location && (
-                 <p className="text-red-500 text-xs font-bold flex items-center gap-1">
-                   <AlertCircle size={14} /> {errors.location}
-                 </p>
+                <p className="text-red-500 text-xs font-bold flex items-center gap-1">
+                  <AlertCircle size={14} /> {errors.location}
+                </p>
               )}
 
               {input.latitude && (
@@ -245,7 +253,6 @@ const SellerRegister = () => {
               )}
             </div>
 
-            {/* Submission */}
             <div className="pt-4">
               <button
                 type="submit"

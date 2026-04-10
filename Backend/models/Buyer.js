@@ -69,6 +69,12 @@ const buyerSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    resetOtp: {
+        type: String
+    },
+    otpExpire: {
+        type: Date
     }
 }, { timestamps: true })
 

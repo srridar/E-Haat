@@ -12,7 +12,8 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
-// Helper component to update view when lat/lng props change
+
+
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {

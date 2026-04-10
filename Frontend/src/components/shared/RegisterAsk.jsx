@@ -92,7 +92,7 @@ const RegisterAsk = () => {
             <p className="text-sm text-slate-500 font-medium">
               Already have an account?{' '}
               <button 
-                onClick={() => navigate('/login')} 
+                onClick={() => navigate('/login-as')} 
                 className="text-emerald-600 font-bold hover:underline"
               >
                 Log In

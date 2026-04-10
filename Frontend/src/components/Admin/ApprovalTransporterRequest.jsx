@@ -1,14 +1,14 @@
 import React from "react";
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Truck, 
-  Mail, 
-  Phone, 
-  Clock, 
-  Banknote, 
-  ChevronRight, 
-  AlertCircle 
+import {
+  ArrowLeft,
+  Truck,
+  Mail,
+  Phone,
+  Clock,
+  Banknote,
+  ChevronRight,
+  AlertCircle
 } from "lucide-react";
 import useGetTransporterApprovalRequest from "@/hooks/adminHooks/useGetTransporterApprovalRequest";
 
@@ -18,15 +18,16 @@ const TransporterApprovalRequest = () => {
 
 
   return (
-    <div className="max-w-5xl mx-auto p-5 pb-10">
+    <div className="max-w-6xl mx-auto p-5 pb-10">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex p-1 bg-green-300 rounded-md items-center gap-2 text-gray-400 hover:text-emerald-600 transition-colors text-sm font-medium mb-2"
+      >
+        <ArrowLeft size={16} /> 
+      </button>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-2">
         <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-400 hover:text-emerald-600 transition-colors text-sm font-medium mb-2"
-          >
-            <ArrowLeft size={16} /> Back to Dashboard
-          </button>
+
           <h1 className="text-2xl font-bold text-gray-900">Transporter Requests</h1>
           <p className="text-sm text-gray-500">Verify logistics partners and vehicle credentials.</p>
         </div>
@@ -58,7 +59,7 @@ const TransporterApprovalRequest = () => {
               className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 hover:border-emerald-200 hover:shadow-md transition-all group"
             >
               <div className="flex flex-col lg:flex-row justify-between gap-6">
-                
+
                 {/* Left: Basic Info & Contact */}
                 <div className="flex gap-5">
                   <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
@@ -96,14 +97,14 @@ const TransporterApprovalRequest = () => {
                   <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Rate / KM</p>
                     <p className="text-sm font-bold text-emerald-600 flex items-center gap-1">
-                      <Banknote size={14} /> 
+                      <Banknote size={14} />
                       {transporter.pricePerKm ? `Rs. ${transporter.pricePerKm}` : "Quote Req."}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center lg:flex-col lg:justify-center gap-3">
-                  <button 
+                  <button
                     onClick={() => navigate(`/admin/view-transporter-details/${transporter._id}`)}
                     className="flex-1 lg:w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all"
                   >

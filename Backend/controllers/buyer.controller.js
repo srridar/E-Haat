@@ -4,13 +4,240 @@ import { Buyer } from '../models/Buyer.js'
 import { TransportProvider } from '../models/TransportProvider.js'
 import { Product } from "../models/Product.js";
 import { TransportRequestInfo } from "../models/TransportRequestInfo.js"
-
-import MAX_DISTANCE from '../config/distance.config.js'
 import Notification from "../models/Notification.js";
 import cloudinary from '../utils/cloudinary.js'
 import bcrypt from 'bcryptjs'
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
+import mongoose from "mongoose";
 
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // App password
+    },
+});
+
+const generateOtp = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email, role } = req.body;
+
+        let Model;
+
+        if (role === "buyer") {
+            Model = Buyer;
+        } else if (role === "seller") {
+            Model = Seller;
+        } else if (role === "transporter") {
+            Model = TransportProvider;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role specified"
+            });
+
+        }
+
+        const user = await Model.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        const otp = generateOtp();
+        const hashedOtp = await bcrypt.hash(otp, 10);
+
+        user.resetOtp = hashedOtp;
+        user.otpExpire = Date.now() + 10 * 60 * 1000;
+
+        await user.save();
+
+        // 📧 Send email
+        await transporter.sendMail({
+            to: user.email,
+            subject: "E-Haat Password Reset OTP",
+            html: `
+  <div style="font-family: Arial, sans-serif; background-color:#f4f4f4; padding:40px 0;">
+    <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg, #10b981, #059669); padding:20px; text-align:center;">
+        <h1 style="color:#ffffff; margin:0;">E-Haat Marketplace</h1>
+        <p style="color:#d1fae5; margin-top:5px;">Secure Password Reset</p>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:30px; text-align:center;">
+        <h2 style="color:#111827; margin-bottom:10px;">Password Reset Request</h2>
+        <p style="color:#6b7280; font-size:14px;">
+          We received a request to reset your password. Use the OTP below to proceed.
+        </p>
+
+        <!-- OTP Box -->
+        <div style="margin:30px 0;">
+          <span style="
+            display:inline-block;
+            padding:15px 30px;
+            font-size:28px;
+            letter-spacing:6px;
+            font-weight:bold;
+            color:#059669;
+            background:#ecfdf5;
+            border:2px dashed #10b981;
+            border-radius:10px;
+          ">
+            ${otp}
+          </span>
+        </div>
+
+        <p style="color:#6b7280; font-size:14px;">
+          This OTP is valid for <b>10 minutes</b>. Do not share it with anyone.
+        </p>
+
+        <p style="color:#9ca3af; font-size:12px; margin-top:20px;">
+          If you did not request this, please ignore this email.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f9fafb; padding:15px; text-align:center; font-size:12px; color:#9ca3af;">
+        © ${new Date().getFullYear()} E-Haat Marketplace. All rights reserved.
+      </div>
+
+    </div>
+  </div>
+`
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent to your email",
+        });
+
+    } catch (error) {
+        console.error("Forgot Password Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+        });
+    }
+};
+
+export const verifyOtp = async (req, res) => {
+    try {
+        const { email, otp, role } = req.body;
+
+        let Model;
+
+        if (role === "buyer") {
+            Model = Buyer;
+        } else if (role === "seller") {
+            Model = Seller;
+        } else if (role === "transporter") {
+            Model = TransportProvider;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role specified"
+            });
+
+        }
+
+        const user = await Model.findOne({ email });
+
+        if (!user || !user.resetOtp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request",
+            });
+        }
+
+        const isMatch = await bcrypt.compare(otp, user.resetOtp);
+
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP",
+            });
+        }
+
+        if (user.otpExpire < Date.now()) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP expired",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP verified successfully",
+        });
+
+    } catch (error) {
+        console.error("Verify OTP Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+        });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, password, role } = req.body;
+
+        let Model;
+        if (role === "buyer") {
+            Model = Buyer;
+        } else if (role === "seller") {
+            Model = Seller;
+        } else if (role === "transporter") {
+            Model = TransportProvider;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role specified"
+            });
+        }
+
+        const user = await Model.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        user.password = hashedPassword;
+        user.resetOtp = undefined;
+        user.otpExpire = undefined;
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successful",
+        });
+
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+        });
+    }
+};
 
 export const registerBuyer = async (req, res) => {
     try {
@@ -84,7 +311,7 @@ export const loginBuyer = async (req, res) => {
             phone: buyer.phone,
             role: "buyer",
             profileImage: buyer.profileImage?.url,
-            location:buyer.location
+            location: buyer.location
         }
 
 
@@ -286,12 +513,12 @@ export const changeBuyerPassword = async (req, res) => {
 
 export const getProductsFromVerifiedSellers = async (req, res) => {
     try {
-        const products = await Product.find({isVerified : true})
+        const products = await Product.find({ isVerified: true })
             .populate({
                 path: "seller",
-                match: { isVerified: true },   
+                match: { isVerified: true },
                 select: "name email phone location"
-            });     
+            });
 
         const verifiedProducts = products.filter(product => product.seller !== null);
 
@@ -311,19 +538,29 @@ export const getProductsFromVerifiedSellers = async (req, res) => {
 }
 
 export const createOrderByBuyer = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
         const buyerId = req.user.buyerId;
-         const { transporter,  products,   totalAmount,   deliveryCost, totalCost,    deliveryLocation } = req.body;
-    
-        if ( !transporter || !products || products.length === 0 || !totalAmount || !deliveryCost || !totalCost || !deliveryLocation?.pickupLocation || !deliveryLocation?.destinationLocation ) {
+        const { transporter, products, totalAmount, deliveryCost, totalCost, deliveryLocation } = req.body;
+
+        console.log("hited run :" + req.body);
+
+        if (!transporter || !products || products.length === 0 || !totalAmount || !deliveryCost || !totalCost
+            || !deliveryLocation?.pickupLocation || !deliveryLocation?.destinationLocation) {
+            await session.abortTransaction();
             return res.status(400).json({
                 message: "Missing required fields",
                 success: false
             });
         }
 
-        const buyer = await Buyer.findById(buyerId);
+
+        const buyer = await Buyer.findById(buyerId).session(session);
+        console.log("buyer data : " + buyer);
         if (!buyer) {
+            await session.abortTransaction();
             return res.status(404).json({
                 message: "Buyer not found",
                 success: false
@@ -334,9 +571,14 @@ export const createOrderByBuyer = async (req, res) => {
             _id: transporter,
             isVerified: true,
             isActive: true
-        });
+        }).session(session);
+
+        console.log(" transporterData " + transporterData);
+
+
 
         if (!transporterData) {
+            await session.abortTransaction();
             return res.status(404).json({
                 message: "Transporter not found or inactive",
                 success: false
@@ -346,9 +588,12 @@ export const createOrderByBuyer = async (req, res) => {
         const verifiedProducts = [];
         const sellerSet = new Set();
 
+        // ✅ First validate products (NO stock update yet)
         for (const item of products) {
-            const product = await Product.findById(item.product);
+            const product = await Product.findById(item.product).session(session);
+
             if (!product) {
+                await session.abortTransaction();
                 return res.status(404).json({
                     message: "Product not found",
                     success: false
@@ -356,15 +601,15 @@ export const createOrderByBuyer = async (req, res) => {
             }
 
             if (product.stock < item.quantity) {
+                await session.abortTransaction();
                 return res.status(400).json({
                     message: `${product.name} is out of stock`,
                     success: false
                 });
             }
 
-            product.stock -= item.quantity;
-            await product.save();
             sellerSet.add(product.seller.toString());
+
             verifiedProducts.push({
                 product: product._id,
                 seller: product.seller,
@@ -372,7 +617,8 @@ export const createOrderByBuyer = async (req, res) => {
             });
         }
 
-        const newOrder = await Order.create({
+        // ✅ Create Order FIRST
+        const newOrder = await Order.create([{
             buyer: buyerId,
             transporter,
             products: verifiedProducts,
@@ -380,21 +626,33 @@ export const createOrderByBuyer = async (req, res) => {
             deliveryCost,
             totalCost,
             deliveryLocation
-        });
+        }], { session });
+
+
+        console.log(" newOrder " + newOrder);
+
+        // ✅ NOW reduce stock (only if order created)
+        for (const item of products) {
+            const product = await Product.findById(item.product).session(session);
+            product.stock -= item.quantity;
+            await product.save({ session });
+        }
 
         const sellers = await Seller.find({
             _id: { $in: Array.from(sellerSet) },
             isVerified: true
-        });
+        }).session(session);
 
+        // ✅ Notifications
         const notifications = [];
+
         notifications.push({
             user: buyerId,
             role: "buyer",
             type: "order",
             title: "Order Placed",
             message: "You have successfully placed an order.",
-            relatedId: newOrder._id,
+            relatedId: newOrder[0]._id,
         });
 
         sellers.forEach((seller) => {
@@ -404,7 +662,7 @@ export const createOrderByBuyer = async (req, res) => {
                 type: "order",
                 title: "New Order Received",
                 message: "You have received a new order.",
-                relatedId: newOrder._id,
+                relatedId: newOrder[0]._id,
             });
         });
 
@@ -414,31 +672,41 @@ export const createOrderByBuyer = async (req, res) => {
             type: "delivery",
             title: "Delivery Assigned",
             message: "A new delivery has been assigned to you.",
-            relatedId: newOrder._id,
+            relatedId: newOrder[0]._id,
         });
 
-        const createdNotifications = await Notification.insertMany(notifications);
+        const createdNotifications = await Notification.insertMany(notifications, { session });
+
+
         buyer.notifications.push(createdNotifications[0]._id);
-        await buyer.save();
+        await buyer.save({ session });
 
         for (let i = 0; i < sellers.length; i++) {
             sellers[i].notifications.push(createdNotifications[i + 1]._id);
-            await sellers[i].save();
+            await sellers[i].save({ session });
         }
 
         transporterData.notifications.push(
             createdNotifications[createdNotifications.length - 1]._id
         );
-        await transporterData.save();
+        await transporterData.save({ session });
 
-        return res.status(201).json({
+        // ✅ COMMIT EVERYTHING
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
             message: "Order created successfully",
             success: true,
-            orderId: newOrder._id,
+            orderId: newOrder[0]._id,
         });
 
     } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
         console.error("CreateOrder Error:", error);
+
         return res.status(500).json({
             message: "Internal Server Error",
             success: false,
@@ -448,79 +716,177 @@ export const createOrderByBuyer = async (req, res) => {
 
 export const getMyOrdersByBuyer = async (req, res) => {
     try {
-        const buyerId = req.user.buyerId;           
-        const allOrders = await Order.find({ buyer: buyerId })         
-            .populate("products.product", "name price");
+        const buyerId = req.user.buyerId;
 
+        const allOrders = await Order.find({ buyer: buyerId })
+            .populate("buyer", "name email")
+            .populate("transporter", "name phone vehicle pricePerKm")
+            .populate({
+                path: "products.product",
+                select: "name price image"
+            })
+            .populate({
+                path: "products.seller",
+                select: "name shopName"
+            })
+            .sort({ createdAt: -1 })
+            .lean();
 
+        // ✅ FIXED: No 404
         if (!allOrders || allOrders.length === 0) {
-            return res.status(404).json({
-                message: "You have not ordered any products yet",
-                success: false
+            return res.status(200).json({
+                success: true,
+                count: 0,
+                orders: []
             });
         }
 
-        const orderedProducts = [];
-        allOrders.forEach(order => {
-            order.products.forEach(item => {
-                orderedProducts.push({
-                    orderId: order._id,
-                    productId: item.product._id,
-                    productName: item.product.name,
-                    productPrice: item.product.price,
-                    quantity: item.quantity,
-                    totalPrice: item.product.price * item.quantity,
-                    seller: order.seller,
-                    orderStatus: order.status,
-                    isSellerRated: order.isSellerRated,
-                    isTransportRated: order.isTransporterRated
-                })
-            })
-        })
+        const orders = allOrders.map(order => ({
+            orderId: order._id,
+
+            // Buyer
+            buyer: {
+                id: order.buyer?._id,
+                name: order.buyer?.name || "N/A",
+                email: order.buyer?.email || "N/A"
+            },
+
+            // Transporter
+            transporter: {
+                id: order.transporter?._id,
+                name: order.transporter?.name || "N/A",
+                phone: order.transporter?.phone || "N/A",
+                vehicle: order.transporter?.vehicle || "N/A",
+                pricePerKm: order.transporter?.pricePerKm || 0
+            },
+
+            // Order Info
+            status: order.status,
+            totalAmount: order.totalAmount || 0,
+            deliveryCost: order.deliveryCost || 0,
+            totalCost: order.totalCost || 0,
+
+            // ✅ IMPORTANT ADD
+            isPaymentCompleted: order.isPaymentCompleted,
+
+            // Ratings
+            isSellerRated: order.isSellerRated,
+            isProductRated: order.isProductRated,
+            isTransporterRated: order.isTransporterRated,
+
+            // Location
+            pickupLocation: order.deliveryLocation?.pickupLocation,
+            destinationLocation: order.deliveryLocation?.destinationLocation,
+
+            // Products
+            products: order.products.map(item => ({
+                productId: item.product?._id,
+                productName: item.product?.name || "Unknown",
+                productPrice: item.product?.price || 0,
+                productImage: item.product?.image || "",
+
+                quantity: item.quantity,
+                totalPrice: (item.product?.price || 0) * item.quantity,
+
+                seller: {
+                    id: item.seller?._id,
+                    name: item.seller?.name || "Unknown",
+                    shopName: item.seller?.shopName || "Unknown"
+                }
+            })),
+
+            createdAt: order.createdAt
+        }));
 
         return res.status(200).json({
             success: true,
-            orderedProducts
+            count: orders.length,
+            orders
         });
 
-
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
+        console.error("GetMyOrders Error:", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false
+        });
     }
-
-}
+};
 
 export const getOrderById = async (req, res) => {
     try {
-        const { id } = req.params; 
-        const order = await Order.findById(id).populate("products.product", "name price");
+        const { orderId } = req.params;
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                message: "Order ID is required"
+            });
+        }
+
+        const order = await Order.findById(orderId)
+            .populate("buyer", "name email phone")
+            .populate("transporter", "name phone vehicle pricePerKm")
+            .populate({
+                path: "products.product",
+                select: "name price image"
+            })
+            .populate({
+                path: "products.seller",
+                select: "name shopName"
+            })
+            .lean();
+
         if (!order) {
             return res.status(404).json({
-                message: "Order not found",
-                success: false
+                success: false,
+                message: "Order not found"
             });
         }
 
-        if (order.buyer.toString() !== req.user.buyerId.toString()) {
+        // 🔐 Authorization check
+        if (order.buyer?._id.toString() !== req.user.buyerId.toString()) {
             return res.status(403).json({
-                message: "Unauthorized access to this order",
-                success: false
+                success: false,
+                message: "Unauthorized access"
             });
         }
 
+        // ✅ FORMAT RESPONSE (IMPORTANT)
         const formattedOrder = {
             orderId: order._id,
-            productName: order.products[0]?.product?.name, 
-            productPrice: order.products[0]?.product?.price,
-            quantity: order.products[0]?.quantity,
-            totalPrice: order.products.reduce((acc, item) => acc + (item.product.price * item.quantity), 0),
-            orderStatus: order.status,
-            seller: order.seller,
-            isSellerRated: order.isSellerRated,
-            isTransportRated: order.isTransporterRated,
-            createdAt: order.createdAt,
-            shippingDetails: order.deliveryLocation
+            status: order.status,
+            totalAmount: order.totalAmount || 0,
+            deliveryCost: order.deliveryCost || 0,
+            totalCost: order.totalCost || 0,
+            isPaymentCompleted: order.isPaymentCompleted,
+
+            transporter: {
+                id: order.transporter?._id,
+                name: order.transporter?.name,
+                phone: order.transporter?.phone,
+                vehicle: order.transporter?.vehicle,
+                pricePerKm: order.transporter?.pricePerKm
+            },
+
+            pickupLocation: order.deliveryLocation?.pickupLocation,
+            destinationLocation: order.deliveryLocation?.destinationLocation,
+
+            products: order.products.map(item => ({
+                productId: item.product?._id,
+                productName: item.product?.name,
+                productPrice: item.product?.price,
+                productImage: item.product?.image,
+                quantity: item.quantity,
+                totalPrice: (item.product?.price || 0) * item.quantity,
+
+                seller: {
+                    id: item.seller?._id,
+                    name: item.seller?.name,
+                    shopName: item.seller?.shopName
+                }
+            })),
+
+            createdAt: order.createdAt
         };
 
         return res.status(200).json({
@@ -529,10 +895,10 @@ export const getOrderById = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error fetching single order:", error);
-        return res.status(500).json({ 
-            message: "Internal Server Error", 
-            success: false 
+        console.error("Error fetching order:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
         });
     }
 };
@@ -607,7 +973,7 @@ export const rateSellerByBuyer = async (req, res) => {
         if (!rating || rating < 1 || rating > 5) {
             return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
         }
-  
+
         const order = await Order.findOne({
             _id: orderId,
             buyer: buyerId,
@@ -756,50 +1122,6 @@ export const rateProductByBuyer = async (req, res) => {
     }
 }
 
-export const recommendedProducts = async (req, res) => {
-    try {
-        const buyerId = req.user.buyerId;
-        const { category } = req.query;
-
-        const buyer = await Buyer.findById(buyerId);
-        if (!buyer) {
-            return res.status(404).json({ message: "Buyer not found" });
-        }
-
-        const maxDistance = MAX_DISTANCE[category] || 20000;
-
-        const nearbySellers = await Seller.find({
-            location: {
-                $near: {
-                    $geometry: {
-                        type: "Point",
-                        coordinates: buyer.location.coordinates
-                    },
-                    $maxDistance: maxDistance
-                }
-            },
-            isActive: true
-        })
-
-        const sellerIds = nearbySellers.map(s => s._id);
-        const products = await Product.find({
-            seller: { $in: sellerIds },
-            category,
-            isActive: true
-        }).sort({ rating: -1 });
-
-        res.status(200).json({
-            success: true,
-            count: products.length,
-            products
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
-}
-
 export const getBuyerNotifications = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
@@ -808,7 +1130,7 @@ export const getBuyerNotifications = async (req, res) => {
             model: "Notification",
             options: { sort: { createdAt: -1 } }
         });
- 
+
         if (!buyer) {
             return res.status(404).json({
                 message: "Buyer not found ",
@@ -929,7 +1251,6 @@ export const getMyTransportRequestData = async (req, res) => {
         });
     }
 };
-
 
 export const setLocation = async (req, res) => {
     try {

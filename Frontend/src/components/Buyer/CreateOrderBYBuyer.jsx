@@ -4,14 +4,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BUYER_API_END_POINT } from "@/utils/constants";
 import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+
 
 const CreateOrderByBuyer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
-  const { items, totalAmount , clearCart} = useSelector((state) => state.cart);
+
+  const { items, totalAmount } = useSelector((state) => state.cart);
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState(null);
   
@@ -24,6 +24,7 @@ const CreateOrderByBuyer = () => {
 
         if (res.data.success) {
           setRequest(res.data.request);
+          console.log("Fetched Request:", res.data.request); 
         }
       } catch (err) {
         console.error("Error fetching request:", err);
@@ -64,7 +65,7 @@ const CreateOrderByBuyer = () => {
       );
 
       if (res.data.success) {
-        dispatch(clearCart()); 
+        // dispatch(clearCart()); 
         setRequest(null);
         navigate("/buyer/all-orders");
       }
@@ -75,7 +76,6 @@ const CreateOrderByBuyer = () => {
   };
 
   if (loading) return <div className="text-center py-20 text-lg font-semibold italic text-blue-600">Loading Request details...</div>;
-
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row relative">
@@ -248,6 +248,16 @@ const CreateOrderByBuyer = () => {
             </div>
           </div>
         </div>
+
+        <div className="pt-4 flex flex-wrap gap-4">
+            <button
+              onClick={() => navigate(`/order-tracking/${request?._id}`)}
+              disabled={items.length === 0}
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition disabled:opacity-50"
+            >
+              view on map
+            </button>
+          </div>
 
         {request?.status === "pending" ? " " :
           <div className="pt-4 flex flex-wrap gap-4">

@@ -4,7 +4,7 @@ import axios from "axios";
 import { PRODUCT_API_END_POINT } from "@/utils/constants";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-
+import {toast} from 'react-toastify'
 const CreateProduct = () => {
 
   const navigate = useNavigate();
@@ -122,6 +122,9 @@ const CreateProduct = () => {
       }
     } catch (err) {
       console.error("Product creation failed:", err);
+      toast.error(err);
+      
+      
     } finally {
       setLoading(false); // End loading
     }

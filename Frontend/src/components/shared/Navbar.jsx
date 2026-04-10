@@ -32,7 +32,7 @@ const Navbar = () => {
 
   return (
     <header 
-      className={`sticky top-0 z-50 w-full transition-all duration-500 ${
+      className={`sticky top-0 overflow-hidden z-50 w-full transition-all duration-500 ${
         isScrolled 
           ? "py-3 bg-white/60 backdrop-blur-2xl border-b border-slate-200/50 shadow-[0_2px_20px_-5px_rgba(0,0,0,0.05)]" 
           : "py-5 bg-transparent"

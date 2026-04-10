@@ -135,7 +135,7 @@ const BuyerProfileUpdate = () => {
         onClick={() => navigate(-1)}
         className="absolute top-8 left-8 text-white flex items-center gap-2 font-bold z-10 hover:text-emerald-100 transition-colors"
       >
-        <ArrowLeft size={20} /> Back to Profile
+        <ArrowLeft size={20} /> 
       </button>
 
       <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-12 border border-slate-100">

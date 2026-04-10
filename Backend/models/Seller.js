@@ -77,7 +77,7 @@ const sellerSchema = new mongoose.Schema({
             required: true
         },
         coordinates: {
-            type: [Number], 
+            type: [Number],
             required: true
         },
         city: {
@@ -91,6 +91,12 @@ const sellerSchema = new mongoose.Schema({
         default: "pending"
     },
     verifiedAt: Date,
+    resetOtp: {
+        type: String
+    },
+    otpExpire: {
+        type: Date
+    }
 
 }, { timestamps: true })
 

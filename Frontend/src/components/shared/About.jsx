@@ -77,7 +77,7 @@ const About = () => {
               Our Mission
             </h3>
             <p className="text-text-gray leading-relaxed">
-              To create an inclusive digital marketplace where sellers can grow
+              To create an inclusive B2B digital marketplace where sellers can grow
               their businesses and buyers can shop with confidence, transparency,
               and convenience.
             </p>
@@ -88,7 +88,7 @@ const About = () => {
               Our Vision
             </h3>
             <p className="text-text-gray leading-relaxed">
-              To become a trusted e-commerce ecosystem that strengthens local
+              To become a trusted B2B e-commerce ecosystem that strengthens local
               economies and promotes ethical digital trade across regions.
             </p>
           </div>
@@ -149,7 +149,7 @@ const About = () => {
             Whether you are a seller or a buyer, E-Haat is built for you.
             Experience a smarter, fairer, and more connected marketplace.
           </p>
-          <button className="bg-white text-green-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
+          <button onClick={()=>navigate("/login-as")} className="bg-white text-green-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
             Get Started
           </button>
         </div>

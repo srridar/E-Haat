@@ -6,11 +6,12 @@ import {
     ArrowRight,
     ArrowLeft,
     CheckCircle,
+    Truck,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ADMIN_API_END_POINT } from "@/utils/constants";
-import { PRODUCT_API_END_POINT } from "@/utils/constants";
+import { ADMIN_API_END_POINT, PRODUCT_API_END_POINT } from "@/utils/constants";
+import LocationPicker from '@/components/LocationPicker';
 
 const HireTransporter = () => {
     const { id } = useParams();
@@ -28,14 +29,18 @@ const HireTransporter = () => {
             district: "",
             municipality: "",
             ward: "",
-            landmark: ""
+            landmark: "",
+            latitude: 27.7172,
+            longitude: 85.3240
         },
         destinationLocation: {
             province: "",
             district: "",
             municipality: "",
             ward: "",
-            landmark: ""
+            landmark: "",
+            latitude: 27.7172,
+            longitude: 85.3240
         },
         itemDescription: "",
         weightKg: "",
@@ -48,9 +53,7 @@ const HireTransporter = () => {
         const fetchTransporter = async () => {
             try {
                 setLoading(true);
-                setError(null);
                 const response = await axios.get(`${ADMIN_API_END_POINT}/gettransporter/${id}`);
-
                 if (response.data?.success) {
                     setTransporter(response.data.transporter);
                 } else {
@@ -62,20 +65,31 @@ const HireTransporter = () => {
                 setLoading(false);
             }
         };
-
-        if (id) {
-            fetchTransporter();
-        }
+        if (id) fetchTransporter();
     }, [id]);
 
+    const handleLocationSelect = (coords, type) => {
+        const [lat, lng] = coords;
+        setFormData(prev => ({
+            ...prev,
+            [type]: {
+                ...prev[type],
+                latitude: lat,
+                longitude: lng
+            }
+        }));
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name.includes(".")) {
             const [parent, child] = name.split(".");
-            setFormData((prev) => ({ ...prev, [parent]: { ...prev[parent], [child]: value }, }));
+            setFormData((prev) => ({
+                ...prev,
+                [parent]: { ...prev[parent], [child]: value },
+            }));
         } else {
-            setFormData((prev) => ({ ...prev, [name]: value, }));
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
 
@@ -84,220 +98,204 @@ const HireTransporter = () => {
         try {
             setLoading(true);
             const res = await axios.post(`${PRODUCT_API_END_POINT}/hiretransporter`, formData, { withCredentials: true });
-            if (res.data.success) {
-                setSubmitted(true);
-            }
-
+            if (res.data.success) setSubmitted(true);
         } catch (err) {
-            alert("Error submitting request: " + (err.response?.data?.message || err.message));
+            alert("Error: " + (err.response?.data?.message || err.message));
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-lg font-semibold italic text-blue-600">Loading transporter details...</div>;
-    if (error) return <div className="text-center py-20 text-red-500 font-semibold">{error}</div>;
-    if (!transporter) return <div className="text-center py-20 font-semibold text-gray-500">No transporter found.</div>;
+    if (loading) return <div className="flex flex-col items-center justify-center min-h-screen space-y-4 font-semibold text-blue-600 animate-pulse"><Truck className="w-12 h-12 animate-bounce" /> Loading details...</div>;
+    if (error) return <div className="text-center py-20 text-red-500 font-bold bg-red-50 rounded-xl m-10 border border-red-200">{error}</div>;
 
     if (submitted) {
         return (
-            <div className="max-w-2xl mx-auto my-10 p-10 bg-white rounded-3xl shadow-xl text-center border border-green-100 animate-in fade-in zoom-in duration-300">
-                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="text-green-600 w-12 h-12" />
+            <div className="max-w-2xl mx-auto my-20 p-12 bg-white rounded-[2.5rem] shadow-2xl text-center border border-green-100 transform transition-all scale-100">
+                <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                    <CheckCircle className="text-green-600 w-14 h-14" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">Request Sent!</h2>
-                <p className="text-gray-600 mb-8">
-                    Your hiring request has been sent to <strong>{transporter?.name}</strong>.
-                    You will be notified once they accept the terms.
+                <h2 className="text-4xl font-black text-gray-900 mb-4">Request Dispatched!</h2>
+                <p className="text-gray-500 text-lg mb-10 leading-relaxed">
+                    Great news! Your request has been sent to <span className="font-bold text-gray-800">{transporter?.name}</span>. 
+                    Track your status in the dashboard.
                 </p>
-                <button onClick={() => navigate("/buyer/profile")}  className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition transform hover:scale-105">
-                    Back to Dashboard
+                <button onClick={() => navigate("/buyer/profile")} className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg">
+                    Back to My Dashboard
                 </button>
             </div>
         );
     }
 
     return (
-        <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row relative">
-            <div className="absolute top-4 left-4 z-10">
-                <button onClick={() => navigate(-1)} className="bg-white/80 backdrop-blur-md p-2 rounded-full shadow-md hover:bg-orange-100 transition-colors text-orange-600">
-                    <ArrowLeft size={20} />
-                </button>
-            </div>
-            <div className="md:w-1/3 bg-slate-900 p-8 text-white">
-                <div className="mt-8 mb-8">
-                    <span className="text-blue-400 text-xs font-bold uppercase tracking-widest">Hiring Session</span>
-                    <h2 className="text-3xl font-bold mt-2 mb-2">
-                        <span className="text-orange-500 italic">Hire</span> {transporter?.name}
+        <div className="max-w-7xl mx-auto my-8 bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-gray-100 flex flex-col lg:flex-row min-h-[800px]">
+
+            <div className="lg:w-1/3 bg-slate-900 p-10 text-white flex flex-col justify-between">
+                <div>
+                    <button onClick={() => navigate(-1)} className="mb-10 bg-slate-800 p-3 rounded-2xl hover:bg-orange-500 transition-colors">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <span className="text-blue-400 text-xs font-black uppercase tracking-[0.2em]">Booking Portal</span>
+                    <h2 className="text-4xl font-bold mt-3 mb-6 leading-tight">
+                        Hire <span className="text-orange-500">{transporter?.name}</span>
                     </h2>
-                    <p className="text-gray-400 text-sm">Review the transporter's capacity and rates before sending your offer.</p>
-                </div>
-
-                <div className="space-y-6">
-                    <div className="flex gap-4 items-center">
-                        <div className="bg-slate-800 p-3 rounded-lg"><MapPin className="text-blue-400 w-5 h-5" /></div>
-                        <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold">Base Rate</p>
-                            <p className="text-lg font-mono text-blue-100">NRP {transporter?.pricePerKm || "0"}/km</p>
+                    
+                    <div className="space-y-4">
+                        <div className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700 flex items-center gap-5">
+                            <div className="bg-blue-500/20 p-3 rounded-xl"><MapPin className="text-blue-400 w-6 h-6" /></div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-black">Base Rate</p>
+                                <p className="text-xl font-mono">Rs. {transporter?.pricePerKm}/km</p>
+                            </div>
+                        </div>
+                        <div className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700 flex items-center gap-5">
+                            <div className="bg-orange-500/20 p-3 rounded-xl"><Package className="text-orange-400 w-6 h-6" /></div>
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-black">Vehicle Limit</p>
+                                <p className="text-xl font-mono">{transporter?.vehicle?.capacityKg} Kg</p>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex gap-4 items-center">
-                        <div className="bg-slate-800 p-3 rounded-lg"><Package className="text-orange-400 w-5 h-5" /></div>
-                        <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold">Max Capacity</p>
-                            <p className="text-lg font-mono text-orange-100">{transporter?.vehicle?.capacityKg || "0"} Kg</p>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="mt-12 p-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700">
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-3 italic underline">Trust & Safety</p>
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                        Payments are held in secure escrow. Funds are only released to the transporter after you confirm successful delivery.
+                <div className="mt-10 p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20">
+                    <h4 className="text-sm font-bold text-blue-400 mb-2 italic">Secure Logistics</h4>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                        Your payment is secured via Escrow. The transporter only receives funds once you confirm the item has arrived safely.
                     </p>
                 </div>
             </div>
 
-
-            <div className="md:w-2/3 p-8 md:p-12 bg-gray-50/50">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-2">
-                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                            <MapPin className="w-5 h-5 text-blue-600" />
-                            <h3 className="font-bold text-gray-800 uppercase tracking-wide text-sm">Pickup Details</h3>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Province</label>
-                                <input name="pickupLocation.province" value={formData.pickupLocation.province} onChange={handleChange} placeholder="e.g. Lumbini" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">District</label>
-                                <input name="pickupLocation.district" value={formData.pickupLocation.district} onChange={handleChange} placeholder="e.g. Rupandehi" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Municipality</label>
-                                <input name="pickupLocation.municipality" value={formData.pickupLocation.municipality} onChange={handleChange} placeholder="e.g. Butwal" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Ward No.</label>
-                                <input name="pickupLocation.ward" value={formData.pickupLocation.ward} onChange={handleChange} placeholder="e.g. 11" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
-                            </div>
-                            <div className="lg:col-span-2 space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Tol / Landmark</label>
-                                <input name="pickupLocation.landmark" value={formData.pickupLocation.landmark} onChange={handleChange} placeholder="e.g. Near Kalika School" className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
-                            </div>
-                        </div>
-                    </div>
-
- 
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-2">
-                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                            <MapPin className="w-5 h-5 text-red-600" />
-                            <h3 className="font-bold text-gray-800 uppercase tracking-wide text-sm">Destination Details</h3>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Province</label>
-                                <input name="destinationLocation.province" value={formData?.destinationLocation?.province} onChange={handleChange} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">District</label>
-                                <input name="destinationLocation.district" value={formData?.destinationLocation?.district} onChange={handleChange} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Municipality</label>
-                                <input name="destinationLocation.municipality" value={formData.destinationLocation?.municipality} onChange={handleChange} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Ward No.</label>
-                                <input name="destinationLocation.ward" value={formData?.destinationLocation?.ward} onChange={handleChange} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
-                            </div>
-                            <div className="lg:col-span-2 space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Tol / Landmark</label>
-                                <input name="destinationLocation.landmark" value={formData?.destinationLocation?.landmark} onChange={handleChange} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
-                            </div>
-                        </div>
-                    </div>
-
+            {/* Form Section */}
+            <div className="lg:w-2/3 p-6 md:p-12 bg-gray-50/50 overflow-y-auto">
+                <form onSubmit={handleSubmit} className="space-y-10">
+                    
+                    {/* Pickup Section */}
                     <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Item Description</label>
-                            <div className="relative">
-                                <Package className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-indigo-800 rounded-2xl flex items-center justify-center text-white font-bold">1</div>
+                            <h3 className="text-xl font-bold text-gray-800">Pickup Details</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                            {['province', 'district', 'municipality', 'ward', 'landmark'].map((field) => (
+                                <div key={field} className={field === 'landmark' ? "md:col-span-2" : ""}>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{field}</label>
+                                    <input 
+                                        name={`pickupLocation.${field}`} 
+                                        value={formData.pickupLocation[field]} 
+                                        onChange={handleChange} 
+                                        className="w-full mt-1 p-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                                        placeholder={`Enter ${field}...`}
+                                        required={field !== 'ward' && field !== 'landmark'}
+                                    />
+                                </div>
+                            ))}
+                            <div className="md:col-span-2 h-[300px] rounded-3xl overflow-hidden border-2 border-dashed border-gray-200 mt-2">
+                                <LocationPicker
+                                    onSelect={(coords) => handleLocationSelect(coords, 'pickupLocation')}
+                                    currentCoords={[formData.pickupLocation.latitude, formData.pickupLocation.longitude]}
+                                    isEditable={true}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Destination Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-indigo-700 rounded-2xl flex items-center justify-center text-white font-bold">2</div>
+                            <h3 className="text-xl font-bold text-gray-800">Destination Details</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                            {['province', 'district', 'municipality', 'ward', 'landmark'].map((field) => (
+                                <div key={field} className={field === 'landmark' ? "md:col-span-2" : ""}>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{field}</label>
+                                    <input 
+                                        name={`destinationLocation.${field}`} 
+                                        value={formData.destinationLocation[field]} 
+                                        onChange={handleChange} 
+                                        className="w-full mt-1 p-3.5 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-red-500 outline-none text-sm font-medium"
+                                        placeholder={`Enter ${field}...`}
+                                        required={field !== 'ward' && field !== 'landmark'}
+                                    />
+                                </div>
+                            ))}
+                            <div className="md:col-span-2 h-[300px] rounded-3xl overflow-hidden border-2 border-dashed border-gray-200 mt-2">
+                                <LocationPicker
+                                    onSelect={(coords) => handleLocationSelect(coords, 'destinationLocation')}
+                                    currentCoords={[formData.destinationLocation.latitude, formData.destinationLocation.longitude]}
+                                    isEditable={true}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Item & Price Section */}
+                    <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-xs font-bold text-gray-400 uppercase">Item Description</label>
                                 <input
                                     required
                                     name="itemDescription"
                                     value={formData.itemDescription}
                                     onChange={handleChange}
-                                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                                    placeholder="e.g. 50 Bags of Cement, Wooden Table..."
+                                    className="w-full p-4 bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    placeholder="What are we transporting?"
                                 />
                             </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Weight (kg)</label>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Weight (kg)</label>
                                 <input
                                     type="number"
                                     name="weightKg"
                                     value={formData.weightKg}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                                    placeholder="0"
+                                    className="w-full p-4 bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Preferred Date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="date"
-                                        name="deliveryDate"
-                                        value={formData.deliveryDate}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                                        required
-                                    />
-                                </div>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Pickup Date</label>
+                                <input
+                                    type="date"
+                                    name="deliveryDate"
+                                    value={formData.deliveryDate}
+                                    onChange={handleChange}
+                                    className="w-full p-4 bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                    required
+                                />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Your Offer (NRP)</label>
+                                <label className="text-xs font-bold uppercase text-orange-400">Offered Price (NRP)</label>
                                 <input
                                     type="number"
                                     name="offeredPrice"
                                     value={formData.offeredPrice}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-bold text-blue-700"
+                                    className="w-full p-4 bg-slate-800 border-2 border-orange-500/30 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-400"
                                     placeholder="0.00"
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Estimated Distance(KM)</label>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Distance (KM)</label>
                                 <input
                                     type="number"
                                     name="estimatedDistanceKm"
                                     value={formData.estimatedDistanceKm}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm font-bold text-blue-700"
+                                    className="w-full p-4 bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
                                     placeholder="0.00"
                                     required
                                 />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="pt-4">
-                        <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-xl hover:shadow-blue-200 transition-all flex items-center justify-center gap-2 group">
-                            Send Hiring Request
-                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                        <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-5 rounded-2xl font-black text-xl shadow-2xl shadow-blue-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
+                            {loading ? "Sending..." : "Confirm & Send Request"}
+                            <ArrowRight size={24} />
                         </button>
-                        <p className="text-center text-[10px] text-gray-400 mt-4 leading-tight italic">
-                            By clicking, you agree to the transporter's terms. The transporter may accept your offer or propose a counter-offer.
-                        </p>
                     </div>
                 </form>
             </div>

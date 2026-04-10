@@ -18,6 +18,7 @@ const MessageToOther = () => {
     const [contacts, setContacts] = useState([]);
     const [contactsLoading, setContactsLoading] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
+    const [seluser, setSelUser] = useState(null);
     
     // State for Editing
     const [editingMessageId, setEditingMessageId] = useState(null);
@@ -171,7 +172,9 @@ const MessageToOther = () => {
         }
     };
 
-    const handleContactSelect = (contactId, contactRole) => {
+    const handleContactSelect = (contactId, contactRole, contactName) => {
+        setContacts
+        setSelUser(contactName);
         navigate(`/message/chat/${contactRole}/${contactId}`);
     };
 
@@ -187,7 +190,7 @@ const MessageToOther = () => {
                         contacts.map((contact) => (
                             <div
                                 key={contact._id}
-                                onClick={() => handleContactSelect(contact._id, contact.role)}
+                                onClick={() => handleContactSelect(contact._id, contact.role, contact.name)}
                                 className={`p-4 cursor-pointer flex gap-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${id === contact._id ? 'bg-indigo-50' : ''}`}
                             >
                                 <div className="relative h-10 w-10 flex-shrink-0">
@@ -212,10 +215,8 @@ const MessageToOther = () => {
                     <>
                         <header className="px-6 py-4 border-b flex justify-between items-center bg-white shadow-sm z-10">
                             <div>
-                                <h2 className="font-bold text-gray-800 text-lg">{role?.toUpperCase()}</h2>
-                                <p className="text-xs text-gray-400 font-medium">
-                                    {onlineUsers.includes(id) ? <span className="text-green-500">● Online</span> : "● Offline"}
-                                </p>
+                                <h2 className="font-bold text-gray-800 text-lg">{seluser} </h2>
+                                <span className='text-sm text-indigo-300'> {role}</span>
                             </div>
                         </header>
 
@@ -236,7 +237,7 @@ const MessageToOther = () => {
                                                             <MoreVertical size={14} className="text-gray-400" />
                                                         </button>
                                                         {openId === msg._id && (
-                                                            <div className="absolute bottom-full left-0 mb-2 w-24 bg-white border border-slate-100 shadow-xl rounded-xl overflow-hidden z-[100]">
+                                                            <div className="absolute bottom-full left-0 top-24 mb-2 w-24 bg-white border border-slate-100 shadow-xl rounded-xl overflow-hidden z-[100]">
                                                                 <button onClick={() => startEditMessage(msg)} className="block w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 font-medium">Edit</button>
                                                                 <button onClick={() => deleteHandler(msg._id)} className="block w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-600 font-medium">Delete</button>
                                                             </div>

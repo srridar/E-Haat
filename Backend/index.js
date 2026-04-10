@@ -10,6 +10,7 @@ import sellerRoute from './routes/seller.route.js';
 import transporterRoute from './routes/transporter.route.js';
 import contactRoute from './routes/contact.route.js';
 import chatRoute from './routes/message.route.js';
+import khaltiRoute from './routes/khalti.route.js';
 import { Server } from "socket.io";
 import http from "http";
 
@@ -66,6 +67,7 @@ app.use("/api/v4/seller", sellerRoute);
 app.use("/api/v4/transporter", transporterRoute);
 app.use("/api/v4/contact", contactRoute);
 app.use("/api/v4/chat", chatRoute);
+app.use("/api/v4/khalti", khaltiRoute);
 
 app.get('/', (req, res) => {
   res.send("Server is running with Socket.io");

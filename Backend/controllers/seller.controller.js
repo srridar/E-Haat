@@ -461,7 +461,6 @@ export const getSellerNotifications = async (req, res) => {
     }
 };
 
-
 export const setLocation = async (req, res) => {
     try {
         const sellerId = req.user.sellerId;
@@ -506,6 +505,82 @@ export const setLocation = async (req, res) => {
 };
 
 
+export const editProduct = async (req, res) => {
+  try {
+    const sellerId = req.user.sellerId;
+    const { productId } = req.params;
+
+    console.log(" edit is hitted"); 
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        message: "Invalid product ID",
+        success: false,
+      });
+    }
+
+    const {
+      name,
+      description,
+      price,
+      category,
+      stock,
+      unit,
+      brand,
+      isActive
+    } = req.body;
+
+    const product = await Product.findOne({
+      _id: productId,
+      seller: sellerId,
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+        success: false,
+      });
+    }
+
+    // ✅ Update fields safely
+    if (name !== undefined) product.name = name;
+    if (description !== undefined) product.description = description;
+    if (price !== undefined) product.price = price;
+    if (category !== undefined) product.category = category;
+    if (stock !== undefined) product.stock = stock;
+    if (unit !== undefined) product.unit = unit;
+    if (brand !== undefined) product.brand = brand;
+    if (isActive !== undefined) product.isActive = isActive;
+
+    // Optional: update images (if you send new ones)
+    if (req.body.images) {
+      product.images = req.body.images;
+    }
+
+    await product.save();
+
+    return res.status(200).json({
+      message: "Product updated successfully",
+      success: true,
+      product,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    // Handle validation errors properly
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: error.message,
+        success: false,
+      });
+    }
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
 
 
 

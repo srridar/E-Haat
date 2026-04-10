@@ -20,6 +20,15 @@ const farmers = [
     struggle: "Moved back to his ancestral village with zero savings. He worked manual labor in the city for 5 years just to afford his first hectare of land.",
     status: "Quality Master"
   },
+  {     
+    id: 3,     
+    name: "Maya Gurung",     
+    product: "Organic Turmeric Powder",     
+    rating: 4.6,     
+    image: "maya grurung.webp",     
+    struggle: "After losing her husband, she had to raise two children alone. With no formal education, she started farming turmeric on a small leased land and slowly built her own sustainable business.",     
+    status: "Rising Star"   
+},
   // Add more farmer objects here
 ];
 
@@ -29,7 +38,7 @@ const FarmerCard = ({ farmer }) => (
       <img 
         src={farmer.image} 
         alt={farmer.name} 
-        className="w-full h-56 object-cover"
+        className="w-full h-56 object-center"
       />
       <div className="absolute top-4 right-4 bg-yellow-400 text-black font-bold px-3 py-1 rounded-full text-sm flex items-center gap-1">
         <Star size={16} fill="black" /> {farmer.rating}
