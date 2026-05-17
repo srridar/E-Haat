@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion"; // Added missing import
+import { motion } from "framer-motion";
 import { ADMIN_API_END_POINT } from "@/utils/constants";
 import { 
   ArrowLeft, 
@@ -10,8 +10,11 @@ import {
   Mail, 
   Inbox, 
   CheckCircle, 
-  AlertCircle 
-} from "lucide-react"; // Modern icons
+  AlertCircle,
+  Loader2,
+  MessageSquare
+} from "lucide-react";
+import { toast } from "sonner";
 
 const GetAllContactForm = () => {
   const navigate = useNavigate();
@@ -23,14 +26,15 @@ const GetAllContactForm = () => {
       const res = await axios.get(`${ADMIN_API_END_POINT}/get-all-contact-request`, { withCredentials: true });
       setContacts(res.data.contacts);
     } catch (error) {
-      console.error("Failed to fetch contacts: " + error);
+      console.error("Transmission Error: " + error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    // Custom styled confirmation would be better, but keeping logic consistent
+    if (!window.confirm("Permanent deletion of this communication log?")) return;
 
     try {
       await axios.delete(
@@ -38,8 +42,9 @@ const GetAllContactForm = () => {
         { withCredentials: true }
       );
       setContacts((prev) => prev.filter((c) => c._id !== id));
+      toast.success("Log purged successfully");
     } catch (err) {
-      alert("Failed to delete: " + err);
+      toast.error("Purge failed: Access Denied");
     }
   };
 
@@ -49,104 +54,128 @@ const GetAllContactForm = () => {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto space-y-6 animate-pulse">
-        <div className="h-10 bg-gray-200 rounded-lg w-48"></div>
-        <div className="h-64 bg-gray-100 rounded-xl"></div>
+      <div className="min-h-screen bg-[#0A0A0A] p-8 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="animate-spin text-indigo-500" size={40} />
+        <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.4em]">Scanning Inbox Segments...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-[#0A0A0A] text-gray-100 p-4 md:p-8">
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto"
       >
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
           <div>
             <button 
               onClick={() => navigate("/admin/dashboard")}
-              className="flex items-center text-sm text-gray-500 hover:text-indigo-600 transition-colors mb-2"
+              className="group flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-indigo-400 transition-all mb-4"
             >
-              <ArrowLeft size={16} className="mr-1" /> Back to Dashboard
+              <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" /> 
+              Command Center
             </button>
-            <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Mail className="text-indigo-600" /> Contact Messages
+            <h2 className="text-4xl font-black text-white flex items-center gap-4 tracking-tighter uppercase italic">
+              <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                <Mail className="text-indigo-500" size={28} />
+              </div>
+              Inquiry <span className="text-indigo-500 opacity-80">Logs</span>
             </h2>
-            <p className="text-gray-500 mt-1">Manage and respond to user inquiries.</p>
+            <p className="text-gray-500 mt-2 text-sm font-medium italic">Intercepted user communications and support requests.</p>
           </div>
 
-          <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-            <span className="text-sm font-medium text-gray-600">Total Requests: </span>
-            <span className="text-lg font-bold text-indigo-600">{contacts.length}</span>
+          <div className="bg-[#161616] border border-white/5 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl">
+            <div className="p-2 bg-indigo-500/10 rounded-lg">
+              <MessageSquare size={18} className="text-indigo-500" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase font-black text-gray-500 tracking-widest leading-none mb-1">Total Logs</p>
+              <span className="text-xl font-mono font-bold text-white">
+                {contacts.length.toString().padStart(2, '0')}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Main Content */}
         {contacts.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-dashed border-gray-300">
-            <Inbox className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500 text-lg">Your inbox is currently empty.</p>
+          <div className="relative overflow-hidden bg-[#111] rounded-[2.5rem] border border-white/5 p-24 text-center">
+            <div className="relative z-10">
+              <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Inbox className="text-gray-600" size={40} />
+              </div>
+              <h2 className="text-xl font-black text-white uppercase tracking-widest">Inbox Secure</h2>
+              <p className="text-gray-500 mt-2 text-sm font-medium">No pending communications detected in this sector.</p>
+            </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full" />
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#111] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sender</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#161616] border-b border-white/5">
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Origin Source</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Subject Header</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Status</th>
+                    <th className="px-8 py-5 text-right text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Operations</th>
                   </tr>
                 </thead>
 
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-white/[0.03]">
                   {contacts.map((contact, index) => (
                     <motion.tr
                       key={contact._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="hover:bg-indigo-50/30 transition-colors group"
+                      transition={{ delay: index * 0.02 }}
+                      className="hover:bg-white/[0.02] transition-all group"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-8 py-6 whitespace-nowrap">
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-gray-900">{contact.name}</span>
-                          <span className="text-sm text-gray-500">{contact.email}</span>
+                          <span className="text-sm font-black text-white tracking-tight group-hover:text-indigo-400 transition-colors">
+                            {contact.name}
+                          </span>
+                          <span className="text-[11px] text-gray-500 font-medium">{contact.email}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-700 line-clamp-1 italic">
-                          "{contact.subject}"
-                        </span>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col">
+                           <span className="text-xs text-gray-300 font-semibold italic line-clamp-1">
+                            "{contact.subject}"
+                          </span>
+                          <span className="text-[9px] text-gray-600 font-bold uppercase tracking-tighter mt-1">
+                            LOG_ID: {contact._id.slice(-8)}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-8 py-6 whitespace-nowrap">
                         {contact.isRead ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle size={12} className="mr-1" /> Read
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <CheckCircle size={10} className="mr-1.5" /> Archive
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                            <AlertCircle size={12} className="mr-1" /> Unread
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
+                            <AlertCircle size={10} className="mr-1.5" /> Priority
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end gap-2">
+                      <td className="px-8 py-6 whitespace-nowrap text-right">
+                        <div className="flex justify-end gap-3">
                           <button
                             onClick={() => navigate(`/admin/single-contact/${contact._id}`)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
-                            title="View Message"
+                            className="p-2.5 bg-[#1A1A1A] text-gray-400 hover:text-white border border-white/5 hover:border-indigo-500/50 rounded-xl transition-all active:scale-90"
+                            title="Open Channel"
                           >
                             <Eye size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(contact._id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete Message"
+                            className="p-2.5 bg-[#1A1A1A] text-gray-600 hover:text-red-500 border border-white/5 hover:border-red-500/50 rounded-xl transition-all active:scale-90"
+                            title="Purge Log"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -160,6 +189,8 @@ const GetAllContactForm = () => {
           </div>
         )}
       </motion.div>
+
+      <div className="fixed bottom-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/[0.02] blur-[120px] rounded-full pointer-events-none" />
     </div>
   );
 };

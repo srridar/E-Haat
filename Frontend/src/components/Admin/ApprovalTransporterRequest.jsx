@@ -8,7 +8,8 @@ import {
   Clock,
   Banknote,
   ChevronRight,
-  AlertCircle
+  ShieldCheck,
+  Loader2
 } from "lucide-react";
 import useGetTransporterApprovalRequest from "@/hooks/adminHooks/useGetTransporterApprovalRequest";
 
@@ -16,110 +17,137 @@ const TransporterApprovalRequest = () => {
   const { data, loading } = useGetTransporterApprovalRequest();
   const navigate = useNavigate();
 
-
   return (
-    <div className="max-w-6xl mx-auto p-5 pb-10">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex p-1 bg-green-300 rounded-md items-center gap-2 text-gray-400 hover:text-emerald-600 transition-colors text-sm font-medium mb-2"
-      >
-        <ArrowLeft size={16} /> 
-      </button>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-2">
-        <div>
-
-          <h1 className="text-2xl font-bold text-gray-900">Transporter Requests</h1>
-          <p className="text-sm text-gray-500">Verify logistics partners and vehicle credentials.</p>
-        </div>
-
-        <div className="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl flex items-center gap-2">
-          <Truck size={18} className="text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">{data?.length || 0} New Applications</span>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mb-4"></div>
-          <p className="text-gray-400 font-medium">Loading logistics data...</p>
-        </div>
-      ) : data.length === 0 ? (
-        <div className="bg-white rounded-3xl border-2 border-dashed border-gray-100 p-16 text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Truck className="text-gray-300" size={32} />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">No Pending Carriers</h2>
-          <p className="text-gray-500">All transporter applications have been processed.</p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {data.map((transporter) => (
-            <div
-              key={transporter._id}
-              className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 hover:border-emerald-200 hover:shadow-md transition-all group"
+    <div className="min-h-screen bg-[#0A0A0A] text-gray-100 pb-10">
+      <div className="max-w-6xl mx-auto px-4 pt-8">
+        
+        {/* Navigation & Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div>
+            <button
+              onClick={() => navigate(-1)}
+              className="group flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all text-sm font-bold uppercase tracking-widest mb-4"
             >
-              <div className="flex flex-col lg:flex-row justify-between gap-6">
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+              Fleet Overview
+            </button>
+            <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+              Carrier <span className="text-emerald-500 text-3xl opacity-80">Authentication</span>
+            </h1>
+            <p className="text-gray-500 text-sm mt-1 font-medium italic">
+              Evaluating logistics nodes and carrier transit capabilities.
+            </p>
+          </div>
 
-                {/* Left: Basic Info & Contact */}
-                <div className="flex gap-5">
-                  <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                    <Truck size={28} />
+          <div className="bg-[#1A1A1A] border border-white/5 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <Truck size={20} className="text-emerald-500" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-[10px] uppercase font-black text-gray-500 tracking-widest">Active Applications</p>
+              <span className="text-xl font-mono font-bold text-white leading-none">
+                {data?.length?.toString().padStart(2, '0') || "00"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 space-y-4">
+            <Loader2 className="animate-spin text-emerald-500" size={40} />
+            <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.4em]">Syncing Logistics Database...</p>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="bg-[#111] rounded-[2rem] border border-white/5 p-20 text-center shadow-inner relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck className="text-emerald-500" size={40} />
+              </div>
+              <h2 className="text-2xl font-bold text-white uppercase italic tracking-tight">Fleet Synchronized</h2>
+              <p className="text-gray-500 mt-2 max-w-xs mx-auto text-sm font-medium">
+                No external carriers are currently requesting authorization.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {data.map((transporter) => (
+              <div
+                key={transporter._id}
+                className="group bg-[#161616] border border-white/5 rounded-[1.5rem] p-6 hover:bg-[#1C1C1C] hover:border-emerald-500/30 transition-all duration-300"
+              >
+                <div className="flex flex-col lg:flex-row justify-between gap-8">
+
+                  {/* Carrier Identity */}
+                  <div className="flex gap-6">
+                    <div className="w-16 h-16 bg-[#0A0A0A] border border-white/10 text-emerald-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 group-hover:border-emerald-500/50 transition-all duration-300">
+                      <Truck size={32} />
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <h2 className="font-black text-xl text-white tracking-tight group-hover:text-emerald-400 transition-colors">
+                          {transporter.name}
+                        </h2>
+                        <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-1">
+                          Node ID: {transporter._id.slice(-8)}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <span className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                          <Mail size={14} className="text-emerald-500/50" /> {transporter.email}
+                        </span>
+                        <span className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                          <Phone size={14} className="text-emerald-500/50" /> {transporter.phone}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div>
-                      <h2 className="font-bold text-lg text-gray-800 leading-none">
-                        {transporter.name}
-                      </h2>
-                      <p className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-tighter">
-                        Carrier ID: {transporter._id.slice(-6)}
+
+                  {/* Vehicle Specs & Pricing */}
+                  <div className="flex flex-wrap items-center gap-4 lg:justify-center">
+                    <div className="px-5 py-3 bg-[#0A0A0A] rounded-2xl border border-white/5 min-w-[140px]">
+                      <p className="text-[9px] text-gray-600 font-black uppercase tracking-tighter mb-1">Class Type</p>
+                      <p className="text-xs font-bold text-gray-300 flex items-center gap-2">
+                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                         {transporter.vehicle?.type || "General Logistics"}
                       </p>
                     </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <span className="flex items-center gap-2 text-sm text-gray-500">
-                        <Mail size={14} className="text-gray-400" /> {transporter.email}
-                      </span>
-                      <span className="flex items-center gap-2 text-sm text-gray-500">
-                        <Phone size={14} className="text-gray-400" /> {transporter.phone}
-                      </span>
+                    
+                    <div className="px-5 py-3 bg-[#0A0A0A] rounded-2xl border border-white/5 min-w-[140px]">
+                      <p className="text-[9px] text-gray-600 font-black uppercase tracking-tighter mb-1">Rate Metric</p>
+                      <p className="text-xs font-bold text-emerald-400 flex items-center gap-2">
+                        <Banknote size={14} className="text-emerald-500" />
+                        {transporter.pricePerKm ? `रू ${transporter.pricePerKm} / KM` : "Negotiable"}
+                      </p>
                     </div>
                   </div>
-                </div>
 
-                {/* Center: Vehicle & Price Badges */}
-                <div className="flex flex-wrap items-center gap-3 md:pl-20 lg:pl-0">
-                  <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Vehicle Type</p>
-                    <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                      <Truck size={14} /> {transporter.vehicle?.type || "Standard"}
-                    </p>
+                  {/* Terminal Action */}
+                  <div className="flex items-center lg:flex-col lg:justify-center gap-4 border-t lg:border-t-0 lg:border-l border-white/5 pt-6 lg:pt-0 lg:pl-8">
+                    <button
+                      onClick={() => navigate(`/admin/view-transporter-details/${transporter._id}`)}
+                      className="flex-1 lg:w-48 flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-900/20 transition-all active:scale-95 group/btn"
+                    >
+                      Audit Carrier <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                    <div className="flex items-center gap-2 px-2">
+                       <Clock size={12} className="text-gray-600" />
+                       <p className="text-[10px] text-gray-600 font-black uppercase tracking-tighter">
+                         Request: {new Date(transporter.createdAt).toLocaleDateString()}
+                       </p>
+                    </div>
                   </div>
-                  <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Rate / KM</p>
-                    <p className="text-sm font-bold text-emerald-600 flex items-center gap-1">
-                      <Banknote size={14} />
-                      {transporter.pricePerKm ? `Rs. ${transporter.pricePerKm}` : "Quote Req."}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center lg:flex-col lg:justify-center gap-3">
-                  <button
-                    onClick={() => navigate(`/admin/view-transporter-details/${transporter._id}`)}
-                    className="flex-1 lg:w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all"
-                  >
-                    Review & Verify <ChevronRight size={16} />
-                  </button>
-                  <p className="hidden lg:block text-[10px] text-gray-400 font-medium">
-                    Requested {new Date(transporter.createdAt).toLocaleDateString()}
-                  </p>
                 </div>
-
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="fixed top-0 right-0 -z-10 w-[500px] h-[500px] bg-emerald-600/[0.03] blur-[120px] rounded-full pointer-events-none" />
     </div>
   );
 };

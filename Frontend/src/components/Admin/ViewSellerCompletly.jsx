@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Phone, MapPin,
   Star, Package, ShieldCheck,
-  ShieldAlert, Check, X
+  ShieldAlert, Check, X, ArrowLeft,
+  Calendar, Fingerprint, Globe
 } from 'lucide-react';
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { ADMIN_API_END_POINT } from "@/utils/constants";
 import useGetVerifyUser from "@/hooks/adminHooks/useGetVerifyUser";
 
 const ViewSellerCompletly = () => {
-
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
-
+  const navigate = useNavigate();
   const verifyUser = useGetVerifyUser();
 
   const handleVerification = async (id, role, action) => {
@@ -22,19 +22,18 @@ const ViewSellerCompletly = () => {
     setSeller((prev) => ({
       ...prev,
       verificationStatus: action,
-      isVerified: action === "approved" ? true : false,
+      isVerified: action === "approved",
     }));
   };
 
   const fetchSellerDetails = async () => {
     try {
-      const res = await axios.get(`${ADMIN_API_END_POINT}/seller-approval/${id}`, { withCredentials: true });
+      const res = await axios.get(`${ADMIN_API_END_POINT}/seller/${id}`, { withCredentials: true });
       if (res.data.success) {
         setSeller(res.data.seller);
-        console.log("i have come hare " + res.data.seller);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error); 
     } finally {
       setLoading(false);
     }
@@ -44,150 +43,210 @@ const ViewSellerCompletly = () => {
     fetchSellerDetails();
   }, [id]);
 
-
   if (loading) {
-    return <div className="p-10 text-center">Loading product data...</div>;
+    return (
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
   }
 
   if (!seller) {
-    return <div className="p-10 text-center">Seller not found</div>;
+    return (
+      <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center text-gray-400">
+        <User size={64} className="mb-4 opacity-20" />
+        <p className="text-xl font-medium">Seller not found</p>
+        <button onClick={() => navigate(-1)} className="mt-4 text-indigo-400 hover:underline">Go Back</button>
+      </div>
+    );
   }
 
-
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 bg-slate-50 min-h-screen font-sans">
+    <div className="min-h-screen bg-[#121212] text-gray-100 pb-20">
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+          <div className="flex items-start gap-5">
+            <button
+              onClick={() => navigate(-1)}
+              className="mt-1 p-2.5 rounded-xl bg-[#1e1e1e] border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-all"
+            >
+              <ArrowLeft size={22} />
+            </button>
+            <div>
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">Seller Verification</h1>
+              <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+                <Fingerprint size={14} /> Account ID: {seller._id}
+              </p>
+            </div>
+          </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Seller Verification</h2>
-        <div className="flex gap-3">
-          {
-            seller.verificationStatus === "approved" ? (
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-600 rounded-lg">
-                <ShieldCheck size={18} /> Approved
+          <div className="flex gap-3">
+            {seller.verificationStatus === "approved" ? (
+              <div className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold shadow-lg shadow-emerald-900/10">
+                <ShieldCheck size={20} /> Verified Seller
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={() => handleVerification(id, "seller", "approved")}
-                  className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md transition"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 transition-all"
                 >
                   <Check size={18} /> Approve Seller
                 </button>
-
                 <button
                   onClick={() => handleVerification(id, "seller", "rejected")}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-[#1e1e1e] border border-red-500/30 text-red-400 rounded-xl font-bold hover:bg-red-500/10 transition-all"
                 >
                   <X size={18} /> Reject
                 </button>
               </div>
-            )
-          }
-
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
           {/* Left Column: Profile Card */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
-              <div className="relative">
-                <img
-                  src={seller.profileImage?.url || 'https://via.placeholder.com/150'}
-                  alt={seller.name}
-                  className="w-32 h-32 rounded-2xl object-cover shadow-inner shadow-black/10"
+          <div className="lg:col-span-4 space-y-6">
+            <div className="bg-[#1e1e1e] rounded-3xl p-8 border border-gray-800 shadow-2xl relative overflow-hidden">
+              {/* Background Glow */}
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/10 blur-3xl rounded-full"></div>
+              
+              <div className="flex flex-col items-center relative z-10">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                  <img
+                    src={seller.profileImage?.url || 'https://via.placeholder.com/150'}
+                    alt={seller.name}
+                    className="relative w-32 h-32 rounded-2xl object-cover border border-gray-700"
+                  />
+                </div>
+
+                <h3 className="mt-6 text-2xl font-bold text-white text-center">{seller.name}</h3>
+                <span className="mt-2 px-3 py-1 bg-gray-800 text-indigo-400 text-xs font-mono rounded-full border border-gray-700">
+                  SELLER_{seller._id?.toString().slice(-6).toUpperCase()}
+                </span>
+
+                <div className="w-full mt-8 pt-8 border-t border-gray-800 space-y-5">
+                  <InfoRow icon={<Mail size={18}/>} label="Email" value={seller.email} />
+                  <InfoRow icon={<Phone size={18}/>} label="Phone" value={seller.phone} />
+                  <InfoRow icon={<MapPin size={18}/>} label="Origin" value={seller.location?.city || 'Not Specified'} />
+                </div>
+              </div>
+            </div>
+
+            {/* Coordinates Card */}
+            <div className="bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-2xl p-6 border border-indigo-500/20 shadow-xl">
+              <h4 className="text-[10px] uppercase tracking-[0.2em] text-indigo-300 font-black mb-4 flex items-center gap-2">
+                <Globe size={14} /> Geo-Location Node
+              </h4>
+              <div className="flex justify-between items-end">
+                <div className="space-y-1 font-mono">
+                  <p className="text-xl text-white">{seller.location?.coordinates[1]?.toFixed(6)}° N</p>
+                  <p className="text-xl text-white">{seller.location?.coordinates[0]?.toFixed(6)}° E</p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                  <MapPin size={24} className="text-indigo-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Stats & Logs */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard 
+                label="Reputation" 
+                value={seller.rating} 
+                icon={<Star size={20} className="text-amber-400 fill-amber-400/20" />}
+                subtext={`From ${seller.totalRatings} user reviews`}
+              />
+              <StatCard 
+                label="Inventory" 
+                value={seller.productsOwned?.length || 0} 
+                icon={<Package size={20} className="text-indigo-400" />}
+                subtext="Total active listings"
+              />
+              <StatCard 
+                label="System Status" 
+                value={seller.isBlocked ? 'Blocked' : 'Active'} 
+                colorClass={seller.isBlocked ? 'text-red-400' : 'text-emerald-400'}
+                subtext="Current visibility"
+              />
+            </div>
+
+            {/* Verification Details */}
+            <div className="bg-[#1e1e1e] rounded-3xl p-8 border border-gray-800 relative overflow-hidden">
+              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <ShieldCheck size={20} className="text-indigo-400" /> Compliance & Audit Trail
+              </h3>
+              
+              <div className="grid gap-4">
+                <LogItem 
+                  label="Verification Status" 
+                  content={seller.verificationStatus} 
+                  highlight 
+                />
+                <LogItem 
+                  label="Verification Date" 
+                  content={seller.verifiedAt ? new Date(seller.verifiedAt).toLocaleString() : 'Pending Processing'} 
+                  icon={<ShieldAlert size={14}/>}
+                />
+                <LogItem 
+                  label="Initial Registration" 
+                  content={new Date(seller.createdAt).toLocaleString()} 
+                  icon={<Calendar size={14}/>}
                 />
               </div>
-
-              <h3 className="mt-4 text-xl font-bold text-slate-800">{seller.name}</h3>
-              <p className="text-slate-500 text-sm mb-4">Seller ID: {seller._id?.toString().slice(-6).toUpperCase()}</p>
-
-              <div className="w-full pt-4 border-t border-slate-50 space-y-3">
-                <div className="flex items-center gap-3 text-slate-600">
-                  <Mail size={18} className="text-indigo-500" />
-                  <span className="text-sm truncate">{seller.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-600">
-                  <Phone size={18} className="text-indigo-500" />
-                  <span className="text-sm">{seller.phone}</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-600">
-                  <MapPin size={18} className="text-indigo-500" />
-                  <span className="text-sm">{seller.location?.city || 'Unknown City'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Location Badge */}
-            <div className="bg-indigo-900 text-white rounded-2xl p-5 shadow-lg">
-              <h4 className="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-3">Geo Coordinates</h4>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-lg font-mono">{seller.location?.coordinates[1]?.toFixed(4)}° N</p>
-                  <p className="text-lg font-mono">{seller.location?.coordinates[0]?.toFixed(4)}° E</p>
-                </div>
-                <MapPin size={32} className="opacity-40" />
-              </div>
+              
+              {/* Subtle Decorative Icon */}
+              <ShieldCheck size={120} className="absolute -bottom-10 -right-10 text-white/[0.02] -rotate-12" />
             </div>
           </div>
 
-          {/* Right Column: Stats & Inventory */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <p className="text-slate-500 text-sm font-medium">Rating</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-2xl font-bold text-slate-800">{seller.rating}</span>
-                  <Star size={20} className="fill-amber-400 text-amber-400" />
-                </div>
-                <p className="text-xs text-slate-400 mt-1">From {seller.totalRatings} reviews</p>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <p className="text-slate-500 text-sm font-medium">Products</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-2xl font-bold text-slate-800">{seller.productsOwned?.length || 0}</span>
-                  <Package size={20} className="text-indigo-500" />
-                </div>
-                <p className="text-xs text-slate-400 mt-1">Active Listings</p>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <p className="text-slate-500 text-sm font-medium">Status</p>
-                <p className={`text-lg font-bold mt-1 capitalize ${seller.isBlocked ? 'text-red-500' : 'text-green-500'
-                  }`}>
-                  {seller.isBlocked ? 'Blocked' : 'Active'}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">Account Visibility</p>
-              </div>
-            </div>
-
-            {/* Verification Log */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">Verification Details</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                  <span className="text-sm text-slate-600 font-medium">Verification Status</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                  <span className="text-sm text-slate-600 font-medium">Verified At</span>
-                  <span className="text-sm text-slate-800 font-mono">
-                    {seller.verifiedAt ? new Date(seller.verifiedAt).toLocaleDateString() : 'Not Yet Verified'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                  <span className="text-sm text-slate-600 font-medium">Registration Date</span>
-                  <span className="text-sm text-slate-800 font-mono">
-                    {new Date(seller.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+
+const InfoRow = ({ icon, label, value }) => (
+  <div className="flex items-center gap-4 group">
+    <div className="text-indigo-400 group-hover:scale-110 transition-transform">
+      {icon}
+    </div>
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider leading-none mb-1">{label}</span>
+      <span className="text-sm text-gray-200 truncate max-w-[180px]">{value}</span>
+    </div>
+  </div>
+);
+
+const StatCard = ({ label, value, icon, subtext, colorClass = "text-white" }) => (
+  <div className="bg-[#1e1e1e] p-6 rounded-2xl border border-gray-800 shadow-sm">
+    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">{label}</p>
+    <div className="flex items-center gap-3">
+      <span className={`text-3xl font-black ${colorClass}`}>{value}</span>
+      {icon}
+    </div>
+    <p className="text-[10px] text-gray-600 mt-2 font-medium">{subtext}</p>
+  </div>
+);
+
+const LogItem = ({ label, content, highlight, icon }) => (
+  <div className="flex justify-between items-center p-4 bg-[#121212] rounded-xl border border-gray-800/50 hover:border-indigo-500/30 transition-colors">
+    <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
+      {icon} {label}
+    </div>
+    <span className={`text-sm font-mono ${highlight ? 'text-indigo-400 font-bold capitalize' : 'text-gray-300'}`}>
+      {content}
+    </span>
+  </div>
+);
 
 export default ViewSellerCompletly;

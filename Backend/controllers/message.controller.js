@@ -1,6 +1,6 @@
 import { Message } from '../models/Chat.js';
 import mongoose from 'mongoose';
-import { io, getReceiverSocketId } from '../index.js';
+import { io, getReceiverSocketId, getAdminSockets } from "../index.js";
 
 
 const getSenderModel = (role) => {
@@ -11,56 +11,71 @@ const getSenderModel = (role) => {
   return "";
 };
 
-
 const getUserId = (user) => {
   return user.adminId || user.sellerId || user.transporterId || user._id;
 };
 
-
 export const sendMessage = async (req, res) => {
   try {
     const { receiver, receiverModel, text } = req.body;
- 
-    if (!text || !receiver || !receiverModel) {
+
+    if (!text || !receiverModel) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required"
+        message: "Text and receiverModel are required"
       });
     }
 
-    let senderModell = "";
+  
+    let senderModel = getSenderModel(req.user.role);
+    const senderId = getUserId(req.user);
 
-    if (req.user.role === "admin" || req.user.role === "superadmin") {
-      senderModell = "Admin";
-    } else if (req.user.role === "seller") {
-      senderModell = "Seller";
-    } else if (req.user.role === "buyer") {
-      senderModell = "Buyer";
-    } else if (req.user.role === "transporter") {
-      senderModell = "TransportProvider";
-    }
-
-    const newMessage = await Message.create({
-      sender: req.user.adminId || req.user.sellerId || req.user.transporterId || req.user.buyerId,
-      senderModel: senderModell,
-      receiver,
+    let messageData = {
+      sender: senderId,
+      senderModel,
       receiverModel,
       text,
-    });
+    };
 
+
+    //  CASE 1: USER → ADMIN (1 → MANY)
 
     if (receiverModel === "Admin") {
+      messageData.receiver = null; // broadcast
+
+      const newMessage = await Message.create(messageData);
+
+      const adminSockets = getAdminSockets();
       adminSockets.forEach((socketId) => {
         io.to(socketId).emit("newMessage", newMessage);
       });
-    } else {
-      const receiverSocketId = getReceiverSocketId(receiver);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("newMessage", newMessage);
-      }
+
+      return res.status(201).json({
+        success: true,
+        message: newMessage,
+      });
     }
 
-    res.status(201).json({
+
+    //   CASE 2: 1 → 1 MESSAGE
+
+    if (!receiver) {
+      return res.status(400).json({
+        success: false,
+        message: "Receiver is required for 1-1 messaging"
+      });
+    }
+
+    messageData.receiver = receiver;
+
+    const newMessage = await Message.create(messageData);
+
+    const receiverSocketId = getReceiverSocketId(receiver);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+
+    return res.status(201).json({
       success: true,
       message: newMessage,
     });
@@ -68,12 +83,11 @@ export const sendMessage = async (req, res) => {
   } catch (error) {
     console.log(error.message);
     res.status(500).json({
-      message: "error occur !",
+      message: "Error occurred!",
       success: false
     });
   }
 };
-
 
 export const getMessages = async (req, res) => {
   try {
@@ -137,7 +151,6 @@ export const getMessages = async (req, res) => {
   }
 };
 
-
 export const editMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -169,7 +182,6 @@ export const editMessage = async (req, res) => {
   }
 };
 
-
 export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -196,7 +208,6 @@ export const deleteMessage = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
-
 
 export const getChatContacts = async (req, res) => {
   try {

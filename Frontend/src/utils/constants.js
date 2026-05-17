@@ -6,3 +6,6 @@ export const PRODUCT_API_END_POINT="http://localhost:8000/api/v4/product";
 export const CONTACT_API_END_POINT="http://localhost:8000/api/v4/contact";
 export const CHAT_API_END_POINT="http://localhost:8000/api/v4/chat";
 export const PAYMENT_API_END_POINT="http://localhost:8000/api/v4/khalti";
+export const SEARCH_API_END_POINT="http://localhost:8000/api/v4/searchHistory";
+export const GENERAL_API_END_POINT="http://localhost:8000/api/v4";
+export const ORDER_API_END_POINT="http://localhost:8000/api/v4/orders";

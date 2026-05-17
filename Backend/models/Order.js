@@ -1,112 +1,64 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
+const orderSchema = new mongoose.Schema({
 
-const locationSchema = new mongoose.Schema(
-  {
-    province: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    district: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    municipality: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    ward: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    landmark: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-  },
-  { _id: false }
-);
-
-
-const orderSchema = new mongoose.Schema(
-  {
     buyer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Buyer',
-      required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Buyer",
+        required: true
     },
-    transporter: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'TransportProvider',
-      required: true
-    },
-    isSellerRated: {
-      type: Boolean,
-      default: false
-    },
-    isProductRated: {
-      type: Boolean,
-      default: false
-    },
-    isTransporterRated: {
-      type: Boolean,
-      default: false
-    },
-    products: [
-      {
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'Product',
-          required: true
-        },
-        seller: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'Seller',
-          required: true
-        },
-        quantity: {
-          type: Number,
-          required: true
+
+    sellerOrders: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "SellerOrder"
         }
-      }
     ],
+
+    totalProductAmount: {
+        type: Number,
+        required: true
+    },
+
+    totalDeliveryCost: {
+        type: Number,
+        default: 0
+    },
+
     totalAmount: {
-      type: Number,
+        type: Number,
+        required: true
     },
-    isPaymentCompleted: {
-      type: Boolean,
-      default: false
-    },
-    deliveryCost: {
-      type: Number,
-    },
-    totalCost: {
-      type: Number,
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'accepted', 'rejected', 'picked', 'delivered', 'cancelled'],
-      default: 'pending'
-    },
-    deliveryLocation: {
-      pickupLocation: {
-        type: locationSchema,
-        required: true,
-      },
 
-      destinationLocation: {
-        type: locationSchema,
-        required: true,
-      },
+    paymentMethod: {
+        type: String,
+        enum: ["cod", "online"],
+        default: "cod"
+    },
+
+    paymentStatus: {
+        type: String,
+        enum: [
+            "pending",
+            "paid",
+            "failed",
+            "refunded"
+        ],
+        default: "pending"
+    },
+
+    overallStatus: {
+        type: String,
+        enum: [
+            "pending",
+            "processing",
+            "partially_shipped",
+            "completed",
+            "cancelled"
+        ],
+        default: "pending"
     }
-  },
-  { timestamps: true }
-);
 
-const Order = mongoose.model("Order", orderSchema);
-export default Order;
+}, { timestamps: true });
+
+export const Order = mongoose.model("Order", orderSchema);

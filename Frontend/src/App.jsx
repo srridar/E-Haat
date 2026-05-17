@@ -35,9 +35,8 @@ import ViewProductCompletly from '@/components/Admin/ViewProductCompletly';
 import ViewSellerCompletly from '@/components/Admin/ViewSellerCompletly';
 import ViewTransporterCompletly from '@/components/Admin/ViewTransporterCompletly';
 import AdminProfileUpdate from '@/components/Admin/AdminProfileUpdate.jsx'
+import ComplaintManagement from '@/components/Admin/ComplaintDashBorard';
 import Messaging from '@/components/Admin/Messageing';
-
-
 
 
 import BuyerRegister from "@/components/Buyer/BuyerRegister";
@@ -48,9 +47,10 @@ import BuyerPasswordChange from "@/components/Buyer/BuyerPasswordChange";
 import BuyerLocationUpdation from '@/components/Buyer/BuyerLocationUpdation';
 import CreateOrderByBuyer from "@/components/Buyer/CreateOrderByBuyer";
 import GetAllOrders from "@/components/Buyer/GetAllOrders";
-import MyRequests from '@/components/Buyer/MyRequests';
-import TrackMyOrderByBuyer from '@/components/Buyer/TrackMyOrderByBuyer';
 import RateOrderPage from '@/components/Buyer/RateOrderPage';
+import OrderSuccessPage from '@/components/Buyer/OrderSuccessPage';
+import OrderTracking from '@/components/Buyer/OrderTracking';
+import MainOrderTracking from '@/components/Buyer/MainOrderTracking';
 
 
 
@@ -62,6 +62,9 @@ import SellerPasswordChange from '@/components/Seller/SellerPasswordChange';
 import AllMyProducts from '@/components/Seller/AllMyProducts'
 import GetAllVerifiedSellerProfile from '@/components/Seller/GetAllVerifiedSellerProfile';
 import SellerLocationUpdation from '@/components/Seller/SellerLocationUpdation';
+import SellerKycForm from '@/components/Seller/SellerKycForm';
+import SellerOrders from '@/components/Seller/SellerOrders';
+import SellerOrderDetails from '@/components/Seller/SellerOrderDetails';
 
 import CreateProduct from "@/components/Product/CreateProduct";
 import GetAllProductsPage from "@/components/Product/GetAllProducts";
@@ -79,17 +82,19 @@ import EditProduct from '@/components/Product/EditProduct';
 import TransporterRegistration from "@/components/Transporter/TransporterRegistration";
 import TransporterLogin from "@/components/Transporter/TransporterLogin";
 import TransporterProfile from "@/components/Transporter/TransporterProfile";
-import TransporterPasswordUpdation from "@/components/Transporter/TransporterPasswordUpdation ";
+import TransporterPasswordUpdation from "@/components/Transporter/TransporterPasswordUpdation";
 import TransporterProfileUpdate from "@/components/Transporter/TransporterProfileUpdate";
 import TransporterDashboard from "@/components/Transporter/TransporterDashBoard";
 import TransporterKycForm from "@/components/Transporter/TransporterKycForm";
 import TransporterLocationSelection from "@/components/Transporter/TransporterLocationSelection";
 import GetParticularTransporter from '@/components/Transporter/GetParticularTransporter';
-import ViewAllRequest from '@/components/Transporter/ViewAllRequest';
 import MessageToOther from '@/components/Transporter/MessageToOther';
 
+import TransporterTasks from '@/components/Transporter/TransporterTasks';
+import TransporterTaskDetails from '@/components/Transporter/TransporterTaskDetails';
+
 import PaymentComplete from '@/components/Payment/PaymentComplete';
-import InitiatePayment from  '@/components/Payment/InitiatePayment';
+import InitiatePayment from '@/components/Payment/InitiatePayment';
 
 const appRouter = createBrowserRouter([
   {
@@ -109,28 +114,28 @@ const appRouter = createBrowserRouter([
     element: <RegisterAsk />
   },
   {
-     path  : '/farmers',
-     element : <Farmers />
+    path: '/farmers',
+    element: <Farmers />
   },
   {
     path: '/login-as',
     element: <LoginAsk />
   },
   {
-     path : '/forgot-password/:role',
-     element : <ForgotPassword />
-  },
-   {
-     path : '/reset-password/:role/:email',
-     element : <ResetPassword />
+    path: '/forgot-password/:role',
+    element: <ForgotPassword />
   },
   {
-     path : '/verify-otp/:role/:email',
-     element : <VerifyOtp />
+    path: '/reset-password/:role/:email',
+    element: <ResetPassword />
   },
   {
-    path : '/order-tracking/:id',
-    element : <DeliveryLocationVisualization />
+    path: '/verify-otp/:role/:email',
+    element: <VerifyOtp />
+  },
+  {
+    path: '/order-tracking/:id',
+    element: <DeliveryLocationVisualization />
 
   },
 
@@ -144,22 +149,23 @@ const appRouter = createBrowserRouter([
       { path: "admin-profile", element: <AdminProfile /> },
       { path: "user/:role/:id", element: <GetUser /> },
       { path: "dashboard", element: <DashBoard /> },
-      { path: "allorders", element: <AllOrders/>},
-      { path: "order/:id", element: <Order/>},
-      { path: "report", element: <ReportAdmin/>},
-      { path: "apassword-change", element: <AdminPasswordChange/>},
-      { path: "single-contact/:id", element: <ViewSingleContact/>},
-      { path: "all-contact-data", element: <GetAllContactForm/>},
+      { path: "allorders", element: <AllOrders /> },
+      { path: "order/:id", element: <Order /> },
+      { path: "report", element: <ReportAdmin /> },
+      { path: "apassword-change", element: <AdminPasswordChange /> },
+      { path: "single-contact/:id", element: <ViewSingleContact /> },
+      { path: "all-contact-data", element: <GetAllContactForm /> },
       { path: "notifications", element: <Notification /> },
-      { path: "product-approval-request", element: <ProductApprovalRequest/>},
-      { path: "seller-approval-request", element: <SellerApprovalRequest/>},
-      { path: "transporter-approval-request", element: <TransporterApprovalRequest/> },
-      { path: "view-seller-details/:id", element: <ViewSellerCompletly/>},
-      { path: "view-transporter-details/:id", element: <ViewTransporterCompletly/>},
-      { path: "view-product-details/:id", element: <ViewProductCompletly/>},
-      { path: "admin-profile-update", element: <AdminProfileUpdate/>},
-      { path: "password-change", element: <AdminPasswordChange/>},
-      
+      { path: "product-approval-request", element: <ProductApprovalRequest /> },
+      { path: "seller-approval-request", element: <SellerApprovalRequest /> },
+      { path: "transporter-approval-request", element: <TransporterApprovalRequest /> },
+      { path: "view-seller-details/:id", element: <ViewSellerCompletly /> },
+      { path: "view-transporter-details/:id", element: <ViewTransporterCompletly /> },
+      { path: "view-product-details/:id", element: <ViewProductCompletly /> },
+      { path: "admin-profile-update", element: <AdminProfileUpdate /> },
+      { path: "password-change", element: <AdminPasswordChange /> },
+      { path: "complaints", element: <ComplaintManagement /> },
+
     ],
   },
   {
@@ -170,10 +176,13 @@ const appRouter = createBrowserRouter([
       { path: "profile", element: <SellerProfile /> },
       { path: "profile/update", element: <SellerProfileUpdate /> },
       { path: "change-password", element: <SellerPasswordChange /> },
-      { path: "my-products", element :<AllMyProducts/>},
+      { path: "my-products", element: <AllMyProducts /> },
       { path: "get-all-seller", element: <GetAllVerifiedSellerProfile /> },
-      { path: "notifications", element: <Notification/> },
+      { path: "notifications", element: <Notification /> },
       { path: "location-selection", element: <SellerLocationUpdation /> },
+      { path: "kyc-section", element: <SellerKycForm /> },
+      { path: "manage-orders", element: <SellerOrders /> },
+      { path: "order-details/:sellerOrderId", element: <SellerOrderDetails /> }
     ],
   },
   {
@@ -186,12 +195,13 @@ const appRouter = createBrowserRouter([
       { path: "change-password", element: <BuyerPasswordChange /> },
       { path: "create-order", element: <CreateOrderByBuyer /> },
       { path: "all-orders", element: <GetAllOrders /> },
-      { path: "notifications", element: <Notification/> },
-      { path: "transporter-details/:id", element: <GetParticularTransporter/>},
-      { path: "all-request", element: <MyRequests/>},
-      { path: "order-tracking/:orderId", element: <TrackMyOrderByBuyer/>},
+      { path: "notifications", element: <Notification /> },
+      { path: "transporter-details/:id", element: <GetParticularTransporter /> },
       { path: "location-selection", element: <BuyerLocationUpdation /> },
-      { path: "rate-order/:orderId", element: <RateOrderPage /> }
+      { path: "rate-order/:orderId", element: <RateOrderPage /> },
+      { path: "order-success/:orderId", element: <OrderSuccessPage /> },
+      { path: "order-tracking/:orderId", element: <OrderTracking /> },
+      { path: "main-order-tracking/:orderId", element: <MainOrderTracking /> }
     ],
   },
   {
@@ -201,13 +211,13 @@ const appRouter = createBrowserRouter([
       { path: "all", element: <GetAllProductsPage /> },
       { path: ":id", element: <GetProduct /> },
       { path: "update/:id", element: <UpdateProductDetails /> },
-      { path: "cart", element: <Cart/>},
-      { path: "checkout", element: <CheckOut/>},
+      { path: "cart", element: <Cart /> },
+      { path: "checkout", element: <CheckOut /> },
       { path: "get-transporter", element: <TransporterDiscoveryMap /> },
-      { path: "hire-transporter/:id", element: <HireTransporter/>},
-      { path: "create-order/:id", element: <CreateOrderByBuyer/>},
-      { path: "seller/:id/products", element: <GetSellerProducts/>},
-      { path: "edit/:productId", element: <EditProduct/> },
+      { path: "hire-transporter/:id", element: <HireTransporter /> },
+      { path: "create-order/:id", element: <CreateOrderByBuyer /> },
+      { path: "seller/:id/products", element: <GetSellerProducts /> },
+      { path: "edit/:productId", element: <EditProduct /> },
 
     ],
   },
@@ -223,8 +233,8 @@ const appRouter = createBrowserRouter([
       { path: "kyc-form", element: <TransporterKycForm /> },
       { path: "notifications", element: <Notification /> },
       { path: "location-selection", element: <TransporterLocationSelection /> },
-      { path: "view-request/:id", element: <ViewRequestCompletly/>},
-      { path: "all-requests",element: <ViewAllRequest/>},
+      { path: "all-tasks", element: <TransporterTasks/>},
+      { path: "task/:taskId", element: <TransporterTaskDetails/>}
     ],
   },
   {
@@ -234,24 +244,24 @@ const appRouter = createBrowserRouter([
       { path: "getall", element: <TransporterLogin /> },
       { path: "get-single", element: <TransporterProfile /> },
       { path: "profile/update", element: <TransporterProfileUpdate /> },
-     
+
     ],
   },
   {
-     path:"/message",
-     children :[
-      { path: "send/:role/:id" , element: <Messaging/>},
-      { path: "chat/:role/:id", element: <MessageToOther />} ,
-      { path:"chat", element: <MessageToOther/> }
-      
-     ]
+    path: "/message",
+    children: [
+      { path: "send/:role/:id", element: <Messaging /> },
+      { path: "chat/:role/:id", element: <MessageToOther /> },
+      { path: "chat", element: <MessageToOther /> }
+
+    ]
   },
   {
-     path: "/payment",
-     children: [
+    path: "/payment",
+    children: [
       { path: "initiate/:orderId", element: <InitiatePayment /> },
       { path: "complete", element: <PaymentComplete /> }
-     ]
+    ]
   }
 ]);
 

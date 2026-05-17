@@ -56,39 +56,121 @@ const sellerSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+
     isBlocked: {
         type: Boolean,
         default: false
     },
+
     notifications: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Notification",
         },
     ],
+
     isVerified: {
         type: Boolean,
         default: false
     },
-    location: {
-        type: {
-            type: String,
-            enum: ["Point"],
-            required: true
-        },
-        coordinates: {
-            type: [Number],
-            required: true
-        },
-        city: {
-            type: String,
-            required: true
-        }
-    },
+
     verificationStatus: {
         type: String,
         enum: ["pending", "approved", "rejected"],
         default: "pending"
+    },
+
+    isKycDataSubmitted: {
+        type: Boolean,
+        default: false
+    },
+
+    isKycCompleted: {
+        type: Boolean,
+        default: false
+    },
+
+    location: {
+        type: {
+            type: String,
+            enum: ["Point"],
+            default: "Point",
+            required: true
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            required: true,
+            validate: {
+                validator: function (v) {
+                    return v.length === 2;
+                },
+                message: "Coordinates must be [longitude, latitude]"
+            }
+        },
+
+        province: { type: String, required: true },
+        district: { type: String, required: true },
+        municipality: { type: String, required: true },
+        ward: { type: String, required: true }
+    },
+
+    isRegisteredBusiness: {
+        type: Boolean,
+        default: false
+    },
+
+    documents: {
+        citizenshipCard: {
+            url: String,
+            public_id: String
+        },
+        businessRegistration: {
+            url: String,
+            public_id: String
+        },
+        NationalIDCard: {
+            url: String,
+            public_id: String
+        },
+        CompanyPANCard: {
+            url: String,
+            public_id: String
+        },
+        PANcard: {
+            url: String,
+            public_id: String
+        }
+    },
+
+    paymentMethod: {
+        type: String,
+        enum: ["cod", "khalti"],
+        required: true
+    },
+
+    paymentDetails: {
+        khalti: {
+            transactionId: {
+                type: String,
+                trim: true
+            },
+
+            phone: {
+                type: String,
+                trim: true,
+                validate: {
+                    validator: function (v) {
+                        return /^(?:\+977|977)?(98|97)\d{8}$/.test(v);
+                    },
+                    message: "Invalid Nepali phone number"
+                }
+            },
+
+            pidx: {
+                type: String,
+                trim: true
+            }
+        }
     },
     verifiedAt: Date,
     resetOtp: {

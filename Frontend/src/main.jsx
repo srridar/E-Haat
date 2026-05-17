@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import { ToastContainer } from "react-toastify";
+import { Toaster } from "sonner";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider } from "@/utils/AuthContext";
 
@@ -18,7 +18,7 @@ createRoot(document.getElementById("root")).render(
         <AuthProvider>
           <App />
         </AuthProvider>
-        <ToastContainer position="top-right" autoClose={3000} />
+        <Toaster position="top-right" richColors />
       </PersistGate>
     </Provider>
   </StrictMode>

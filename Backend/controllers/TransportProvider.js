@@ -1,12 +1,22 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { TransportProvider } from "../models/TransportProvider.js";
-import { TransportRequestInfo } from "../models/TransportRequestInfo.js"
 import { Buyer } from "../models/Buyer.js";
 import { Seller } from "../models/Seller.js";
-import Notification from "../models/Notification.js";
-import Order from "../models/Order.js"
+import { Notification } from "../models/Notification.js";
+import { Order } from "../models/Order.js"
 import cloudinary from "cloudinary";
+import { SellerOrder } from '../models/SellerOrder.js'
+import { deductStock } from "./inventory.controller.js";
+import { TransporterAssignment } from "../models/TransporterAssignment.js";
+import { transportRequestNotification } from "../controllers/notification.controller.js";
+import mongoose from "mongoose";
+
+const generateOTP = () => {
+    return Math.floor(
+        100000 + Math.random() * 900000
+    ).toString();
+};
 
 
 export const registerTransportProvider = async (req, res) => {
@@ -128,7 +138,7 @@ export const loginTransportProvider = async (req, res) => {
                     isVerified: transporter?.isVerified,
                     isKycCompleted: transporter?.isKycCompleted,
                     verificationStatus: transporter?.verificationStatus,
-                    isKycDataSubmitted : transporter?.isKycDataSubmitted
+                    isKycDataSubmitted: transporter?.isKycDataSubmitted
                 }
             });
 
@@ -143,14 +153,16 @@ export const loginTransportProvider = async (req, res) => {
 
 export const logoutTransporter = async (req, res) => {
     try {
-        return res.status(200).cookie("token", "", {
-            maxAge: 0,  // Expire the cookie immediately
-            httpOnly: true,  // Prevent access via JavaScript
-            secure: process.env.NODE_ENV === 'production',  // Only set secure cookies in production (HTTPS)
-            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax'
-        }).json({
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+            path: "/"   // IMPORTANT: must match
+        });
+
+        return res.status(200).json({
             message: "Logged out successfully!",
-            success: true  // Corrected typo from 'sucess' to 'success'
+            success: true
         });
 
     } catch (error) {
@@ -243,7 +255,7 @@ export const changeTransporterPassword = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 
-}     
+}
 
 export const submitTransporterKyc = async (req, res) => {
     try {
@@ -303,7 +315,7 @@ export const submitTransporterKyc = async (req, res) => {
         transporter.isKycCompleted = true;
         transporter.verificationStatus = "pending";
         transporter.isVerified = false;
-        transporter.isKycDataSubmitted=true;
+        transporter.isKycDataSubmitted = true;
 
         await transporter.save();
 
@@ -319,7 +331,7 @@ export const submitTransporterKyc = async (req, res) => {
             message: "Internal Server Error"
         });
     }
-};      
+};
 
 export const updateTransportProviderProfile = async (req, res) => {
     try {
@@ -407,7 +419,7 @@ export const updateTransportProviderProfile = async (req, res) => {
             message: "Internal Server Error"
         });
     }
-};    
+};
 
 export const updateAvailabilityStatus = async (req, res) => {
     try {
@@ -612,511 +624,14 @@ export const getAssignedOrders = async (req, res) => {
     }
 }
 
-export const getTransportRequests = async (req, res) => {
-    try {
-        const transporterId = req.user.transporterId;
-
-        const transporterData = await TransportProvider.findById(transporterId);
-        if (!transporterData) {
-            return res.status(404).json({
-                message: "Transporter not found in database",
-                success: false
-            });
-        }
-        const transportRequests = await TransportRequestInfo
-            .find({ transporter: transporterId })
-            .populate("customer", "name email phone")
-            .sort({ createdAt: -1 });
-
-        console.log(transportRequests);
-        return res.status(200).json({
-            message: "Transport requests fetched successfully",
-            success: true,
-            totalRequests: transportRequests.length,
-            requests: transportRequests
-        });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};    // redundant xa hasto xaa
-
-export const getTransportRequest = async (req, res) => {
-    try {
-        const transporterId = req.user.transporterId;
-        const requestId = req.params.id;
-
-
-        const transporterData = await TransportProvider.findById(transporterId);
-        if (!transporterData) {
-            return res.status(404).json({
-                message: "Transporter not found in database",
-                success: false
-            });
-        }
-
-        const transportRequest = await TransportRequestInfo
-            .findOne({
-                _id: requestId,
-                transporter: transporterId
-            })
-            .populate("customer", "name email phone").populate("transporter");
-
-        if (!transportRequest) {
-            return res.status(404).json({
-                message: "Transport request not found or unauthorized access",
-                success: false
-            });
-        }
-
-        return res.status(200).json({
-            message: "Transport request fetched successfully",
-            success: true,
-            request: transportRequest
-        });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};     // use hunxa
-
-export const getAllTransportationRequests = async (req, res) => {
-    try {
-        const transporterId = req.user.transporterId;
-        const allrequest = await TransportRequestInfo.find({ transporter: transporterId }).populate("customer")
-        if (!allrequest || allrequest.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No requests found",
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            allrequest
-        })
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
-    }
-}        // use hunxa
-
-export const updateRequestStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { action } = req.body; 
-    const transporterId = req.user.transporterId;
-
-    const transportRequest = await TransportRequestInfo.findById(id);
-
-    if (!transportRequest) {
-      return res.status(404).json({
-        success: false,
-        message: "Transport request not found.",
-      });
-    }
- 
-    if (transportRequest.transporter.toString() !== transporterId) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to modify this request.",
-      });
-    }
-    
-    const validActions = {
-      accept: "accepted",
-      reject: "rejected",
-      start: "in_transit",
-      deliver: "delivered",
-      cancel: "cancelled",
-    };
-
-    if (!validActions[action]) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid action provided.",
-      });
-    }
-
-
-    const blockedStatuses = ["cancelled", "delivered"];
-    if (blockedStatuses.includes(transportRequest.status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot modify a request that is already ${transportRequest.status}.`,
-      });
-    }
-
-
-    transportRequest.status = validActions[action];
-
-    if (action === "deliver") {
-      transportRequest.isCompleted = true;
-    }
-
-    await transportRequest.save();
-
-    return res.status(200).json({
-      success: true,
-      message: `Request ${validActions[action]} successfully.`,
-      transportRequest,
-    });
-
-  } catch (error) {
-    console.error("UpdateRequestStatus Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
-  }
-};    // use hunxa
-
-export const acceptOrder = async (req, res) => {
-    try {
-        const transporterId = req.user.transporterId;
-        const orderId = req.params.id;
-
-        // 1️⃣ Check transporter
-        const transporter = await TransportProvider.findById(transporterId);
-        if (!transporter || transporter.isBlocked || !transporter.isActive) {
-            return res.status(403).json({
-                message: "Transporter not authorized",
-                success: false
-            });
-        }
-
-        // 2️⃣ Find order
-        const order = await Order.findById(orderId);
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-                success: false
-            });
-        }
-
-        // 3️⃣ Ensure transporter is assigned
-        if (order.transporter.toString() !== transporterId) {
-            return res.status(403).json({
-                message: "You are not assigned to this order",
-                success: false
-            });
-        }
-
-        // 4️⃣ Check status
-        if (order.status !== "pending") {
-            return res.status(400).json({
-                message: `Order already ${order.status}`,
-                success: false
-            });
-        }
-
-        const buyerId = order.buyer;
-        const sellerId = order.seller;
-
-        // 5️⃣ Update order
-        order.status = "accepted";
-        await order.save();
-
-        // 6️⃣ Create notifications
-        const createdNotifications = await Notification.insertMany([
-            {
-                user: buyerId,
-                role: "buyer",
-                type: "order",
-                title: "Order Accepted",
-                message: "Your order has been accepted by the transporter.",
-                relatedId: order._id,
-            },
-            {
-                user: sellerId,
-                role: "seller",
-                type: "order",
-                title: "Order Accepted",
-                message: "The transporter has accepted your order for delivery.",
-                relatedId: order._id,
-            },
-            {
-                user: transporterId,
-                role: "transporter",
-                type: "delivery",
-                title: "Order Accepted",
-                message: "You have accepted this order for delivery.",
-                relatedId: order._id,
-            }
-        ]);
-
-        // 7️⃣ Push notification IDs into respective accounts (parallel execution)
-
-        await Promise.all([
-            Buyer.findByIdAndUpdate(buyerId, {
-                $push: { notifications: createdNotifications[0]._id }
-            }),
-            Seller.findByIdAndUpdate(sellerId, {
-                $push: { notifications: createdNotifications[1]._id }
-            }),
-            TransportProvider.findByIdAndUpdate(transporterId, {
-                $push: { notifications: createdNotifications[2]._id }
-            })
-        ]);
-
-        return res.status(200).json({
-            message: "Order accepted successfully",
-            success: true,
-            order
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
-        });
-    }
-};  // use vaxa
-
-export const rejectOrder = async (req, res) => {
-    try {
-        const transporterId = req.user.transporterId;
-        const orderId = req.params.id;
-
-        const transporter = await TransportProvider.findById(transporterId);
-        if (!transporter || transporter.isBlocked || !transporter.isActive) {
-            return res.status(403).json({
-                message: "Transporter not authorized",
-                success: false,
-            });
-        }
-
-
-        const order = await Order.findById(orderId);
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-                success: false,
-            });
-        }
-
-        // Ensure transporter is assigned to this order
-        if (order.transporter.toString() !== transporterId) {
-            return res.status(403).json({
-                message: "You are not assigned to this order",
-                success: false,
-            });
-        }
-
-        if (order.status !== "pending") {
-            return res.status(400).json({
-                message: `Order already ${order.status}`,
-                success: false,
-            });
-        }
-
-        // Update order status
-        order.status = "rejected";
-        order.transporter = null; // unassign transporter
-        await order.save();
-
-        const buyerId = order.buyer;
-        const sellerId = order.seller;
-
-        // Notifications
-        const notifications = [
-            {
-                user: buyerId,
-                role: "buyer",
-                type: "order",
-                title: "Order Rejected",
-                message: "Your order delivery has been rejected by the transporter.",
-                relatedId: order._id,
-            },
-            {
-                user: sellerId,
-                role: "seller",
-                type: "order",
-                title: "Order Rejected",
-                message: "The transporter has rejected the delivery for your order.",
-                relatedId: order._id,
-            },
-            {
-                user: transporterId,
-                role: "transporter",
-                type: "delivery",
-                title: "Order Rejected",
-                message: "You have rejected this order for delivery.",
-                relatedId: order._id,
-            },
-        ];
-
-        await Notification.insertMany(notifications);
-
-        await Buyer.findByIdAndUpdate(buyerId, {
-            $push: { notifications: createdNotifications[0]._id }
-        });
-
-        await Seller.findByIdAndUpdate(sellerId, {
-            $push: { notifications: createdNotifications[1]._id }
-        });
-
-        await TransportProvider.findByIdAndUpdate(transporterId, {
-            $push: { notifications: createdNotifications[2]._id }
-        });
-
-
-        return res.status(200).json({
-            message: "Order rejected successfully",
-            success: true,
-            order,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};   // use vaxa
-
-export const updateOrderStatus = async (req, res) => {
-    try {
-        const transporterId = req.user.transporterId;
-        const orderId = req.params.id;
-        const { status } = req.body;
-
-        const allowedStatuses = ["picked", "delivered"];
-
-        if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({
-                message: "Invalid status update",
-                success: false,
-            });
-        }
-
-        const transporter = await TransportProvider.findById(transporterId);
-        if (!transporter || transporter.isBlocked || !transporter.isActive) {
-            return res.status(403).json({
-                message: "Transporter not authorized",
-                success: false,
-            });
-        }
-
-        const order = await Order.findById(orderId);
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-                success: false,
-            });
-        }
-
-        if (order.transporter.toString() !== transporterId) {
-            return res.status(403).json({
-                message: "You are not assigned to this order",
-                success: false,
-            });
-        }
-
-        if (status === "picked" && order.status !== "accepted") {
-            return res.status(400).json({
-                message: "Order must be accepted before pickup",
-                success: false,
-            });
-        }
-
-        if (status === "delivered" && order.status !== "picked") {
-            return res.status(400).json({
-                message: "Order must be picked before delivery",
-                success: false,
-            });
-        }
-
-        // Update order status
-        order.status = status;
-
-        if (status === "delivered") {
-            transporter.totalDeliveries = (transporter.totalDeliveries || 0) + 1;
-            transporter.isAvailable = true;
-            await transporter.save();
-        }
-
-        await order.save();
-
-        // Create notifications dynamically based on status
-        const notifications = [
-            {
-                user: order.buyer,
-                role: "buyer",
-                type: "order",
-                title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-                message:
-                    status === "picked"
-                        ? "Your order has been picked up by the transporter."
-                        : "Your order has been delivered successfully.",
-                relatedId: order._id,
-            },
-            {
-                user: order.seller,
-                role: "seller",
-                type: "order",
-                title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-                message:
-                    status === "picked"
-                        ? "Your order has been picked up by the transporter."
-                        : "Your order has been delivered to the buyer.",
-                relatedId: order._id,
-            },
-            {
-                user: transporterId,
-                role: "transporter",
-                type: "delivery",
-                title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-                message:
-                    status === "picked"
-                        ? "You have picked up the order for delivery."
-                        : "You have successfully delivered the order.",
-                relatedId: order._id,
-            },
-            {
-                user: null, // optional adminId or all admins
-                role: "admin",
-                type: "system",
-                title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-                message: `Order #${order._id} status updated to ${status} by transporter.`,
-                relatedId: order._id,
-            },
-        ];
-
-        await Notification.insertMany(notifications);
-
-        return res.status(200).json({
-            message: `Order marked as ${status}`,
-            success: true,
-            order,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};  // use vaxa
-
 export const getTransporterNotifications = async (req, res) => {
     try {
         const transporterId = req.user.transporterId;
         const transporter = await TransportProvider.findById(transporterId).populate({
-                path: "notifications",
-                model: "Notification",
-                options: { sort: { createdAt: -1 } }
-            });
+            path: "notifications",
+            model: "Notification",
+            options: { sort: { createdAt: -1 } }
+        });
 
         if (!transporter) {
             return res.status(404).json({
@@ -1138,7 +653,773 @@ export const getTransporterNotifications = async (req, res) => {
             success: false,
         });
     }
-}; // use vaxa
+};
+
+export const transporterStatus = async (req, res) => {
+    try {
+        const transporterId = req.user.transporterId;
+        const transporter = await TransportProvider.findById(transporterId).select("verificationStatus isVerified isKycCompleted isKycDataSubmitted");
+
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            sss: {
+                verificationStatus: transporter.verificationStatus,
+                isVerified: transporter.isVerified,
+                isKycCompleted: transporter.isKycCompleted,
+                isKycDataSubmitted: transporter.isKycDataSubmitted
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+}
+
+
+
+
+
+export const getAvailablePickupAssignedToTransporter = async (req, res) => {
+    try {
+        const transporterId = req.user?.transporterId;
+
+        if (!transporterId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized transporter",
+            });
+        }
+
+        const transporter = await TransportProvider.findById(transporterId);
+
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter not found",
+            });
+        }
+
+        const now = new Date();
+
+        // 🚚 Get only valid assignments
+        const tasks = await TransporterAssignment.find({
+            transporter: transporterId, // ✅ FIXED
+            status: { $in: ["waiting", "pending"] }, // available tasks
+            $or: [
+                { expiresAt: null },
+                { expiresAt: { $gt: now } }, // not expired
+            ],
+        })
+            .populate({
+                path: "sellerOrder",
+                populate: [
+                    { path: "buyer" },
+                    { path: "sellerOrders" },
+                ],
+            })
+            .sort({ priority: 1, createdAt: 1 }); // high priority first
+
+        return res.status(200).json({
+            success: true,
+            total: tasks.length,
+            tasks,
+        });
+    } catch (error) {
+        console.error("Error fetching available pickup tasks:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+export const getPickupTaskDetails = async (req, res) => {
+    try {
+        const transporterId = req.user?.transporterId;
+        const { taskId } = req.params;
+
+
+        if (!transporterId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized transporter",
+            });
+        }
+
+
+        const transporter = await TransportProvider.findById(transporterId);
+
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter not found",
+            });
+        }
+
+
+        const task = await TransporterAssignment.findById(taskId)
+            .populate({
+                path: "sellerOrder",
+                populate: [
+                    { path: "buyer" },
+                    { path: "sellerOrders" },
+                ],
+            });
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: "Pickup task not found",
+            });
+        }
+
+
+        if (task.transporter.toString() !== transporterId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to access this task",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            task,
+        });
+    } catch (error) {
+        console.log("Error in getPickupTaskDetails:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+export const verifyPickup = async (req, res) => {
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+        const { otp } = req.body;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId).session(session);
+
+        if (!sellerOrder) {
+            await session.abortTransaction();
+            session.endSession();
+
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        if (sellerOrder.transporter.toString() !== transporterId.toString()) {
+            await session.abortTransaction();
+            session.endSession();
+
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized transporter"
+            });
+        }
+
+        if (sellerOrder.pickupOTP !== otp) {
+
+            await session.abortTransaction();
+            session.endSession();
+
+            return res.status(400).json({
+                success: false,
+                message: "Invalid pickup OTP"
+            });
+        }
+
+
+        for (const item of sellerOrder.products) {
+
+            await deductStock(
+                item.product,
+                item.quantity,
+                session
+            );
+        }
+
+        sellerOrder.pickupVerified = true;
+        sellerOrder.status = "picked_up";
+        sellerOrder.pickedUpAt = new Date();
+        sellerOrder.deliveryOTP = generateOTP();
+        addStatusHistory(
+            sellerOrder,
+            "picked_up",
+            transporterId
+        );
+
+        await sellerOrder.save({ session });
+        await session.commitTransaction();
+        session.endSession();
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Pickup verified successfully"
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+}
+
+export const markInTransit = async (req, res) => {
+
+    try {
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+        const sellerOrder = await SellerOrder.findById(sellerOrderI);
+
+        if (sellerOrder.status !== "picked_up") {
+            return res.status(400).json({
+                success: false,
+                message: "Order must be picked up first"
+            });
+        }
+
+        sellerOrder.status = "in_transit";
+        sellerOrder.inTransitAt = new Date();
+        addStatusHistory(
+            sellerOrder,
+            "in_transit",
+            transporterId
+        );
+
+        await sellerOrder.save();
+        return res.status(200).json({
+            success: true,
+            message: "Order marked in transit"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const markOutForDelivery = async (req, res) => {
+
+    try {
+
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (sellerOrder.status !== "in_transit") {
+            return res.status(400).json({
+                success: false,
+                message: "Order must be in transit"
+            });
+        }
+
+        sellerOrder.status = "out_for_delivery";
+        sellerOrder.outForDeliveryAt = new Date();
+        addStatusHistory(sellerOrder, "out_for_delivery", transporterId);
+        await sellerOrder.save();
+        return res.status(200).json({
+            success: true,
+            message: "Order out for delivery"
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const uploadDeliveryProof = async (req, res) => {
+    try {
+
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+        const files = req.files || [];
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        if (sellerOrder.transporter.toString() !== transporterId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized transporter"
+            });
+        }
+
+        const proofs = files.map(file => ({
+            url: file.path,
+            public_id: file.filename
+        }));
+
+
+        sellerOrder.deliveryProofImages.push(...proofs);
+
+        await sellerOrder.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Delivery proof uploaded"
+        });
+
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const completeDelivery = async (req, res) => {
+    try {
+
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+        const { otp } = req.body;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        if (sellerOrder.deliveryOTP !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid delivery OTP"
+            });
+        }
+
+        if (sellerOrder.deliveryProofImages.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Upload delivery proof first"
+            });
+        }
+
+        sellerOrder.status = "delivered";
+        sellerOrder.deliveryVerified = true;
+        sellerOrder.deliveredAt = new Date();
+        addStatusHistory(
+            sellerOrder,
+            "delivered",
+            transporterId
+        );
+
+        await sellerOrder.save();
+
+        // TODO:
+        // release seller payment
+        // enable ratings and reviews
+        // send notifications to buyer and seller
+        // close logistics task
+
+        return res.status(200).json({
+            success: true,
+            message: "Order delivered successfully"
+        });
+
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+
+}
+
+
+const haversineDistance = (lat1, lon1, lat2, lon2) => {
+    const toRad = (value) => (value * Math.PI) / 180;
+    const R = 6371;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+};
+
+export const transporterByRecommendationEngine = async (req, res) => {
+
+    try {
+
+        const { sellerOrderId } = req.params;
+        const { buyerLocation, sellerLocation } = req.body;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        if (!buyerLocation?.coordinates || !sellerLocation?.coordinates) {
+            return res.status(400).json({
+                success: false,
+                message: "Buyer and seller location required"
+            });
+        }
+
+        const transporters = await TransportProvider.find({
+            isActive: true,
+            isVerified: true,
+            isBlocked: false
+        });
+
+        if (!transporters.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No transporters found"
+            });
+        }
+
+        const scoredTransporters = transporters.map((t) => {
+
+
+            const transporterLat = t.location.coordinates[1];
+            const transporterLng = t.location.coordinates[0];
+
+            const sellerLat = sellerLocation.coordinates[1];
+            const sellerLng = sellerLocation.coordinates[0];
+
+            const buyerLat = buyerLocation.coordinates[1];
+            const buyerLng = buyerLocation.coordinates[0];
+
+            const pickupDistance = haversineDistance(
+                transporterLat,
+                transporterLng,
+                sellerLat,
+                sellerLng
+            );
+
+            const deliveryDistance = haversineDistance(
+                sellerLat,
+                sellerLng,
+                buyerLat,
+                buyerLng
+            );
+
+            const totalDistance = pickupDistance + deliveryDistance;
+            const distanceScore = Math.exp(-totalDistance / 10);
+
+            const ratingScore = (t.totalRating || 0) / 5;
+
+            const acceptanceRate = t.totalRequest > 0 ? t.acceptedRequests / t.totalRequest : 0;
+
+            const cancellationRate = t.totalRequest > 0 ? t.cancelledRequests / t.totalRequest : 0;
+
+            const workloadScore = 1 / (1 + (t.activeDeliveriesCount || 0));
+
+            const experienceScore = Math.min((t.totalDeliveries || 0) / 100, 1);
+
+            const finalScore =
+                0.30 * distanceScore +
+                0.25 * ratingScore +
+                0.20 * acceptanceRate +
+                0.10 * workloadScore +
+                0.10 * (1 - cancellationRate) +
+                0.05 * experienceScore;
+
+            return {
+                transporter: t,
+                distanceScore,
+                ratingScore,
+                finalScore
+            };
+        });
+
+        const sortedTransporters = scoredTransporters.sort((a, b) => {
+
+            if (b.finalScore !== a.finalScore)
+                return b.finalScore - a.finalScore;
+
+            if (a.distanceScore !== b.distanceScore)
+                return a.distanceScore - b.distanceScore;
+
+            return b.ratingScore - a.ratingScore;
+        });
+
+        const top5 = sortedTransporters.slice(0, 5);
+
+        const assignments = [];
+
+
+        for (let i = 0; i < top5.length; i++) {
+
+            assignments.push({
+                sellerOrder: sellerOrder._id,
+                transporter: top5[i].transporter._id,
+                priority: i + 1,
+                status: i === 0 ? "pending" : "waiting",
+                requestedAt: i === 0 ? new Date() : null,
+                expiresAt: i === 0 ? new Date(Date.now() + 15 * 60 * 1000) : null
+            });
+        }
+
+        await TransporterAssignment.insertMany(assignments);
+
+        await transportRequestNotification({
+            transporterId: top5[0].transporter._id,
+            sellerOrderId: sellerOrder._id
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Transporter dispatch started"
+        });
+
+    } catch (error) {
+
+        console.error("Transporter Recommendation Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const acceptTransportRequest = async (req, res) => {
+
+    try {
+
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+
+        const assignment =
+            await TransporterAssignment.findOne({
+                sellerOrder: sellerOrderId,
+                transporter: transporterId,
+                status: "pending"
+            });
+
+        if (!assignment) {
+            return res.status(400).json({
+                success: false,
+                message: "No pending request"
+            });
+        }
+
+        // request expired
+        if (new Date() > assignment.expiresAt) {
+
+            assignment.status = "expired";
+
+            await assignment.save();
+
+            return res.status(400).json({
+                success: false,
+                message: "Request expired"
+            });
+        }
+
+        // accept assignment
+        assignment.status = "accepted";
+        await assignment.save();
+
+        // expire all other assignments
+        await TransporterAssignment.updateMany(
+            {
+                sellerOrder: sellerOrderId,
+                _id: { $ne: assignment._id }
+            },
+            {
+                $set: {
+                    status: "expired"
+                }
+            }
+        );
+
+        // assign transporter finally
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        sellerOrder.transporter = transporterId;
+        sellerOrder.status = "pickup_assigned";
+        sellerOrder.transporterAssignedAt = new Date();
+        sellerOrder.pickupOTP = generateOTP();
+        await sellerOrder.save();
+
+        // transporter statistics
+        await TransportProvider.findByIdAndUpdate(
+            transporterId,
+            {
+                $inc: {
+                    acceptedRequests: 1,
+                    activeDeliveriesCount: 1
+                }
+            }
+        );
+
+        // notification
+        sendPickupNotification({
+            sellerId: sellerOrder.seller,
+            transporterId,
+            sellerOrderId
+        }).catch(err =>
+            console.log("Notification Error:", err)
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Transport request accepted",
+            pickupOTP: sellerOrder.pickupOTP
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const activateNextTransporter = async (sellerOrderId) => {
+
+    const nextAssignment = await TransporterAssignment.findOne({
+        sellerOrder: sellerOrderId,
+        status: "waiting"
+    }).sort({ priority: 1 });   //  this is used to get the next transporter in line based on priority (1 is highest)
+
+    if (!nextAssignment) {
+        console.log("No more transporters");
+        return;
+    }
+
+    nextAssignment.status = "pending";
+    nextAssignment.requestedAt = new Date();
+    nextAssignment.expiresAt = new Date(Date.now() + 15 * 60 * 1000);           // waits for 15 minutes for the next transporter to accept the request
+
+    await nextAssignment.save();
+    await transportRequestNotification({
+        transporterId: nextAssignment.transporter,
+        sellerOrderId
+    });
+};
+
+export const rejectTransportRequest = async (req, res) => {
+
+    try {
+
+        const transporterId = req.user.transporterId;
+        const { sellerOrderId } = req.params;
+
+        const assignment = await TransporterAssignment.findOne({
+            sellerOrder: sellerOrderId,
+            transporter: transporterId,
+            status: "pending"
+        });
+
+        if (!assignment) {
+            return res.status(404).json({
+                success: false,
+                message: "No pending assignment found"
+            });
+        }
+
+
+        assignment.status = "rejected";
+        await assignment.save();
+
+
+        await TransportProvider.findByIdAndUpdate(                       // transporter stats
+            transporterId,
+            {
+                $inc: {
+                    cancelledRequests: 1
+                }
+            }
+        );
+
+
+        await activateNextTransporter(sellerOrderId);          // activate next transporter
+
+        return res.status(200).json({
+            success: true,
+            message: "Transport request rejected"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { LockKeyhole, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { BUYER_API_END_POINT } from "@/utils/constants";
@@ -17,26 +17,47 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
 
   const submitHandler = async (e) => {
+    setLoading(true);
     e.preventDefault();
     if (!password || !confirmPassword) return toast.error("All fields are required");
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     if (password !== confirmPassword) return toast.error("Passwords do not match");
 
-    try {
-      setLoading(true);
-      const res = await axios.post(
-        `${BUYER_API_END_POINT}/reset-password`,
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
-      );
+    if (!email) {
+      toast.error("Session expired. Please try again.");
+      navigate("/buyer/login");
+      return;
+    }
 
-      if (res.data.success) {
-        toast.success("Password reset successful 🎉");
-        navigate("/buyer/login");
-      }
+    const promise = axios.post(
+      `${BUYER_API_END_POINT}/reset-password`,
+      { email, password },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    toast.promise(promise, {
+      loading: "Resetting password...",
+      success: (res) => {
+        if (res.data.success) {
+          setTimeout(() => {
+            navigate("/buyer/login");
+          }, 800);
+          return "Password reset successful ";
+        }
+        throw new Error("Reset failed");
+      },
+      error: (err) =>
+        err?.response?.data?.message ||
+        err?.message ||
+        "Error resetting password"
+    });
+
+    try {
+      await promise;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error resetting password");
-    } finally {
+      console.error(error);
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -45,14 +66,14 @@ const ResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 px-4">
       {/* Background Glows */}
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative max-w-md w-full"
       >
         <div className="bg-white/80 backdrop-blur-xl border border-white shadow-2xl rounded-3xl p-8 md:p-10">
-          
+
           <div className="flex justify-center mb-6">
             <div className="bg-emerald-600 p-3 rounded-2xl shadow-lg shadow-emerald-200">
               <ShieldCheck className="text-white w-8 h-8" />

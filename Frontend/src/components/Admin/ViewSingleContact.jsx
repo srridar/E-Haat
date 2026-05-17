@@ -45,7 +45,7 @@ const ViewSingleContact = () => {
 
     try {
       setActionLoading(true);
-      await axios.delete(`${ADMIN_API_END_POINT}/contact/${id}`, { withCredentials: true });
+      await axios.delete(`${ADMIN_API_END_POINT}/delete-contact/${id}`, { withCredentials: true });
       navigate("/admin/contacts");
     } catch (error) {
       console.error("Delete failed:", error);
@@ -58,7 +58,7 @@ const ViewSingleContact = () => {
   if (!contact) return <div className="p-12 text-center text-red-500 font-medium">Contact not found</div>;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
+    <div className="min-h-screen bg-[#111212] p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         
         {/* Navigation */}

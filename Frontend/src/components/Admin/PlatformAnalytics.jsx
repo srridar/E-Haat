@@ -23,13 +23,13 @@ const data = [
 
 const PlatformAnalytics = () => {
   return (
-    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 p-8 lg:col-span-2 transition-all">
+    <div className="bg-gray-800 rounded-[2rem] border border-indigo-500 shadow-xl shadow-indigo-200/50 p-8 lg:col-span-2 transition-all">
       
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Platform Analytics</h2>
+            <h2 className="text-xl font-bold text-slate-200 tracking-tight">Platform Analytics</h2>
             <span className="flex items-center gap-1 bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
               <TrendingUp size={12} /> +12.5%
             </span>
@@ -90,19 +90,19 @@ const PlatformAnalytics = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-50">
         <div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gross Sales</p>
-          <p className="text-lg font-bold text-slate-800">Rs 34,500</p>
+          <p className="text-lg font-bold text-slate-400">Rs 34,500</p>
         </div>
         <div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Orders</p>
-          <p className="text-lg font-bold text-slate-800">190</p>
+          <p className="text-lg font-bold text-slate-400">190</p>
         </div>
         <div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg. Order</p>
-          <p className="text-lg font-bold text-slate-800">Rs 181</p>
+          <p className="text-lg font-bold text-slate-400">Rs 181</p>
         </div>
         <div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Category</p>
-          <p className="text-lg font-bold text-green-600 font-mono">Vegetables</p>
+          <p className="text-lg font-bold text-green-400 font-mono">Vegetables</p>
         </div>
       </div>
     </div>

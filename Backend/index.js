@@ -11,8 +11,10 @@ import transporterRoute from './routes/transporter.route.js';
 import contactRoute from './routes/contact.route.js';
 import chatRoute from './routes/message.route.js';
 import khaltiRoute from './routes/khalti.route.js';
+import orderRoute from './routes/order.route.js'; 
 import { Server } from "socket.io";
 import http from "http";
+import { startTransportExpiryJob } from "./job/transportExpiryJob.js";
 
 dotenv.config();
 const app = express();
@@ -31,19 +33,29 @@ const io = new Server(server, {
 });
 
 
-const userSocketMap = {}; 
+const userSocketMap = {};
+const adminSockets = new Set();
 
 export const getReceiverSocketId = (receiverId) => userSocketMap[receiverId];
+export const getAdminSockets = () => adminSockets;
 
 io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
-  if (userId !== "undefined") {
+  const { userId, role } = socket.handshake.query;
+
+  if (userId && userId !== "undefined") {
     userSocketMap[userId] = socket.id;
+
+    if (role === "admin" || role === "superadmin") {
+      adminSockets.add(socket.id);
+    }
   }
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
     delete userSocketMap[userId];
+    adminSockets.delete(socket.id); // remove if admin
+
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
@@ -68,19 +80,21 @@ app.use("/api/v4/transporter", transporterRoute);
 app.use("/api/v4/contact", contactRoute);
 app.use("/api/v4/chat", chatRoute);
 app.use("/api/v4/khalti", khaltiRoute);
+app.use("/api/v4/orders", orderRoute);
+
 
 app.get('/', (req, res) => {
   res.send("Server is running with Socket.io");
 });
 
-connectDB()
-  .then(() => {
-    server.listen(PORT, () => {
-      console.log(`✅ Server & Socket running on port ${PORT}`);
+connectDB() .then(() => {
+    startTransportExpiryJob();
+     server.listen(PORT, () => {
+      console.log(` Server & Socket running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ Database connection failed", err);
+    console.error(" Database connection failed", err);
   });
 
 export { app, io }; 

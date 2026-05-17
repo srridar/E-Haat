@@ -35,7 +35,6 @@ const SellerRegister = () => {
 
   const navigate = useNavigate()
 
-
   const validateForm = () => {
     let newErrors = {};
     const emailReg = /^[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/;
@@ -221,6 +220,7 @@ const SellerRegister = () => {
               <div className="flex items-center gap-2 text-orange-600 border-b border-orange-50 pb-2">
                 <MapPin size={18} />
                 <h3 className="font-bold text-sm uppercase tracking-wider">Store Location</h3>
+                <span className="ml-auto text-xs font-medium text-slate-700">Pin your store or warehouse on the map</span>
               </div>
 
               <div className={`h-[400px] rounded-[2rem] overflow-hidden border-4 shadow-inner relative group ${errors.location ? "border-red-200" : "border-slate-50"

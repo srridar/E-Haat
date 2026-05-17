@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { MessagesSquare, ChevronRight, MapPin , LogOut} from "lucide-react";
+import { MessagesSquare, ChevronRight, MapPin, LogOut, FileCheck, Package  } from "lucide-react";
 import {
-  UserIcon, Cog6ToothIcon, BellIcon, CubeIcon,MapPinIcon,
+  UserIcon, Cog6ToothIcon, BellIcon, CubeIcon, MapPinIcon,
   PhoneIcon, CalendarIcon, CheckBadgeIcon,
-  XMarkIcon, ChevronDownIcon ,
+  XMarkIcon, ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import useLogOut from '@/hooks/sharedHooks/useLogOut.js';
@@ -17,8 +17,8 @@ const SellerProfile = () => {
   const logout = useLogOut("seller");
   const getProfile = useGetProfile("seller");
 
-  const role ="superadmin";
-  const id="69814a039ab20f77e7b72fc3";
+  const role = "superadmin";
+  const id = "69814a039ab20f77e7b72fc3";
 
   useEffect(() => {
     const fetchprofile = async () => {
@@ -40,6 +40,7 @@ const SellerProfile = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row gap-6 p-4 md:p-8">
 
       <aside className="w-full md:w-64 flex flex-col gap-2">
+        <h1 className="text-2xl font-bold text-[#4F46E5] bg-indigo-400-400 p-2 rounded-xl">Seller Profile</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 text-center bg-gradient-to-br from-indigo-500 to-indigo-800">
             <img
@@ -53,13 +54,24 @@ const SellerProfile = () => {
 
           <nav className="p-2 space-y-1">
             <NavButton icon={<UserIcon className="w-5 h-5" />} label="Profile" active />
+
+            <NavButton
+              icon={<FileCheck className="w-5 h-5" />}
+              label="KYC Verification"
+              onClick={() => navigate("/seller/kyc-section")}
+              className={!sss?.isVerified ? "text-orange-600" : ""}
+            />
+
             <NavButton icon={<CubeIcon className="w-5 h-5" />} label="My Products" onClick={() => navigate("/seller/my-products")} />
             <NavButton icon={<BellIcon className="w-5 h-5" />} label="Notifications" onClick={() => navigate("/seller/notifications")} />
             <NavButton onClick={() => navigate("/message/chat")} icon={<MessagesSquare size={19} />} label="Messages" active />
             <NavButton onClick={() => navigate(`/message/send/${role}/${id}`)} icon={<MessagesSquare size={19} />} label="Message Admin" />
+            <NavButton onClick={() => navigate("/seller/manage-orders")} icon={<Package  size={18} />} label="Manage Orders" />
             <NavButton onClick={() => navigate("/seller/location-selection")} icon={<MapPin size={18} />} label="Base Location" />
             <NavButton icon={<Cog6ToothIcon className="w-5 h-5" />} label="Settings" onClick={() => setSetting(true)} />
+
             <hr className="my-2 border-gray-100" />
+
             <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm" >
               <LogOut className="w-5 h-5" />
               Logout
@@ -68,7 +80,6 @@ const SellerProfile = () => {
         </div>
       </aside>
 
-      {/* --- Main Content Area --- */}
       <main className="flex-1 space-y-6">
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-center gap-6">

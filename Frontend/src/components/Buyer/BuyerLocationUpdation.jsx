@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BUYER_API_END_POINT } from "@/utils/constants";
 import LocationPicker from "@/components/LocationPicker";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Loader2,
@@ -17,10 +17,9 @@ import {
 
 const BuyerLocationUpdation = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-
+  const [loading , setLoading] = useState(false);
   const [savedLocation, setSavedLocation] = useState(null);
   const [location, setLocation] = useState({
     latitude: 27.7172,
@@ -46,6 +45,7 @@ const BuyerLocationUpdation = () => {
         }
       } catch (err) {
         console.error("Error fetching location:", err);
+        toast.error("Failed to load saved location");
       } finally {
         setAddressLoading(false);
       }
@@ -65,6 +65,7 @@ const BuyerLocationUpdation = () => {
       setLocation((prev) => ({ ...prev, address: data.display_name || "Custom Pin" }));
     } catch (err) {
       setLocation((prev) => ({ ...prev, address: "Manual location pin" }));
+      toast.error("Could not fetch address");
     } finally {
       setAddressLoading(false);
     }
@@ -78,34 +79,49 @@ const BuyerLocationUpdation = () => {
 
   const toggleEditMode = () => {
     setIsEditMode(true);
-    toast.info("Map editing enabled. Click anywhere to move pin.");
+    toast.info("Edit mode enabled. Click map to change location.");
   };
 
   const cancelEdit = () => {
     if (savedLocation) setLocation(savedLocation);
     setIsEditMode(false);
+    toast.warning("Changes discarded");
   };
 
   const submitHandler = async () => {
-    try {
-      setLoading(true);
-      const payload = {
+    setLoading(true);
+    const promise = axios.put(
+      `${BUYER_API_END_POINT}/setlocation`,
+      {
         location: {
           type: "Point",
           coordinates: [location.longitude, location.latitude],
           city: location.address
         }
-      };
+      },
+      { withCredentials: true }
+    );
 
-      const res = await axios.put(`${BUYER_API_END_POINT}/setlocation`, payload, { withCredentials: true });
-      if (res.data.success) {
-        toast.success("Location updated successfully!");
-        setSavedLocation(location);
-        setIsEditMode(false);
-      }
+    toast.promise(promise, {
+      loading: "Updating location...",
+      success: (res) => {
+        if (res.data.success) {
+          setSavedLocation(location);
+          setIsEditMode(false);
+          return "Location updated successfully!";
+        }
+        throw new Error("Update failed");
+      },
+      error: (err) =>
+        err.response?.data?.message || "Failed to update location"
+    });
+
+    try {
+      await promise;
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update");
-    } finally {
+      console.error(err);
+    }
+    finally{
       setLoading(false);
     }
   };
@@ -176,7 +192,7 @@ const BuyerLocationUpdation = () => {
               <div className="mt-8">
                 <button
                   onClick={submitHandler}
-                  disabled={loading || addressLoading}
+                  disabled={addressLoading}
                   className="w-full bg-slate-900 hover:bg-orange-600 disabled:bg-slate-200 text-white font-black py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
                 >
                   {loading ? <Loader2 className="animate-spin" /> : <>Save Changes <Save size={16} /></>}

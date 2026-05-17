@@ -1,10 +1,15 @@
 import { Seller } from '../models/Seller.js';
-import Notification from '../models/Notification.js';
+import {Notification }from '../models/Notification.js';
 import bcrypt from 'bcryptjs';
 import jwt from "jsonwebtoken";
 import cloudinary from '../utils/cloudinary.js'
 import { Product } from '../models/Product.js';
 import mongoose from 'mongoose';
+import { SellerOrder } from "../models/SellerOrder.js";
+import { assignTransporterUsingAI } from "../services/transporterAssignment.service.js";
+
+// done 
+
 
 
 export const registerSeller = async (req, res) => {
@@ -59,15 +64,18 @@ export const loginSeller = async (req, res) => {
             return res.status(401).json({ message: "Invalid email or password", success: false });
         }
 
+
+
         if (seller.isBlocked) {
             return res.status(403).json({
                 message: "Account is blocked",
                 success: false
             });
         }
-        // Generate JWT Token
+
+        console.log("ddddfdkljsad");
         const token = jwt.sign(
-            { sellerId: seller._id, role: 'seller' },          //  id is obtained from buyer._id it is object id of mongodb . it will be used to identify the buyer in future requests
+            { sellerId: seller._id, role: 'seller' },        //  id is obtained from buyer._id it is object id of mongodb . it will be used to identify the buyer in future requests
             process.env.JWT_SECRET,                         // secret key from environment variables USED to sign the token
             { expiresIn: '7d' }
         );
@@ -101,14 +109,16 @@ export const loginSeller = async (req, res) => {
 
 export const logoutSeller = async (req, res) => {
     try {
-        return res.status(200).cookie("token", "", {
-            maxAge: 0,  // Expire the cookie immediately
-            httpOnly: true,  // Prevent access via JavaScript
-            secure: process.env.NODE_ENV === 'production',  // Only set secure cookies in production (HTTPS)
-            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax'
-        }).json({
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+            path: "/"   // IMPORTANT: must match
+        });
+
+        return res.status(200).json({
             message: "Logged out successfully!",
-            success: true  // Corrected typo from 'sucess' to 'success'
+            success: true
         });
 
     } catch (error) {
@@ -119,7 +129,8 @@ export const logoutSeller = async (req, res) => {
 
 export const getSellerProfile = async (req, res) => {
     try {
-        const sellerId = req.user.sellerId; 
+
+        const sellerId = req.user.sellerId;
         const seller = await Seller.findById(sellerId).select("-password");
 
         if (!seller) {
@@ -182,10 +193,10 @@ export const updateSellerProfile = async (req, res) => {
         if (latitude !== undefined)
             seller.location.coordinates[1] = Number(latitude);
 
-      
+
         if (req.file) {
             if (seller.profileImage?.public_id) {
-                await cloudinary.v2.uploader.destroy(
+                await cloudinary.uploader.destroy(
                     seller.profileImage.public_id
                 );
             }
@@ -504,93 +515,662 @@ export const setLocation = async (req, res) => {
     }
 };
 
-
 export const editProduct = async (req, res) => {
-  try {
-    const sellerId = req.user.sellerId;
-    const { productId } = req.params;
+    try {
+        const sellerId = req.user.sellerId;
+        const { productId } = req.params;
 
-    console.log(" edit is hitted"); 
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({
-        message: "Invalid product ID",
-        success: false,
-      });
+        console.log(" edit is hitted");
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(400).json({
+                message: "Invalid product ID",
+                success: false,
+            });
+        }
+
+        const {
+            name,
+            description,
+            price,
+            category,
+            stock,
+            unit,
+            brand,
+            isActive
+        } = req.body;
+
+        const product = await Product.findOne({
+            _id: productId,
+            seller: sellerId,
+        });
+
+        if (!product) {
+            return res.status(404).json({
+                message: "Product not found",
+                success: false,
+            });
+        }
+
+        // ✅ Update fields safely
+        if (name !== undefined) product.name = name;
+        if (description !== undefined) product.description = description;
+        if (price !== undefined) product.price = price;
+        if (category !== undefined) product.category = category;
+        if (stock !== undefined) product.stock = stock;
+        if (unit !== undefined) product.unit = unit;
+        if (brand !== undefined) product.brand = brand;
+        if (isActive !== undefined) product.isActive = isActive;
+
+        // Optional: update images (if you send new ones)
+        if (req.body.images) {
+            product.images = req.body.images;
+        }
+
+        await product.save();
+
+        return res.status(200).json({
+            message: "Product updated successfully",
+            success: true,
+            product,
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        // Handle validation errors properly
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: error.message,
+                success: false,
+            });
+        }
+
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
     }
+};
 
-    const {
-      name,
-      description,
-      price,
-      category,
-      stock,
-      unit,
-      brand,
-      isActive
-    } = req.body;
 
-    const product = await Product.findOne({
-      _id: productId,
-      seller: sellerId,
-    });
+export const sellerKYC = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
 
-    if (!product) {
-      return res.status(404).json({
-        message: "Product not found",
-        success: false,
-      });
+        const {
+            citizenshipCard,
+            NationalIDCard,
+            businessRegistration,
+            PANcard
+        } = req.files || {};
+
+        const {
+            accountHolderName,
+            bankName,
+            accountNumber,
+            branchName,
+            isRegisteredBusiness,
+
+            //     NEW Khalti fields
+            khaltiPhone,
+            khaltiTransactionId
+        } = req.body;
+
+        const seller = await Seller.findById(sellerId);
+
+        if (!seller) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller not found"
+            });
+        }
+
+        if (seller.isKycDataSubmitted) {
+            return res.status(400).json({
+                success: false,
+                message: "KYC already submitted"
+            });
+        }
+
+        //      Validation
+        if (!citizenshipCard || !NationalIDCard || !accountHolderName || !bankName || !accountNumber || !branchName) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields"
+            });
+        }
+
+        //  KYC Documents
+        seller.documents = {
+            citizenshipCard: {
+                url: citizenshipCard?.[0]?.path,
+                public_id: citizenshipCard?.[0]?.filename
+            },
+            NationalIDCard: {
+                url: NationalIDCard?.[0]?.path,
+                public_id: NationalIDCard?.[0]?.filename
+            },
+            businessRegistration: {
+                url: businessRegistration?.[0]?.path || "",
+                public_id: businessRegistration?.[0]?.filename || ""
+            },
+            PANcard: {
+                url: PANcard?.[0]?.path || "",
+                public_id: PANcard?.[0]?.filename || ""
+            }
+        };
+
+        //  Bank details
+        seller.bankDetails = {
+            accountHolderName,
+            bankName,
+            accountNumber,
+            branchName
+        };
+
+        //  Khalti payment details (IMPORTANT FIX)
+        seller.paymentMethod = "khalti";
+
+        seller.paymentDetails = {
+            khalti: {
+                phone: khaltiPhone,
+                transactionId: khaltiTransactionId,
+                pidx: ""
+            }
+        };
+
+        seller.isRegisteredBusiness = isRegisteredBusiness === "true";
+        seller.verificationStatus = "pending";
+        seller.isKycDataSubmitted = true;
+        seller.isVerified = false;
+
+        await seller.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "KYC submitted successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
     }
+};
 
-    // ✅ Update fields safely
-    if (name !== undefined) product.name = name;
-    if (description !== undefined) product.description = description;
-    if (price !== undefined) product.price = price;
-    if (category !== undefined) product.category = category;
-    if (stock !== undefined) product.stock = stock;
-    if (unit !== undefined) product.unit = unit;
-    if (brand !== undefined) product.brand = brand;
-    if (isActive !== undefined) product.isActive = isActive;
 
-    // Optional: update images (if you send new ones)
-    if (req.body.images) {
-      product.images = req.body.images;
+
+export const sellerStatus = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
+        const seller = await Seller.findById(sellerId).select("verificationStatus isVerified isKycCompleted isKycDataSubmitted");
+
+        if (!seller) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            sss: {
+                verificationStatus: seller.verificationStatus,
+                isVerified: seller.isVerified,
+                isKycCompleted: seller.isKycCompleted,
+                isKycDataSubmitted: seller.isKycDataSubmitted
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
     }
+}
 
-    await product.save();
 
-    return res.status(200).json({
-      message: "Product updated successfully",
-      success: true,
-      product,
-    });
+export const getSellerOrders = async (req, res) => {
 
-  } catch (error) {
-    console.error(error);
+    try {
 
-    // Handle validation errors properly
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        message: error.message,
-        success: false,
-      });
+        const sellerId = req.user.sellerId;
+
+        const {
+            status,        //  optional status filter (pending, accepted, rejected, delivered) from query parameters
+            page = 1,      // default to page 1 if not provided
+            limit = 10
+        } = req.query;
+
+        const query = {
+            seller: sellerId
+        };
+
+        if (status) {
+            query.status = status;
+        }
+
+        const orders = await SellerOrder.find(query).populate("buyer", "name email").populate("products.product").sort({ createdAt: -1 })
+            .skip((page - 1) * limit).limit(Number(limit));
+
+        const total = await SellerOrder.countDocuments(query);
+
+        return res.status(200).json({
+            success: true,
+            total,
+            currentPage: Number(page),
+            totalPages: Math.ceil(total / limit),
+            orders
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
     }
+};
 
-    return res.status(500).json({
-      message: "Internal Server Error",
-      success: false,
-    });
-  }
+
+export const getSellerOrderDetails = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
+        const { sellerOrderId } = req.params;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId)
+            .populate("buyer", "name email phone")
+            .populate("seller", "name email phone")
+            .populate("transporter", "name phone rating")
+            .populate("products.product", "name price images");
+
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+       if (sellerOrder.seller._id.toString() !== sellerId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access to this order"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            sellerOrder: {
+                _id: sellerOrder._id,
+                mainOrder: sellerOrder.mainOrder,
+                buyer: sellerOrder.buyer,
+                seller: sellerOrder.seller,
+                transporter: sellerOrder.transporter,
+
+                products: sellerOrder.products,
+
+                pickupLocation: sellerOrder.pickupLocation,
+                deliveryLocation: sellerOrder.deliveryLocation,
+
+                deliveryCost: sellerOrder.deliveryCost,
+                totalAmount: sellerOrder.totalAmount,
+
+                status: sellerOrder.status,
+
+                sellerPacked: sellerOrder.sellerPacked,
+                transporterPicked: sellerOrder.transporterPicked,
+                delivered: sellerOrder.delivered,
+
+                verificationCode: sellerOrder.verificationCode,
+
+                sellerProofImages: sellerOrder.sellerProofImages,
+                pickupProofImages: sellerOrder.pickupProofImages,
+                deliveryProofImages: sellerOrder.deliveryProofImages,
+
+                complaintRaised: sellerOrder.complaintRaised,
+                paymentReleasedToSeller: sellerOrder.paymentReleasedToSeller,
+
+                pickupOTP: sellerOrder.pickupOTP,
+                deliveryOTP: sellerOrder.deliveryOTP,
+
+                pickupVerified: sellerOrder.pickupVerified,
+                deliveryVerified: sellerOrder.deliveryVerified,
+
+                assignedByAdmin: sellerOrder.assignedByAdmin,
+
+                transporterAssignedAt: sellerOrder.transporterAssignedAt,
+                pickedUpAt: sellerOrder.pickedUpAt,
+                inTransitAt: sellerOrder.inTransitAt,
+                outForDeliveryAt: sellerOrder.outForDeliveryAt,
+                deliveredAt: sellerOrder.deliveredAt,
+
+                transporterNotes: sellerOrder.transporterNotes,
+
+                createdAt: sellerOrder.createdAt,
+                updatedAt: sellerOrder.updatedAt
+            }
+        });
+
+    } catch (error) {
+        console.log("getSellerOrderDetails error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+
+export const acceptSellerOrder = async (req, res) => {  // this controller is used to accept the order by the seller. only pending orders can be accepted. 
+
+    try {
+
+        const sellerId = req.user.sellerId;
+        const { sellerOrderId } = req.params;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        // Ownership check
+        if (sellerOrder.seller.toString() !== sellerId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        // Status validation
+        if (sellerOrder.status !== "pending") {
+            return res.status(400).json({
+                success: false,
+                message: "Only pending orders can be accepted"
+            });
+        }
+
+        sellerOrder.status = "accepted";
+
+      
+        await sellerOrder.save();
+
+        return res.status(200).json({
+            success: true,
+            message:
+                "Order accepted successfully",
+            sellerOrder
+        });
+
+    } catch (error) {
+
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message:
+                "Internal Server Error"
+        });
+    }
+};
+
+
+export const rejectSellerOrder = async (req, res) => {
+
+    try {
+        const sellerId = req.user.sellerId;
+        const { sellerOrderId } = req.params;
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message:"Seller order not found"
+            });
+        }
+
+        if (
+            sellerOrder.seller.toString()
+            !== sellerId.toString()
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        if (
+            sellerOrder.status !== "pending"
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:"Only pending orders can be rejected"
+            });
+        }
+
+        sellerOrder.status = "rejected";
+
+
+        // TODO:          
+        // release reserved stock       this means we need to implement stock reservation when the order is placed. when the order is rejected we need to release the reserved stock back to the available stock.
+        // notify buyer
+        // refund partial payment
+
+        await sellerOrder.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Order rejected successfully"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+
+export const markPreparing = async (req, res) => {
+
+    try {
+
+        const sellerId = req.user.sellerId;
+        const { sellerOrderId } = req.params;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message:"Seller order not found"
+            });
+        }
+
+        if (sellerOrder.status !== "accepted") {
+            return res.status(400).json({
+                success: false,
+                message: "Order must be accepted first"
+            });
+        }
+
+        sellerOrder.status = "preparing";
+
+        sellerOrder.packingStartedAt = new Date();
+
+    
+
+        await sellerOrder.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Order marked as preparing"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message:
+                "Internal Server Error"
+        });
+    }
+};
+
+
+export const markReadyForPickup = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
+        const { sellerOrderId } = req.params;
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        if (sellerOrder.status !== "preparing") {
+            return res.status(400).json({
+                success: false,
+                message: "Order must be in preparing status"
+            });
+        }
+
+
+        if (sellerOrder.sellerProofImages.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Upload packing proof first"
+            });
+        }
+
+        sellerOrder.status = "ready_for_pickup";
+        sellerOrder.readyForPickupAt = new Date();
+        sellerOrder.sellerPacked = true;
+
+        await sellerOrder.save();
+        await assignTransporterUsingAI({ sellerOrderId: sellerOrder._id });
+
+         return res.status(200).json({
+            success: true,
+            message: "Order marked as ready for pickup and transporter dispatch started"
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+}  
+
+
+
+export const uploadPackingProof = async (req, res) => {
+    try {
+        const sellerId = req.user.sellerId;
+        const { sellerOrderId } = req.params;
+
+        const files = req.files || [];
+
+        if (files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Please upload packing proof images"
+            });
+        }
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        // Ownership validation
+        if (sellerOrder.seller.toString() !== sellerId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        // Prevent upload after shipment
+        const blockedStatuses = [
+            "picked_up",
+            "in_transit",
+            "out_for_delivery",
+            "delivered",
+            "cancelled"
+        ];
+
+        if (blockedStatuses.includes(sellerOrder.status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot upload proof now"
+            });
+        }
+
+        // Convert uploaded files
+        const proofImages =
+            files.map(file => ({
+                url: file.path,
+                public_id:
+                    file.filename ||
+                    file.public_id
+            }));
+
+        // Push new proofs
+        sellerOrder.sellerProofImages.push(
+            ...proofImages
+        );
+
+        // Auto update status
+        if (sellerOrder.status === "preparing") {
+            sellerOrder.status = "ready_for_pickup";
+        }
+
+        sellerOrder.packingCompletedAt = new Date();
+
+        await sellerOrder.save();
+        return res.status(200).json({
+            success: true,
+            message: "Packing proof uploaded successfully",
+            sellerProofImages: sellerOrder.sellerProofImages
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            succes: false,
+            message: "Internal Server Error"
+        });
+    }
 };
 
 
 
 
 
-
-
-
-
-
-
-
-
+ 

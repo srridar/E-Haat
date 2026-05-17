@@ -12,11 +12,11 @@ const useGetSellerApprovalRequest = () => {
     try {
       setLoading(true);
       const res = await axios.get(`${ADMIN_API_END_POINT}/sellers-approval-req`, { withCredentials: true });
-      console.log("i rich below api seller");
+      
       if (res.data?.success) {
         setData(res.data.sellers || []);
       }
-      console.log(res.data);
+
     } catch (error) {
       console.error("Profile fetch failed:", error);
       navigate(`/admin/dashboard`);

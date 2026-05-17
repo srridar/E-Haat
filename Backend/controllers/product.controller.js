@@ -1,12 +1,11 @@
-import Order from '../models/Order.js';
+import {Order }from '../models/Order.js';
 import { Seller } from '../models/Seller.js'
 import { Product } from '../models/Product.js'
 import getDataUri from "../utils/getDataUri.js";
 import mongoose from 'mongoose';
 import { Buyer } from "../models/Buyer.js";
 import { TransportProvider } from "../models/TransportProvider.js";
-import { TransportRequestInfo } from "../models/TransportRequestInfo.js";
-
+import SearchHistory from "../models/SearchHistory.js";
 
 
 export const CreateProduct = async (req, res) => {
@@ -99,7 +98,6 @@ export const GetAllProduct = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
-
 
 export const GetProductById = async (req, res) => {
     try {
@@ -253,230 +251,6 @@ export const deleteProduct = async (req, res) => {
     }
 };
 
-export const SearchFilterProduct = async (req, res) => {
-    try {
-
-        const { search, category, minPrice, maxPrice, inStock } = req.query;
-        const query = {}
-
-        if (search) {
-            query.name = { $regex: search, $options: "i" };
-        }
-
-        if (category) {
-            query.category = category;
-        }
-
-        if (minPrice || maxPrice) {
-            query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice);   // $gte means 
-            if (maxPrice) query.price.$lte = Number(maxPrice);
-        }
-
-        if (inStock == "true") {
-            query.stock = { $gt: 0 };                            //  only those which are in stock
-        }
-
-        const products = await Product.find(query)
-            .populate("seller", "name phone")
-            .sort({ createdAt: -1 });
-
-
-        if (products.length === 0) {
-            return res.status(404).json({
-                message: "No products found",
-                success: false
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            count: products.length,
-            products
-        });
-
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
-        })
-    }
-}
-
-export const RateAndReviewProduct = async (req, res) => {
-    try {
-
-        const { rating, productId, orderId } = req.body;
-        const buyerId = req.user.id;
-
-        if (!rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
-        }
-
-        const order = await Order.findOne({
-            _id: orderId,
-            buyer: buyerId,
-            product: productId
-        })
-
-        if (!order) {
-            return res.status(404).json({ message: "Order not found", success: false });
-        }
-
-        if (order.status !== "DELIVERED") {
-            return res.status(400).json({
-                message: "You can rate transporter only after delivery",
-                success: false
-            });
-        }
-
-
-        if (order.isTransportRated) {
-            return res.status(400).json({
-                message: "Transporter already rated for this order",
-                success: false
-            });
-        }
-
-        const product = await Product.findById(productId);
-        if (!product) {
-            return res.status(404).json({ message: "Product not found", success: false });
-        }
-
-        const newTotalRatings = product.totalRatings + 1;
-        const newRating = ((product.rating * product.totalRatings) + rating) / newTotalRatings;
-
-        product.rating = Number(newRating.toFixed(1));
-        product.totalRatings = newTotalRatings;
-
-        order.isTransportRated = true;
-
-        await product.save();
-        await order.save();
-
-        return res.status(200).json({
-            message: "Product rated successfully",
-            success: true,
-            rating: product.rating
-        });
-
-
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
-        })
-    }
-}
-
-export const HireTransporter = async (req, res) => {
-    try {
-        const buyerId = req.user.buyerId;
-
-        const {
-            transporter,
-            pickupLocation,
-            destinationLocation,
-            itemDescription,
-            weightKg,
-            deliveryDate,
-            offeredPrice,
-            estimatedDistanceKm,
-        } = req.body;
-
-
-        if (
-            !transporter ||
-            !pickupLocation ||
-            !destinationLocation ||
-            !itemDescription ||
-            !weightKg ||
-            !deliveryDate ||
-            !offeredPrice
-        ) {
-            return res.status(400).json({
-                message: "All required fields must be provided!",
-                success: false,
-            });
-        }
-
-
-        if (!pickupLocation.province || !pickupLocation.district || !pickupLocation.municipality ||
-            !pickupLocation.ward || !pickupLocation.landmark || pickupLocation.latitude === undefined || pickupLocation.longitude === undefined
-           ) 
-            {
-            return res.status(400).json({
-                message: "All pickup location fields are required!",
-                success: false,
-            });
-        }
-
-
-        if (
-            !destinationLocation.province || !destinationLocation.district ||
-            !destinationLocation.municipality || !destinationLocation.ward || !destinationLocation.landmark ||
-            destinationLocation.latitude === undefined || destinationLocation.longitude === undefined
-        ) {
-            return res.status(400).json({
-                message: "All destination location fields are required!",
-                success: false,
-            });
-        }
-
-
-        const buyer = await Buyer.findById(buyerId);
-        if (!buyer) {
-            return res.status(404).json({
-                message: "Buyer not found",
-                success: false,
-            });
-        }
-
-
-        const transporterData = await TransportProvider.findById(transporter);
-        if (!transporterData) {
-            return res.status(404).json({
-                message: "Transporter not found",
-                success: false,
-            });
-        }
-
-
-        const newHireRequest = await TransportRequestInfo.create({
-            customer: buyerId,
-            transporter: transporter,
-            pickupLocation,
-            destinationLocation,
-            itemDescription,
-            weightKg,
-            deliveryDate,
-            offeredPrice,
-            estimatedDistanceKm: estimatedDistanceKm || 0,
-        });
-
-        return res.status(201).json({
-            message: "Transporter hired successfully!",
-            success: true,
-            request: newHireRequest,
-        });
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};
-
-
-
-
-
-
-
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
     const toRad = (value) => (value * Math.PI) / 180;
     const R = 6371;
@@ -496,7 +270,6 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 const cosineSimilarity = (text1, text2) => {
-
     if (!text1 || !text2) return 0;
 
     const words1 = text1.toLowerCase().split(" ");
@@ -504,8 +277,13 @@ const cosineSimilarity = (text1, text2) => {
 
     const allWords = [...new Set([...words1, ...words2])];
 
-    const vector1 = allWords.map(word => words1.includes(word) ? 1 : 0);
-    const vector2 = allWords.map(word => words2.includes(word) ? 1 : 0);
+    const vector1 = allWords.map(
+        word => words1.filter(w => w === word).length
+    );
+
+    const vector2 = allWords.map(
+        word => words2.filter(w => w === word).length
+    );
 
     const dotProduct = vector1.reduce((sum, val, i) => sum + val * vector2[i], 0);
 
@@ -579,150 +357,256 @@ export const GetAllProductOfSeller = async (req, res) => {
     }
 };
 
-export const getAllProductsSorted = async (req, res) => {
+export const saveSearchHistory = async (req, res) => {
     try {
 
-        const {latitude,longitude, search = "",categories = ""} = req.query;
+        const buyerId = req.user?.buyerId;
+        const { search, categories } = req.body;
 
-        const selectedCategories = categories ? categories.split(",") : [];
-        const user = req.user;
-
-        const hasSearch = search.trim() !== "";
-        const hasCategory = selectedCategories.length > 0;
-
-
-        if (!user) {
-
-            const products = await Product.find({
-                isActive: true,
-                isVerified: true
-            }).populate("seller");
-
-            return res.status(200).json({
-                success: true,
-                type: "public_products",
-                total: products.length,
-                products
+        if (!buyerId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized buyer",
             });
         }
 
-
-
-        if (!latitude || !longitude) {
+        if (!search || search.trim() === "") {
             return res.status(400).json({
                 success: false,
-                message: "Buyer location required"
+                message: "Search query is required",
             });
         }
 
-        const buyerLat = parseFloat(latitude);
-        const buyerLon = parseFloat(longitude);
 
-        const products = await Product.find({
-            isActive: true,
-            isVerified: true
-        }).populate("seller");
+        const normalizedSearch = search.trim().toLowerCase();
 
+        const history = await SearchHistory.findOneAndUpdate(
+            {
+                buyer: buyerId,
+                searchQuery: normalizedSearch,
+            },
+            {
+                $set: {
+                    category: categories || null,
+                    updatedAt: new Date(),
+                },
 
+                // Only used during insertion
+                $setOnInsert: {
+                    buyer: buyerId,
+                    searchQuery: normalizedSearch,
+                },
+            },
+            {
+                new: true,
+                upsert: true,
+                runValidators: true,
+            }
+        );
 
-        if (hasSearch || hasCategory) {
+        // Get latest 20 searches (based on updatedAt)
+        const latestSearches = await SearchHistory.find({ buyer: buyerId })
+            .sort({ updatedAt: -1 })   // latest first
+            .limit(20)
+            .select("_id");
 
-            const processedProducts = products
-                .filter(product => {
-                    if (!hasCategory) return true;
-                    return selectedCategories.includes(product.category);
-                })
-                .map(product => {
+        const latestIds = latestSearches.map(item => item._id);
 
-                    const sellerLon = product.seller.location.coordinates[0];
-                    const sellerLat = product.seller.location.coordinates[1];
-
-                    const distance = haversineDistance(
-                        buyerLat,
-                        buyerLon,
-                        sellerLat,
-                        sellerLon
-                    );
-
-                    const similarity = hasSearch
-                        ? cosineSimilarity(
-                            search,
-                            `${product.name} ${product.category} ${product.description}`
-                        )
-                        : 0;
-
-                    return {
-                        ...product._doc,
-                        distance,
-                        similarity
-                    };
-
-                });
-
-            processedProducts.sort((a, b) => {
-
-                if (b.similarity !== a.similarity) {
-                    return b.similarity - a.similarity;
-                }
-
-                return a.distance - b.distance;
-
-            });
-
-            return res.status(200).json({
-                success: true,
-                type: "search_products",
-                total: processedProducts.length,
-                products: processedProducts
-            });
-        }
-
-        // ------------------------------------------------
-        // CASE 4 : LOGGED IN BUT NO INPUT
-        // LOCATION + BEHAVIOR BASED
-        // ------------------------------------------------
-
-        const processedProducts = products.map(product => {
-
-            const sellerLon = product.seller.location.coordinates[0];
-            const sellerLat = product.seller.location.coordinates[1];
-
-            const distance = haversineDistance(
-                buyerLat,
-                buyerLon,
-                sellerLat,
-                sellerLon
-            );
-
-
-            const popularityScore = (product.rating * product.totalRatings) / 100;
-
-            const finalScore = (0.6 * (1 / (distance + 1))) + (0.4 * popularityScore);
-
-            return {
-                ...product._doc,
-                distance,
-                score: finalScore
-            };
-
+        // 3    Delete old searches
+        await SearchHistory.deleteMany({
+            buyer: buyerId,
+            _id: { $nin: latestIds }
         });
-
-        processedProducts.sort((a, b) => b.score - a.score);
 
         return res.status(200).json({
             success: true,
-            type: "recommended_products",
-            total: processedProducts.length,
-            products: processedProducts
+            message: "Search saved & cleaned successfully",
+            data: history,
         });
 
     } catch (error) {
-
-        console.error(error);
-
+        console.error("Save Search Error:", error);
         return res.status(500).json({
             success: false,
-            message: "Server Error"
+            message: "Server Error",
         });
     }
 };
+
+export const getProductBysearchAndRecommendation = async (req, res) => {
+    try {
+        const buyerId = req.user?.buyerId;
+        const {
+            search = "",
+            category,
+            minPrice,
+            maxPrice,
+            inStock,
+            sortBy = "recommended"
+        } = req.query;
+
+
+        let filterQuery = {
+            isActive: true,
+            isVerified: true
+        };
+
+        if (search && search.trim()) {
+            filterQuery.name = { $regex: search, $options: "i" };
+        }
+
+        if (category) {
+            filterQuery.category = { $in: category.split(",") };
+        }
+
+        if (minPrice || maxPrice) {
+            filterQuery.price = {};
+            if (minPrice) filterQuery.price.$gte = Number(minPrice);
+            if (maxPrice) filterQuery.price.$lte = Number(maxPrice);
+        }
+
+        if (inStock === "true") {
+            filterQuery.stock = { $gt: 0 };
+        }
+
+
+        // 2. BUYER DATA (LOCATION + INTEREST)
+
+        let buyer = null;
+        let buyerLat = null;
+        let buyerLon = null;
+
+        if (buyerId) {
+            buyer = await Buyer.findById(buyerId);
+            if (buyer?.location?.coordinates) {
+                buyerLon = buyer.location.coordinates[0];
+                buyerLat = buyer.location.coordinates[1];
+            }
+        }
+
+
+        // 3. USER INTEREST
+
+
+        let searchText = "";
+        let purchaseText = "";
+
+        if (buyer) {
+            const searchHistory = await SearchHistory.find({ buyer: buyerId }).sort({ createdAt: -1 }).limit(10);
+
+            searchHistory.forEach(item => {
+                searchText += item.searchQuery + " ";
+            });
+
+            const orders = await Order.find({ buyer: buyerId }).populate({
+                path: "products.product",
+                select: "name category description"
+            });
+
+            orders.forEach(order => {
+                order.products.forEach(item => {
+                    if (item.product) {
+                        purchaseText += `${item.product.name} ${item.product.category} ${item.product.description} `;
+                    }
+                });
+            });
+        }
+
+
+        // 4. FETCH FILTERED PRODUCTS
+
+        const products = await Product.find(filterQuery).populate("seller", "name phone location rating totalRatings").lean();
+
+
+        // 5. SCORE PRODUCTS (RECOMMENDATION)
+
+
+        const categoryDistanceFactors = {
+            Dairy: 15,
+            Vegetables: 25,
+            Fruits: 200,
+            Food: 20,
+            Grains: 160,
+            Clothing: 220,
+            Electronics: 350,
+            Furniture: 100,
+            Other: 90
+        };
+
+        const scoredProducts = products.map(product => {
+            let distance = Infinity;
+            let distanceScore = 0;
+
+            if (buyerLat && buyerLon && product.seller?.location?.coordinates) {
+                const sellerLon = product.seller.location.coordinates[0];
+                const sellerLat = product.seller.location.coordinates[1];
+
+                distance = haversineDistance(
+                    buyerLat,
+                    buyerLon,
+                    sellerLat,
+                    sellerLon
+                );
+
+                const decayFactor = categoryDistanceFactors[product.category] || 100;
+
+                distanceScore = Math.max(Math.exp(-distance / decayFactor), 0.07); // 0.07 is the minimum score for very far products);
+            }
+
+            const searchScore = searchText ? cosineSimilarity(searchText, `${product.name} ${product.category} ${product.description}`) : 0;
+
+            const purchaseScore = purchaseText ? cosineSimilarity(purchaseText, `${product.name} ${product.category} ${product.description}`) : 0;
+
+            const popularityScore = (product.rating * product.totalRatings) / 100 || 0;
+
+            const finalScore =
+                0.3 * searchScore +
+                0.25 * purchaseScore +
+                0.35 * distanceScore +
+                0.1 * popularityScore;
+
+            return {
+                ...product,
+                distance,
+                score: finalScore
+            };
+        });
+
+
+        // 6.                   SORTING
+
+        let sortedProducts;
+
+        if (sortBy === "price-low") {
+            sortedProducts = scoredProducts.sort((a, b) => a.price - b.price);
+        } else if (sortBy === "price-high") {
+            sortedProducts = scoredProducts.sort((a, b) => b.price - a.price);
+        } else if (sortBy === "newest") {
+            sortedProducts = scoredProducts.sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+        } else {
+            //                    DEFAULT: RECOMMENDED
+            sortedProducts = scoredProducts.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (a.distance !== b.distance) return a.distance - b.distance;
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count: sortedProducts.length,
+            products: sortedProducts
+        });
+
+    } catch (error) {
+        console.error("Product Controller Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+

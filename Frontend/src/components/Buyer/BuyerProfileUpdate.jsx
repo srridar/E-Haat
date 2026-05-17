@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "sonner";
 import { BUYER_API_END_POINT } from "@/utils/constants";
 import { Label } from "@/components/ui/label";
 import validator from "validator";
@@ -52,6 +53,7 @@ const BuyerProfileUpdate = () => {
         }
       } catch (error) {
         console.error("Profile fetch failed", error);
+        toast.error("Failed to load profile");
       }
     };
 
@@ -71,9 +73,14 @@ const BuyerProfileUpdate = () => {
       const objectUrl = URL.createObjectURL(file);
       setFormData((prev) => ({ ...prev, file }));
       setPreview(objectUrl);
-      return () => URL.revokeObjectURL(objectUrl);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
 
   const validateInput = () => {
@@ -97,25 +104,45 @@ const BuyerProfileUpdate = () => {
     const validationErrors = validateInput();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      toast.error("Please fix the highlighted fields");
       return;
     }
     setLoading(true);
-    try {
-      const data = new FormData();
-      Object.keys(formData).forEach((key) => {
-        if (key === "file" && formData.file) {
-          data.append("profileImage", formData.file);
-        } else if (formData[key] !== null) {
-          data.append(key, formData[key]);
-        }
-      });
 
-      const res = await axios.put(`${BUYER_API_END_POINT}/update-profile`, data, { withCredentials: true });
-      if (res.data.success) {
-        navigate("/buyer/profile");
+    const data = new FormData();
+    Object.keys(formData).forEach((key) => {
+      if (key === "file" && formData.file) {
+        data.append("profileImage", formData.file);
+      } else if (formData[key] !== null) {
+        data.append(key, formData[key]);
       }
+    });
+
+    const promise = axios.put(
+      `${BUYER_API_END_POINT}/update-profile`,
+      data,
+      { withCredentials: true }
+    );
+
+    toast.promise(promise, {
+      loading: "Updating profile...",
+      success: (res) => {
+        if (res.data.success) {
+          setTimeout(() => navigate("/buyer/profile"), 800);
+          return "Profile updated successfully!";
+        }
+        throw new Error("Update failed");
+      },
+      error: (err) =>
+        err?.response?.data?.message ||
+        err?.message ||
+        "Update failed"
+    });
+
+    try {
+      await promise;
     } catch (error) {
-      alert(error.response?.data?.message || "Update failed");
+      console.log(error.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
     }
@@ -135,7 +162,7 @@ const BuyerProfileUpdate = () => {
         onClick={() => navigate(-1)}
         className="absolute top-8 left-8 text-white flex items-center gap-2 font-bold z-10 hover:text-emerald-100 transition-colors"
       >
-        <ArrowLeft size={20} /> 
+        <ArrowLeft size={20} />
       </button>
 
       <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-12 border border-slate-100">

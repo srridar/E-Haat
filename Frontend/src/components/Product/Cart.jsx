@@ -16,19 +16,16 @@ const Cart = () => {
   const navigate = useNavigate();
 
 
-const handleCheckout = () => {
-  if (items.length === 0) return;
+  const handleCheckout = () => {
+    if (items.length === 0) return;
 
-  if (isAuthenticated) {
-    navigate("/product/get-transporter");
-  } else {
-    toast.error("Only logged in users can choose a transporter. Please log in first!");
-
-    navigate("/buyer/login", {
-      state: { from: "/admin/checkout" },
-    });
-  }
-};
+    if (isAuthenticated) {
+      navigate("/buyer/create-order");
+    } else {
+      toast.error("Please login first!");
+      navigate("/buyer/login");
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -86,7 +83,7 @@ const handleCheckout = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-         
+
           <div className="lg:col-span-8 space-y-3">
             <div className="hidden md:grid grid-cols-12 px-6 mb-4 text-xs font-bold  uppercase tracking-widest">
               <div className="col-span-6">Product Details</div>
@@ -148,7 +145,7 @@ const handleCheckout = () => {
             ))}
           </div>
 
-         
+
           <aside className="lg:col-span-4">
             <div className="sticky top-8 bg-white/80 backdrop-blur-xl border border-white p-8 rounded-[2rem] shadow-2xl shadow-gray-200/50">
               <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Summary</h2>
@@ -176,7 +173,7 @@ const handleCheckout = () => {
 
               <div className="space-y-4">
                 <button onClick={handleCheckout} className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-black transition-all shadow-xl shadow-gray-300 flex items-center justify-center gap-3 group">
-                  Get a Transporter
+                  make order
                   <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </button>
 

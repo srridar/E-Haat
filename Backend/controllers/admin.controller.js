@@ -3,10 +3,10 @@ import { Seller } from '../models/Seller.js'
 import { ContactData } from '../models/Contact.js'
 import { TransportProvider } from '../models/TransportProvider.js'
 import { Product } from '../models/Product.js'
-import Order from '../models/Order.js'
+import {Order} from '../models/Order.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken';
-import Notification from "../models/Notification.js";
+import {Notification} from "../models/Notification.js";
 import mongoose from 'mongoose'
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -35,6 +35,65 @@ export const registerSuperAdmin = async (req, res) => {
 
         return res.status(201).json({
             message: "Super Admin registered successfully",
+            success: true,
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+export const createAdmin = async (req, res) => {
+    try {
+
+        if (req.user.role !== "superadmin") {
+            return res.status(403).json({
+                message: "Access denied. Only Super Admin can create admins.",
+                success: false,
+            });
+        }
+
+        const { name, email, password, phone , role } = req.body;
+
+        if (!name || !email || !password || !phone || !role) {
+            return res.status(400).json({
+                message: "All required fields must be provided",
+                success: false,
+            });
+        }
+
+
+        const existingAdmin = await Admin.findOne({ email });
+
+        if (existingAdmin) {
+            return res.status(409).json({
+                message: "Admin with this email already exists",
+                success: false,
+            });
+        }
+
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+
+        const newAdmin = new Admin({
+            name,
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            phone,
+            role: role,
+            isActive: true,
+            createdBy: req.user._id,
+        });
+
+        await newAdmin.save();
+
+        return res.status(201).json({
+            message: "Admin created successfully",
             success: true,
         });
 
@@ -107,7 +166,7 @@ export const loginAdmin = async (req, res) => {
                 role: admin.role,
             },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+            { expiresIn: "15m" }
         );
 
 
@@ -126,7 +185,7 @@ export const loginAdmin = async (req, res) => {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                maxAge: 15* 60 * 1000,
             })
             .json({
                 message: "Login successful",
@@ -145,92 +204,34 @@ export const loginAdmin = async (req, res) => {
 
 export const logoutAdmin = async (req, res) => {
     try {
-        return res.status(200).cookie("token", "", {
-            maxAge: 0,  // Expire the cookie immediately
-            httpOnly: true,  // Prevent access via JavaScript
-            secure: process.env.NODE_ENV === 'production',  // Only set secure cookies in production (HTTPS)
-            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax'
-        }).json({
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+            path: "/"   // IMPORTANT: must match
+        });
+
+        return res.status(200).json({
             message: "Logged out successfully!",
-            success: true  // Corrected typo from 'sucess' to 'success'
+            success: true
         });
 
     } catch (error) {
         console.error(error.message);
         return res.status(500).send("Internal Server Error");
     }
-}
-
-export const createAdmin = async (req, res) => {
-    try {
-
-        if (req.user.role !== "superadmin") {
-            return res.status(403).json({
-                message: "Access denied. Only Super Admin can create admins.",
-                success: false,
-            });
-        }
-
-        const { name, email, password, phone } = req.body;
-
-        if (!name || !email || !password || !phone) {
-            return res.status(400).json({
-                message: "All required fields must be provided",
-                success: false,
-            });
-        }
-
-
-        const existingAdmin = await Admin.findOne({ email });
-
-        if (existingAdmin) {
-            return res.status(409).json({
-                message: "Admin with this email already exists",
-                success: false,
-            });
-        }
-
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-
-        const newAdmin = new Admin({
-            name,
-            email: email.toLowerCase(),
-            password: hashedPassword,
-            phone,
-            role: "admin",
-            isActive: true,
-            createdBy: req.user._id,
-        });
-
-        await newAdmin.save();
-
-        return res.status(201).json({
-            message: "Admin created successfully",
-            success: true,
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
 };
 
 export const getAdminProfile = async (req, res) => {
     try {
         const adminId = req.user.adminId;
-        const admin = await Admin.findById(adminId).select('-password'); // Exclude password field
+        const admin = await Admin.findById(adminId).select('-password'); 
 
         if (!admin) {
             return res.status(404).json({ message: "Admin not found", success: false });
         }
         return res.status(200).json({ success: true, admin });
     } catch (error) {
-        console.log(error);
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
@@ -307,16 +308,17 @@ export const updateAdminProfile = async (req, res) => {
     }
 };
 
+
 export const changeAdminPassword = async (req, res) => {
     try {
         const adminId = req.user.adminId;
         const { oldPassword, newPassword } = req.body;
-
         if (!oldPassword || !newPassword) {
             return res.status(400).json({ message: "All fields are required", success: false });
         }
 
         const admin = await Admin.findById(adminId).select("+password");
+    
         if (!admin) {
             return res.status(404).json({
                 message: "Admin not found",
@@ -448,6 +450,330 @@ export const getAllUnVerifiedProducts = async (req, res) => {
     }
 };
 
+export const removeProduct = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const deletedProduct = await Product.findByIdAndDelete(productId);
+        if (!deletedProduct) {
+            return res.status(404).json({ message: "Product not found", success: false });
+        }
+
+        return res.status(200).json({ message: "Product removed successfully", success: true });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error", success: false });
+    }
+}
+
+export const blockOrUnblockProduct = async (req, res) => {
+    try {
+        const { id, action } = req.body;
+
+        if (!["block", "unblock"].includes(action)) {
+            return res.status(400).json({
+                message: "Invalid action",
+                success: false,
+            });
+        }
+        const product = await Product.findById(id).populate("seller");
+
+        if (!product) {
+            return res.status(404).json({
+                message: "Product not found",
+                success: false,
+            });
+        }
+
+        const seller = product.seller;
+
+        let notificationMessage = "";
+
+        if (action === "block") {
+            if (product.isBlocked) {
+                return res.status(400).json({
+                    message: "Product is already blocked",
+                    success: false,
+                });
+            }
+
+            product.isBlocked = true;
+            notificationMessage = `Your product "${product.name}" has been blocked by admin.`;
+        }
+
+        if (action === "unblock") {
+            if (!product.isBlocked) {
+                return res.status(400).json({
+                    message: "Product is already unblocked",
+                    success: false,
+                });
+            }
+
+            product.isBlocked = false;
+            notificationMessage = `Your product "${product.name}" has been unblocked by admin.`;
+        }
+
+
+        await product.save();
+
+        //  create notification for seller
+        const notification = new Notification({
+            user: seller._id,
+            role: "seller",
+            type: "product",
+            title: `Product ${action}ed`,
+            message: notificationMessage,
+            relatedId: product._id,
+        });
+
+        await notification.save();
+
+
+        if (!seller.notifications) {
+            seller.notifications = [];
+        }
+        seller.notifications.push(notification._id);
+        await seller.save();
+
+        return res.status(200).json({
+            message: `Product ${action}ed successfully`,
+            success: true,
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+export const verifyProduct = async (req, res) => {
+    try {
+        const { productId, action } = req.body;
+        const adminId = req.user.adminId;
+
+        const product = await Product.findById(productId).populate("seller", "name email");
+
+        if (!product) {
+            return res.status(404).json({
+                message: "Product not found",
+                success: false,
+            });
+        }
+
+        let notificationMessage = "";
+
+        if (action === "approved") {
+            product.isVerified = true;
+            product.verifiedBy = adminId;
+            product.verifiedAt = new Date();
+            notificationMessage = `Your product "${product.name}" has been approved by the admin.`;
+        } else if (action === "rejected") {
+            product.isVerified = false;
+            product.verifiedBy = adminId;
+            product.verifiedAt = new Date();
+            notificationMessage = `Your product "${product.name}" has been rejected by the admin.`;
+        }
+
+        await product.save();
+
+        const notification = new Notification({
+            user: product.seller._id,
+            role: "seller",
+            type: "product",
+            title: `Product ${action}d`,
+            message: notificationMessage,
+            relatedId: product._id,
+        });
+
+        const seller = await Seller.findById(product.seller._id);
+        seller.notifications.push(notification._id);
+        await seller.save();
+
+        await notification.save();
+        await product.save();
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+}
+
+export const verifyUser = async (req, res) => {
+    try {
+        const { id, role, action } = req.body;
+        let Model;
+
+        if (role === "seller") {
+            Model = Seller;
+        } else if (role === "transporter") {
+            Model = TransportProvider;
+        } else {
+            return res.status(400).json({
+                message: "Invalid role provided",
+                success: false,
+            });
+        }
+
+        const account = await Model.findById(id);
+        if (!account) {
+            return res.status(404).json({
+                message: "Account not found",
+                success: false,
+            });
+        }
+
+        let notificationMessage = "";
+        if (action === "approved") {
+            account.isVerified = true;
+            console.log(account.isVerified);
+            account.verificationStatus = "approved";
+            account.verifiedAt = new Date();
+            if (role === "transporter") {
+                account.isKycCompleted = true;
+            }
+            notificationMessage = "Your account verification has been approved by the admin.";
+
+        } else if (action === "rejected") {
+            account.isVerified = false;
+            account.verificationStatus = "rejected";
+            account.verifiedAt = new Date();
+            notificationMessage = "Your account verification has been rejected by the admin.";
+        } else {
+            return res.status(400).json({
+                message: "Invalid action",
+                success: false,
+            });
+        }
+
+        await account.save();
+        const notification = new Notification({
+            user: account._id,
+            role: role,
+            type: "verification",
+            title: `Account ${action}d`,
+            message: notificationMessage,
+            relatedId: null, // optional, could be userId if needed
+        });
+
+        await notification.save();
+        account.notifications.push(notification._id);
+        await account.save();
+
+        return res.status(200).json({
+            message: `Account has been ${action}d successfully`,
+            success: true,
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+export const blockOrUnblockUser = async (req, res) => {
+    try {
+        let Model;
+        const { id, role, action } = req.body;
+
+        if (!["block", "unblock"].includes(action)) {
+            return res.status(400).json({
+                message: "Invalid action",
+                success: false,
+            });
+        }
+
+        //    assign correct model
+        if (role === "seller") Model = Seller;
+        else if (role === "buyer") Model = Buyer;
+        else if (role === "transporter") Model = TransportProvider;
+
+        //     check role
+        if (!Model) {
+            return res.status(400).json({
+                message: "Invalid role",
+                success: false,
+            });
+        }
+
+        const user = await Model.findById(id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                success: false,
+            });
+        }
+
+        let notificationMessage = "";
+
+        if (action === "block") {
+            if (user.isBlocked) {
+                return res.status(400).json({
+                    message: "User is already blocked",
+                    success: false,
+                });
+            }
+            user.isBlocked = true;
+            notificationMessage = "Your account has been blocked by the admin.";
+        }
+
+        if (action === "unblock") {
+            if (!user.isBlocked) {
+                return res.status(400).json({
+                    message: "User is already unblocked",
+                    success: false,
+                });
+            }
+            user.isBlocked = false;
+            notificationMessage = "Your account has been unblocked by the admin.";
+        }
+
+        //    save user
+        await user.save();
+
+        //     create notification
+        const notification = new Notification({
+            user: user._id,
+            role: role,
+            type: "system",
+            title: `Account ${action}ed`,
+            message: notificationMessage,
+            relatedId: user._id,
+        });
+
+        await notification.save();
+
+        //    push notification to user
+        if (!user.notifications) {
+            user.notifications = [];
+        }
+
+        user.notifications.push(notification._id);
+        await user.save();
+
+        return res.status(200).json({
+            message: `${role} ${action}ed successfully`,
+            success: true,
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+
 export const getAllSellers = async (req, res) => {
     try {
         const sellers = await Seller.find().select('-password');
@@ -576,328 +902,6 @@ export const getAllUnVerifiedTransporters = async (req, res) => {
     }
 }
 
-export const removeProduct = async (req, res) => {
-    try {
-        const { productId } = req.params;
-        const deletedProduct = await Product.findByIdAndDelete(productId);
-        if (!deletedProduct) {
-            return res.status(404).json({ message: "Product not found", success: false });
-        }
-
-        return res.status(200).json({ message: "Product removed successfully", success: true });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
-    }
-}
-
-export const verifyUser = async (req, res) => {
-    try {
-        const { id, role, action } = req.body;
-        let Model;
-
-        if (role === "seller") {
-            Model = Seller;
-        } else if (role === "transporter") {
-            Model = TransportProvider;
-        } else {
-            return res.status(400).json({
-                message: "Invalid role provided",
-                success: false,
-            });
-        }
-
-        const account = await Model.findById(id);
-        if (!account) {
-            return res.status(404).json({
-                message: "Account not found",
-                success: false,
-            });
-        }
-
-        let notificationMessage = "";
-        if (action === "approved") {
-            account.isVerified = true;
-            console.log(account.isVerified);
-            account.verificationStatus = "approved";
-            account.verifiedAt = new Date();
-            if (role === "transporter") {
-                account.isKycCompleted = true;
-            }
-            notificationMessage = "Your account verification has been approved by the admin.";
-
-        } else if (action === "rejected") {
-            account.isVerified = false;
-            account.verificationStatus = "rejected";
-            account.verifiedAt = new Date();
-            notificationMessage = "Your account verification has been rejected by the admin.";
-        } else {
-            return res.status(400).json({
-                message: "Invalid action",
-                success: false,
-            });
-        }
-
-        await account.save();
-        const notification = new Notification({
-            user: account._id,
-            role: role,
-            type: "verification",
-            title: `Account ${action}d`,
-            message: notificationMessage,
-            relatedId: null, // optional, could be userId if needed
-        });
-
-        await notification.save();
-        account.notifications.push(notification._id);
-        await account.save();
-
-        return res.status(200).json({
-            message: `Account has been ${action}d successfully`,
-            success: true,
-        });
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};
-
-export const verifyProduct = async (req, res) => {
-    try {
-        const { productId, action } = req.body;
-        const adminId = req.user.adminId;
-
-        const product = await Product.findById(productId).populate("seller", "name email");
-
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found",
-                success: false,
-            });
-        }
-
-        let notificationMessage = "";
-
-        if (action === "approved") {
-            product.isVerified = true;
-            product.verifiedBy = adminId;
-            product.verifiedAt = new Date();
-            notificationMessage = `Your product "${product.name}" has been approved by the admin.`;
-        } else if (action === "rejected") {
-            product.isVerified = false;
-            product.verifiedBy = adminId;
-            product.verifiedAt = new Date();
-            notificationMessage = `Your product "${product.name}" has been rejected by the admin.`;
-        }
-
-        await product.save();
-
-        const notification = new Notification({
-            user: product.seller._id,
-            role: "seller",
-            type: "product",
-            title: `Product ${action}d`,
-            message: notificationMessage,
-            relatedId: product._id,
-        });
-
-        const seller = await Seller.findById(product.seller._id);
-        seller.notifications.push(notification._id);
-        await seller.save();
-
-        await notification.save();
-        await product.save();
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-}
-
-export const blockOrUnblockUser = async (req, res) => {
-    try {
-        let Model;
-        const { id, role, action } = req.body;
-
-        if (!["block", "unblock"].includes(action)) {
-            return res.status(400).json({
-                message: "Invalid action",
-                success: false,
-            });
-        }
-
-        // ✅ assign correct model
-        if (role === "seller") Model = Seller;
-        else if (role === "buyer") Model = Buyer;
-        else if (role === "transporter") Model = TransportProvider;
-
-        // ✅ check role
-        if (!Model) {
-            return res.status(400).json({
-                message: "Invalid role",
-                success: false,
-            });
-        }
-
-        const user = await Model.findById(id);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found",
-                success: false,
-            });
-        }
-
-        let notificationMessage = "";
-
-        if (action === "block") {
-            if (user.isBlocked) {
-                return res.status(400).json({
-                    message: "User is already blocked",
-                    success: false,
-                });
-            }
-            user.isBlocked = true;
-            notificationMessage = "Your account has been blocked by the admin.";
-        }
-
-        if (action === "unblock") {
-            if (!user.isBlocked) {
-                return res.status(400).json({
-                    message: "User is already unblocked",
-                    success: false,
-                });
-            }
-            user.isBlocked = false;
-            notificationMessage = "Your account has been unblocked by the admin.";
-        }
-
-        // ✅ save user
-        await user.save();
-
-        // ✅ create notification
-        const notification = new Notification({
-            user: user._id,
-            role: role,
-            type: "system",
-            title: `Account ${action}ed`,
-            message: notificationMessage,
-            relatedId: user._id,
-        });
-
-        await notification.save();
-
-        // ✅ push notification to user
-        if (!user.notifications) {
-            user.notifications = [];
-        }
-
-        user.notifications.push(notification._id);
-        await user.save();
-
-        return res.status(200).json({
-            message: `${role} ${action}ed successfully`,
-            success: true,
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};
-
-export const blockOrUnblockProduct = async (req, res) => {
-    try {
-        const { id, action } = req.body;
-
-        if (!["block", "unblock"].includes(action)) {
-            return res.status(400).json({
-                message: "Invalid action",
-                success: false,
-            });
-        }
-        const product = await Product.findById(id).populate("seller");
-
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found",
-                success: false,
-            });
-        }
-
-        const seller = product.seller;
-
-        let notificationMessage = "";
-
-        if (action === "block") {
-            if (product.isBlocked) {
-                return res.status(400).json({
-                    message: "Product is already blocked",
-                    success: false,
-                });
-            }
-
-            product.isBlocked = true;
-            notificationMessage = `Your product "${product.name}" has been blocked by admin.`;
-        }
-
-        if (action === "unblock") {
-            if (!product.isBlocked) {
-                return res.status(400).json({
-                    message: "Product is already unblocked",
-                    success: false,
-                });
-            }
-
-            product.isBlocked = false;
-            notificationMessage = `Your product "${product.name}" has been unblocked by admin.`;
-        }
-
-
-        await product.save();
-
-        // ✅ create notification for seller
-        const notification = new Notification({
-            user: seller._id,
-            role: "seller",
-            type: "product",
-            title: `Product ${action}ed`,
-            message: notificationMessage,
-            relatedId: product._id,
-        });
-
-        await notification.save();
-
-
-        if (!seller.notifications) {
-            seller.notifications = [];
-        }
-        seller.notifications.push(notification._id);
-        await seller.save();
-
-        return res.status(200).json({
-            message: `Product ${action}ed successfully`,
-            success: true,
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};
 
 export const getAdminNotifications = async (req, res) => {
     try {
@@ -1208,5 +1212,246 @@ export const updateOrderStatusByAdmin = async (req, res) => {
     }
 };
 
+
+export const getMyTransportRequestData = async (req, res) => {
+    try {
+        const buyerId = req.user.buyerId;
+        const requestId = req.params.id;
+
+        const buyerData = await Buyer.findById(buyerId);
+        if (!buyerData) {
+            return res.status(404).json({
+                message: "Buyer not found in database",
+                success: false
+            });
+        }
+
+        const transportRequest = await TransportRequestInfo
+            .findOne({
+                _id: requestId,
+                customer: buyerId
+            })
+            .populate("transporter", "name email phone").populate("transporter");
+
+        if (!transportRequest) {
+            return res.status(404).json({
+                message: "Transport request not found or unauthorized access",
+                success: false
+            });
+        }
+
+        return res.status(200).json({
+            message: "Transport request fetched successfully",
+            success: true,
+            request: transportRequest
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            success: false,
+        });
+    }
+};
+
+
+
+export const assignTransporter = async (req, res) => {
+    try {
+        const adminId = req.user.adminId;
+        const { sellerOrderId, transporterId } = req.body;
+
+        if (!sellerOrderId || !transporterId) {
+            return res.status(400).json({
+                success: false,
+                message: "Seller order and transporter required"
+            });
+        }
+
+        const sellerOrder = await SellerOrder.findById(sellerOrderId);
+
+        if (!sellerOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Seller order not found"
+            });
+        }
+
+        // Prevent reassignment
+        if (sellerOrder.transporter) {
+            return res.status(400).json({
+                success: false,
+                message: "Transporter already assigned"
+            });
+        }
+
+        // Only assign after ready
+        if (sellerOrder.status !== "ready_for_pickup") {
+            return res.status(400).json({
+                success: false,
+                message: "Seller order not ready for pickup"
+            });
+        }
+
+        const transporter = await TransportProvider.findById(transporterId);
+
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter not found"
+            });
+        }
+
+        if (transporter.isBlocked) {
+            return res.status(400).json({
+                success: false,
+                message: "Transporter is blocked"
+            });
+        }
+
+        sellerOrder.transporter = transporterId;
+        sellerOrder.status = "pickup_requested";
+
+        sellerOrder.assignedByAdmin = true;
+        sellerOrder.transporterAssignedAt = new Date();
+
+        await sellerOrder.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Transporter assigned successfully",
+            sellerOrder
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//  not implemented yet, should be implemented after payment gateway integration
+export const refundBuyer = async (req, res) => {
+  try {
+        const adminId =req.user.adminId;
+        const {  complaintId,   refundAmount } = req.body;
+
+        if (  !complaintId ||  !refundAmount) {
+            return res.status(400).json({
+                success: false,
+                message:"Complaint and refund amount required"
+            });
+        }
+
+        const complaint = await Complaint.findById( complaintId  ).populate("sellerOrder").populate("buyer");
+
+        if (!complaint) {
+            return res.status(404).json({
+                success: false,
+                message: "Complaint not found"
+            });
+        }
+
+        // Prevent duplicate refunds
+        if ( complaint.refundStatus ==="completed"  ) {
+            return res.status(400).json({
+                success: false,
+                message:"Refund already completed"
+            });
+        }
+
+        // Complaint must be resolved first
+        if ( complaint.status !==   "resolved"  ) {
+            return res.status(400).json({
+                success: false,
+                message:"Resolve complaint first"
+            });
+        }
+
+        const sellerOrder = complaint.sellerOrder;
+
+        // Prevent over refund
+        if (refundAmount > sellerOrder.totalAmount) {
+            return res.status(400).json({
+                success: false,
+                message:  "Refund exceeds order amount"
+            });
+        }
+
+        /*
+            PAYMENT GATEWAY REFUND
+            SHOULD HAPPEN HERE
+        */
+
+        complaint.refundStatus = "completed";
+        complaint.refundAmount =  refundAmount;
+        complaint.refundProcessedAt = new Date();
+
+        await complaint.save();
+
+        // Optional notification
+        /*
+            notify buyer
+        */
+
+        return res.status(200).json({
+            success: true,
+            message: "Refund processed successfully",
+            refundAmount
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message:  "Internal Server Error"
+        });
+    }
+};
 
 

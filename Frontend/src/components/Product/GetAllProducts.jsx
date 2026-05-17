@@ -3,11 +3,10 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
-  ChevronRight, Filter, Search, RotateCcw,
-  ArrowLeft, MapPin, ArrowUpDown, ArrowDown, ShoppingCart,
-  ArrowRight, ShoppingBag, Truck, ShieldCheck
+  ChevronRight, Filter, Search, RotateCcw, ArrowLeft, MapPin, ArrowUpDown, ArrowDown, ShoppingCart, Truck, ShieldCheck
 } from "lucide-react";
 import { PRODUCT_API_END_POINT } from "@/utils/constants";
+
 
 const GetAllProducts = () => {
   const [allProducts, setAllProducts] = useState([]);
@@ -20,12 +19,14 @@ const GetAllProducts = () => {
 
   const navigate = useNavigate();
   const { items } = useSelector((state) => state.cart);
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
-  console.log(isAuthenticated);
+  const { user } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const role = user?.role || null;
+
 
   const [location, setLocation] = useState({
-    longitude: user?.location?.coordinates[0],
-    latitude: user?.location?.coordinates[1],
+    longitude: user?.location?.coordinates?.[0] || null,
+    latitude: user?.location?.coordinates?.[1] || null,
   });
 
 
@@ -36,23 +37,22 @@ const GetAllProducts = () => {
     { name: "More", sub: ["Other"] },
   ];
 
-  useEffect(() => {
 
+  useEffect(() => {
     const fetchAllProducts = async () => {
       try {
+        setLoading(true);
 
-        const res = await axios.get(
-          `${PRODUCT_API_END_POINT}/get-recommended-products`,
-          {
-            params: {
-              latitude: location?.latitude || "",
-              longitude: location?.longitude || "",
-              search: search || "",
-              categories: selectedCategories.join(",")
-            },
-            withCredentials: true
-          }
-        );
+        const res = await axios.get(`${PRODUCT_API_END_POINT}/products`, {
+          params: {
+            search: search || "",
+            category: selectedCategories.join(","), // backend should handle array/string
+            sortBy: sortBy,
+            latitude: locationFilter ? location?.latitude : "",
+            longitude: locationFilter ? location?.longitude : "",
+          },
+          withCredentials: true,
+        });
 
         if (res.data.success) {
           setAllProducts(res.data.products);
@@ -65,10 +65,48 @@ const GetAllProducts = () => {
       }
     };
 
-    fetchAllProducts();
+    const delay = setTimeout(() => {
+      fetchAllProducts();
+    }, 400); // debounce
 
-  }, [search, selectedCategories, location]);
+    return () => clearTimeout(delay);
 
+  }, [locationFilter, location]);
+
+
+ const handleSearch = async () => {
+  try {
+
+    if (!search.trim() || search.length < 3) return;
+
+    // Save only for authenticated buyers
+    if (isAuthenticated && role === "buyer") {
+
+      await axios.post(
+        `${PRODUCT_API_END_POINT}/search-history/save`,
+        {
+          search,
+          categories: selectedCategories.join(",")
+        },
+        {
+          withCredentials: true
+        }
+      );
+    }
+
+  } catch (error) {
+    console.error("Search error:", error);
+  }
+};
+
+  useEffect(() => {
+    if (user?.location?.coordinates) {
+      setLocation({
+        longitude: user.location.coordinates[0],
+        latitude: user.location.coordinates[1],
+      });
+    }
+  }, [user]);
 
 
   const handleCategoryChange = (category) => {
@@ -84,11 +122,17 @@ const GetAllProducts = () => {
   };
 
   const filteredProducts = allProducts.filter((product) => {
+    const name = product.name?.toLowerCase() || "";
+    const desc = product.description?.toLowerCase() || "";
+
     const matchesSearch =
-      product.name.toLowerCase().includes(search.toLowerCase()) ||
-      product.description.toLowerCase().includes(search.toLowerCase());
+      name.includes(search.toLowerCase()) ||
+      desc.includes(search.toLowerCase());
+
     const matchesCategory =
-      selectedCategories.length === 0 || selectedCategories.includes(product.category);
+      selectedCategories.length === 0 ||
+      selectedCategories.includes(product.category);
+
     return matchesSearch && matchesCategory;
   });
 
@@ -98,6 +142,9 @@ const GetAllProducts = () => {
     if (sortBy === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
+
+
+
 
   if (loading) {
     return (
@@ -182,7 +229,7 @@ const GetAllProducts = () => {
 
 
         <div id="main" className="flex flex-col lg:flex-row gap-4">
-          <aside className="w-full lg:w-64 space-y-6 text-white ">
+          <aside className="w-full lg:w-96 space-y-6 text-white ">
             <div className="sticky top-28 bg-slate-900  p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-8">
               <div className="flex items-center justify-between border-b border-slate-50 pb-4">
                 <h3 className="font-bold text-lg  flex items-center gap-2">
@@ -193,15 +240,25 @@ const GetAllProducts = () => {
                 </button>
               </div>
 
-              <div className="relative text-black">
+              <div className="relative text-black flex items-center gap-2">
                 <Search className="absolute left-1 top-1/2 -translate-y-1/2 " size={16} />
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full pl-10 pr-2 py-2 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
                 />
+
+                {
+                  isAuthenticated && role === "buyer" && (<button
+                    onClick={handleSearch}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition-colors shadow-md active:scale-95"
+                  >
+                    Search
+                  </button>)
+                }
+
               </div>
 
               <div className="space-y-6">
@@ -250,11 +307,11 @@ const GetAllProducts = () => {
                 </div>
                 <button
                   onClick={() => setLocationFilter(!locationFilter)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${locationFilter ? "bg-indigo-600 text-white" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                  className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs font-bold transition-all ${locationFilter ? " bg-[#4b0570] " : "bg-slate-500 text-black hover:bg-slate-100"
                     }`}
                 >
                   <MapPin size={14} />
-                  Nearby
+                  Special For Me
                 </button>
               </div>
             </header>

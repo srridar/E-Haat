@@ -84,6 +84,7 @@ const transportProviderSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
     verificationStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -98,6 +99,14 @@ const transportProviderSchema = new mongoose.Schema(
       vehicleRegistration: String,
     },
 
+
+    bankDetails: {
+      accountHolderName: String,
+      bankName: String,
+      accountNumber: String,
+      branchName: String,
+      ifscCode: String
+    },
 
     vehicle: {
       type: {
@@ -118,19 +127,28 @@ const transportProviderSchema = new mongoose.Schema(
       },
     },
 
-
     serviceAreas: [
       {
         type: String,
       },
     ],
 
-
     pricePerKm: {
       type: Number,
       required: false,
     },
 
+    currentLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number],
+        default: [85.3240, 27.7172],
+      },
+    },
 
     isAvailable: {
       type: Boolean,
@@ -142,15 +160,37 @@ const transportProviderSchema = new mongoose.Schema(
       default: false,
     },
 
-    rating: {
+    totalRating: {
       type: Number,
       default: 0,
+    },
+
+    totalRequest: {
+      type: Number,
+      default: 0,
+    },
+
+    acceptedRequests: {
+      type: Number,
+      default: 0
+    },
+
+    cancelledRequests: {
+      type: Number,
+      default: 0
+    },
+
+    activeDeliveriesCount: {
+      type: Number,
+      default: 0
     },
 
     totalDeliveries: {
       type: Number,
       default: 0,
-    }, resetOtp: {
+    },
+
+    resetOtp: {
       type: String
     },
     otpExpire: {
@@ -164,6 +204,17 @@ const transportProviderSchema = new mongoose.Schema(
   { timestamps: true }
 
 );
+
+
+transportProviderSchema.pre("save", function (next) {
+  if (this.isNew) {
+    this.currentLocation = {
+      type: "Point",
+      coordinates: this.location.coordinates,
+    };
+  }
+  next();
+});
 
 export const TransportProvider = mongoose.model("TransportProvider", transportProviderSchema);
 

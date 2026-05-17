@@ -1,12 +1,9 @@
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
-import Order from "../models/Order.js";
-
+import {Order }from "../models/Order.js";
 
 dotenv.config();
 const KHALTI_BASE_URL = "https://dev.khalti.com/api/v2/epayment";
-
-
 
 export const handlePayment = async (req, res) => {
     try {
@@ -50,7 +47,6 @@ export const handlePayment = async (req, res) => {
         });
     }
 };
-
 
 export const lookupPayment = async (req, res) => {
   try {

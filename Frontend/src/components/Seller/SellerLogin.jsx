@@ -77,7 +77,7 @@ const SellerLogin = () => {
 
       if (res.data.success) {
         dispatch(loginSuccess({ user: res.data.seller }));
-        toast.success("Login successful 🎉");
+       
         navigate("/seller/profile");
       }
     } catch (error) {

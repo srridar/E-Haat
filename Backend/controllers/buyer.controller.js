@@ -1,10 +1,9 @@
-import Order from '../models/Order.js';
+import {Order} from '../models/Order.js';
 import { Seller } from '../models/Seller.js'
 import { Buyer } from '../models/Buyer.js'
 import { TransportProvider } from '../models/TransportProvider.js'
 import { Product } from "../models/Product.js";
-import { TransportRequestInfo } from "../models/TransportRequestInfo.js"
-import Notification from "../models/Notification.js";
+import {Notification} from "../models/Notification.js";
 import cloudinary from '../utils/cloudinary.js'
 import bcrypt from 'bcryptjs'
 import jwt from "jsonwebtoken";
@@ -332,15 +331,17 @@ export const loginBuyer = async (req, res) => {
 }
 
 export const logoutBuyer = async (req, res) => {
-    try {
-        return res.status(200).cookie("token", "", {
-            maxAge: 0,  // Expire the cookie immediately
-            httpOnly: true,  // Prevent access via JavaScript
-            secure: process.env.NODE_ENV === 'production',  // Only set secure cookies in production (HTTPS)
-            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax'
-        }).json({
+       try {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+            path: "/"   // IMPORTANT: must match
+        });
+
+        return res.status(200).json({
             message: "Logged out successfully!",
-            success: true  // Corrected typo from 'sucess' to 'success'
+            success: true
         });
 
     } catch (error) {
@@ -509,32 +510,6 @@ export const changeBuyerPassword = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 
-}
-
-export const getProductsFromVerifiedSellers = async (req, res) => {
-    try {
-        const products = await Product.find({ isVerified: true })
-            .populate({
-                path: "seller",
-                match: { isVerified: true },
-                select: "name email phone location"
-            });
-
-        const verifiedProducts = products.filter(product => product.seller !== null);
-
-        if (verifiedProducts.length === 0) {
-            return res.status(404).json({ message: "No products found from verified sellers", success: false });
-        }
-
-        return res.status(200).json({
-            success: true,
-            products: verifiedProducts
-        });
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
-    }
 }
 
 export const createOrderByBuyer = async (req, res) => {
@@ -903,225 +878,6 @@ export const getOrderById = async (req, res) => {
     }
 };
 
-export const rateTransporterByBuyer = async (req, res) => {
-    try {
-        const { rating, transporterId, orderId } = req.body;
-        const buyerId = req.user.buyerId;
-
-        if (!rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
-        }
-
-        const order = await Order.findOne({
-            _id: orderId,
-            buyer: buyerId,
-            transporter: transporterId
-        })
-
-        if (!order) {
-            return res.status(404).json({ message: "Order not found", success: false });
-        }
-
-        if (order.status !== "DELIVERED") {
-            return res.status(400).json({
-                message: "You can rate transporter only after delivery",
-                success: false
-            });
-        }
-
-        if (order.isTransporterRated) {
-            return res.status(400).json({
-                message: "Transporter already rated for this order",
-                success: false
-            });
-        }
-
-        const transporter = await TransportProvider.findById(transporterId);
-        if (!transporter) {
-            return res.status(404).json({ message: "Transporter not found", success: false });
-        }
-
-        const newTotalRatings = transporter.totalRatings + 1;
-        const newRating = ((transporter.rating * transporter.totalRatings) + rating) / newTotalRatings;
-
-        transporter.rating = Number(newRating.toFixed(1));
-        transporter.totalRatings = newTotalRatings;
-
-        order.isTransporterRated = true;
-
-        await transporter.save();
-        await order.save();
-
-        return res.status(200).json({
-            message: "Transporter rated successfully",
-            success: true,
-            rating: transporter.rating
-        });
-
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
-    }
-}
-
-export const rateSellerByBuyer = async (req, res) => {
-    try {
-        const { rating, sellerId, orderId } = req.body;
-        const buyerId = req.user.buyerId;
-
-        if (!rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
-        }
-
-        const order = await Order.findOne({
-            _id: orderId,
-            buyer: buyerId,
-            seller: sellerId
-        })
-
-        if (!order) {
-            return res.status(404).json({ message: "Order not found", success: false });
-        }
-
-        if (order.status !== "DELIVERED") {
-            return res.status(400).json({
-                message: "You can rate seller only after delivery",
-                success: false
-            });
-        }
-
-
-        if (order.isSellerRated) {
-            return res.status(400).json({
-                message: "Seller already rated for this order",
-                success: false
-            });
-        }
-
-        if (order.seller.toString() !== sellerId) {
-            return res.status(403).json({
-                message: "You are not allowed to rate this seller",
-                success: false
-            });
-        }
-
-        const seller = await Seller.findById(sellerId);
-        if (!seller) {
-            return res.status(404).json({ message: "Seller not found", success: false });
-        }
-
-        const newTotalRatings = seller.totalRatings + 1;
-        const newRating = ((seller.rating * seller.totalRatings) + rating) / newTotalRatings;
-
-        seller.rating = Number(newRating.toFixed(1));
-        seller.totalRatings = newTotalRatings;
-
-        order.isSellerRated = true;
-
-        await seller.save();
-        await order.save();
-
-        return res.status(200).json({
-            message: "Seller rated successfully",
-            success: true,
-            rating: seller.rating
-        });
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", success: false });
-    }
-}
-
-export const rateProductByBuyer = async (req, res) => {
-    try {
-        const { rating, productId, orderId } = req.body;
-        const buyerId = req.user.buyerId;
-
-        if (!rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ message: "Rating must be between 1 and 5", success: false });
-        }
-
-        const order = await Order.findById(orderId);
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: "Order not found",
-            });
-        }
-
-        if (order.buyer.toString() !== buyerId) {
-            return res.status(403).json({
-                success: false,
-                message: "You are not allowed to rate this order",
-            });
-        }
-
-        if (order.status !== "delivered") {
-            return res.status(400).json({
-                success: false,
-                message: "You can rate product only after delivery",
-            });
-        }
-
-        if (order.isProductRated) {
-            return res.status(400).json({
-                success: false,
-                message: "Product already rated for this order",
-            });
-        }
-
-        const productInOrder = order.products.find(
-            (item) => item.product.toString() === productId
-        );
-
-        if (!productInOrder) {
-            return res.status(400).json({
-                success: false,
-                message: "This product is not part of the order",
-            });
-        }
-
-        const product = await Product.findById(productId);
-
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: "Product not found",
-            });
-        }
-
-        const newTotalRatings = product.totalRatings + 1;
-        const newRating =
-            (product.rating * product.totalRatings + rating) / newTotalRatings;
-
-        product.rating = newRating;
-        product.totalRatings = newTotalRatings;
-
-        await product.save();
-
-        // 9️⃣ Mark order as product rated
-        order.isProductRated = true;
-        await order.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Product rated successfully",
-            rating: product.rating,
-        });
-
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false
-        })
-    }
-}
-
 export const getBuyerNotifications = async (req, res) => {
     try {
         const buyerId = req.user.buyerId;
@@ -1154,103 +910,6 @@ export const getBuyerNotifications = async (req, res) => {
         });
     }
 }
-
-export const getTransporterById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid Transporter ID",
-            });
-        }
-
-        const transporter = await TransportProvider.findById(id);
-        if (!transporter) {
-            return res.status(404).json({
-                success: false,
-                message: "transporter not found",
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            transporter,
-        });
-    } catch (error) {
-        console.error("Get product by ID error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
-    }
-};
-
-export const getMyAllRequests = async (req, res) => {
-    try {
-        const buyerId = req.user.buyerId;
-        const allmyrequest = await TransportRequestInfo.find({ customer: buyerId }).populate("transporter")
-
-        if (!allmyrequest || allmyrequest.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No requests found",
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            allmyrequest
-        })
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
-    }
-}
-
-export const getMyTransportRequestData = async (req, res) => {
-    try {
-        const buyerId = req.user.buyerId;
-        const requestId = req.params.id;
-
-        const buyerData = await Buyer.findById(buyerId);
-        if (!buyerData) {
-            return res.status(404).json({
-                message: "Buyer not found in database",
-                success: false
-            });
-        }
-
-        const transportRequest = await TransportRequestInfo
-            .findOne({
-                _id: requestId,
-                customer: buyerId
-            })
-            .populate("transporter", "name email phone").populate("transporter");
-
-        if (!transportRequest) {
-            return res.status(404).json({
-                message: "Transport request not found or unauthorized access",
-                success: false
-            });
-        }
-
-        return res.status(200).json({
-            message: "Transport request fetched successfully",
-            success: true,
-            request: transportRequest
-        });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            success: false,
-        });
-    }
-};
 
 export const setLocation = async (req, res) => {
     try {
@@ -1294,5 +953,87 @@ export const setLocation = async (req, res) => {
         });
     }
 };
+
+export const registerMultipleBuyers = async (req, res) => {
+    try {
+        const buyers = req.body;
+      
+        if (!Array.isArray(buyers) || buyers.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide an array of buyers"
+            });
+        }
+
+        const formattedBuyers = [];
+
+        for (const buyer of buyers) {
+
+            const {
+                name,
+                email,
+                password,
+                phone,
+                latitude,
+                longitude,
+                city
+            } = buyer;
+
+            // Validation
+            if (
+                !name ||
+                !email ||
+                !password ||
+                !phone ||
+                latitude === undefined ||
+                longitude === undefined ||
+                !city
+            ) {
+                continue; // Skip invalid records
+            }
+
+            // Check existing email
+            const existingBuyer = await Buyer.findOne({ email });
+
+            if (existingBuyer) {
+                continue; // Skip duplicate emails
+            }
+
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            formattedBuyers.push({
+                name,
+                email,
+                password: hashedPassword,
+                phone,
+                location: {
+                    type: "Point",
+                    coordinates: [longitude, latitude],
+                    city
+                }
+            });
+        }
+
+        // Insert all buyers at once
+        const insertedBuyers = await Buyer.insertMany(formattedBuyers);
+
+        return res.status(201).json({
+            success: true,
+            message: "Multiple buyers registered successfully",
+            totalInserted: insertedBuyers.length,
+            data: insertedBuyers
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
 
 
