@@ -749,14 +749,12 @@ export const getPickupTaskDetails = async (req, res) => {
         const transporterId = req.user?.transporterId;
         const { taskId } = req.params;
 
-
         if (!transporterId) {
             return res.status(401).json({
                 success: false,
                 message: "Unauthorized transporter",
             });
         }
-
 
         const transporter = await TransportProvider.findById(transporterId);
 
@@ -766,7 +764,6 @@ export const getPickupTaskDetails = async (req, res) => {
                 message: "Transporter not found",
             });
         }
-
 
         const task = await TransporterAssignment.findById(taskId)
             .populate({
@@ -784,7 +781,6 @@ export const getPickupTaskDetails = async (req, res) => {
             });
         }
 
-
         if (task.transporter.toString() !== transporterId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -798,6 +794,114 @@ export const getPickupTaskDetails = async (req, res) => {
         });
     } catch (error) {
         console.log("Error in getPickupTaskDetails:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+export const getYourConfirmedPickupTasks = async (req, res) => {
+    try {
+
+        const transporterId = req.user?.transporterId;
+
+        if (!transporterId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized transporter",
+            });
+        }
+
+        const transporter = await TransportProvider.findById(transporterId);
+
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter not found", 
+            });
+        }
+
+        const confirmedTasks = await TransporterAssignment.find({
+            transporter: transporterId,
+            status: "confirmed",
+        })
+            .populate({
+                path: "sellerOrder",
+                populate: [
+                    { path: "buyer" },
+                    { path: "sellerOrders" },
+                ],
+            })
+            .sort({ updatedAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            total: confirmedTasks.length,
+            tasks: confirmedTasks,
+        });
+
+    } catch (error) {
+
+        console.log("Error in getYourConfirmedPickupTasks:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+export const getSingleConfirmedPickupTask = async (req, res) => {
+    try {
+
+        const transporterId = req.user?.transporterId;
+        const { taskId } = req.params;
+
+        if (!transporterId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized transporter",
+            });
+        }
+
+        const transporter = await TransportProvider.findById(transporterId);
+
+        if (!transporter) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter not found",
+            });
+        }
+
+        const task = await TransporterAssignment.findOne({
+            _id: taskId,
+            transporter: transporterId,
+            status: "confirmed",
+        }).populate({
+            path: "sellerOrder",
+            populate: [
+                { path: "buyer" },
+                { path: "sellerOrders" },
+            ],
+        });
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: "Confirmed pickup task not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            task,
+        });
+
+    } catch (error) {
+
+        console.log("Error in getSingleConfirmedPickupTask:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error",
@@ -907,12 +1011,7 @@ export const markInTransit = async (req, res) => {
 
         sellerOrder.status = "in_transit";
         sellerOrder.inTransitAt = new Date();
-        addStatusHistory(
-            sellerOrder,
-            "in_transit",
-            transporterId
-        );
-
+     
         await sellerOrder.save();
         return res.status(200).json({
             success: true,
@@ -930,9 +1029,7 @@ export const markInTransit = async (req, res) => {
 };
 
 export const markOutForDelivery = async (req, res) => {
-
     try {
-
         const transporterId = req.user.transporterId;
         const { sellerOrderId } = req.params;
         const sellerOrder = await SellerOrder.findById(sellerOrderId);
@@ -946,7 +1043,6 @@ export const markOutForDelivery = async (req, res) => {
 
         sellerOrder.status = "out_for_delivery";
         sellerOrder.outForDeliveryAt = new Date();
-        addStatusHistory(sellerOrder, "out_for_delivery", transporterId);
         await sellerOrder.save();
         return res.status(200).json({
             success: true,
@@ -1361,7 +1457,6 @@ export const activateNextTransporter = async (sellerOrderId) => {
 };
 
 export const rejectTransportRequest = async (req, res) => {
-
     try {
 
         const transporterId = req.user.transporterId;
@@ -1380,10 +1475,8 @@ export const rejectTransportRequest = async (req, res) => {
             });
         }
 
-
         assignment.status = "rejected";
         await assignment.save();
-
 
         await TransportProvider.findByIdAndUpdate(                       // transporter stats
             transporterId,
@@ -1393,7 +1486,6 @@ export const rejectTransportRequest = async (req, res) => {
                 }
             }
         );
-
 
         await activateNextTransporter(sellerOrderId);          // activate next transporter
 

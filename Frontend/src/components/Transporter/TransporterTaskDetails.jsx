@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import {TRANSPORTER_API_END_POINT} from "@/utils/constants";
+import { TRANSPORTER_API_END_POINT } from "@/utils/constants";
 import {
     MapPin,
     Phone,
@@ -26,42 +26,46 @@ const TransporterTaskDetails = () => {
     const [error, setError] = useState(null);
     const [actionLoading, setActionLoading] = useState({ accept: false, reject: false });
 
-    useEffect(() => {
-     
-        const fetchTask = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const res = await axios.get(`${TRANSPORTER_API_END_POINT}/pickup-task/${taskId}`, {withCredentials: true});
-                if (res.data?.success) {
-                    setTask(res.data.task);
-                } else {
-                    setError("Requested shipment details could not be parsed.");
-                }
-            } catch (err) {
-
-                console.error(" Error loading task:", err);
-                setError("Failed to synchronize with logistical manifest servers.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (taskId) fetchTask();
-      
-    }, [taskId]);
-
-    const handleAction = async (type) => {
-        setActionLoading((prev) => ({ ...prev, [type]: true }));
+    const fetchTask = async () => {
         try {
-
-            navigate("/transporter/tasks");
+            setLoading(true);
+            setError(null);
+            const res = await axios.get(`${TRANSPORTER_API_END_POINT}/pickup-task/${taskId}`, { withCredentials: true });
+            if (res.data?.success) {
+                setTask(res.data.task);
+            } 
         } catch (err) {
-            console.error(`Failed to process ${type} lifecycle action:`, err);
+            console.error(" Error loading task:", err);
+            setError("Failed to synchronize with logistical manifest servers.");
         } finally {
-            setActionLoading((prev) => ({ ...prev, [type]: false }));
+            setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (taskId) fetchTask();
+    }, [taskId]);
+
+
+
+    const handleAction = async (apiCall) => {
+        setActionLoading(true);
+        try {
+            await apiCall();
+            await fetchTask();
+        } catch (err) {
+            console.error("Action handler execution crashed:", err);
+            setActionLoading(false);
+        }
+    };
+
+    const acceptTransRequest = () => handleAction(() =>
+        axios.patch(`${TRANSPORTER_API_END_POINT}/transporter-req/${taskId}/accept`, {}, { withCredentials: true })
+    );
+
+    const rejectTransRequest = () => handleAction(() =>
+        axios.patch(`${TRANSPORTER_API_END_POINT}/transporter-req/${taskId}/reject`, {}, { withCredentials: true })
+    );
 
     const getPriorityStyle = (priority) => {
         switch (priority?.toLowerCase()) {
@@ -277,7 +281,7 @@ const TransporterTaskDetails = () => {
                         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
                             <button
                                 disabled={actionLoading.accept || actionLoading.reject}
-                                onClick={() => handleAction("accept")}
+                                onClick={acceptTransRequest}
                                 className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 text-white font-medium text-sm py-2.5 rounded-xl transition shadow-sm hover:shadow active:scale-[0.99]"
                             >
                                 {actionLoading.accept ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
@@ -286,7 +290,7 @@ const TransporterTaskDetails = () => {
 
                             <button
                                 disabled={actionLoading.accept || actionLoading.reject}
-                                onClick={() => handleAction("reject")}
+                                onClick={rejectTransRequest}
                                 className="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-rose-50 border border-slate-200 disabled:bg-slate-50 text-rose-600 hover:text-rose-700 disabled:text-slate-400 font-medium text-sm py-2.5 rounded-xl transition active:scale-[0.99]"
                             >
                                 {actionLoading.reject ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
